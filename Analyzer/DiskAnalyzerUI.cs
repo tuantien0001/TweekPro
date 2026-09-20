@@ -18,7 +18,7 @@ namespace TweekPro {
   void BuildAnalyzerTab(){
    var tab=analyzerTab=new TabPage("Phân tích ổ đĩa");
    SetupList(analyzerList,new[]{"Mục","Dung lượng","Chi tiết"},new[]{620,150,240},false,true);
-   analyzerList.DoubleClick+=(s,e)=>OpenAnalyzerLocation();
+   analyzerList.DoubleClick+=async(s,e)=>await Guard(()=>{if(analyzerList.SelectedItems.Count>0)OpenAnalyzerLocation(true);return Task.FromResult(0);});
    var host=Theme.ListHost(analyzerList,out analyzerOverlay);
 
    var bar=Bar();
@@ -97,13 +97,14 @@ namespace TweekPro {
   }
 
   /// <summary>Opens Explorer at the selected folder, or selects the chosen file; extension rows have no location.</summary>
-  void OpenAnalyzerLocation(){
+  /// <summary>Opens the selected folder or file in Explorer; extension rows have no location and are ignored quietly on double-click.</summary>
+  void OpenAnalyzerLocation(bool quiet=false){
    if(analyzerList.SelectedItems.Count==0)throw new IOException("Chọn một dòng thư mục hoặc tệp.");
    object tag=analyzerList.SelectedItems[0].Tag;
    var folder=tag as FolderUsage;var file=tag as LargeFile;
    if(folder!=null&&Directory.Exists(folder.Path))System.Diagnostics.Process.Start("explorer.exe","\""+folder.Path+"\"");
    else if(file!=null&&File.Exists(file.Path))System.Diagnostics.Process.Start("explorer.exe","/select,\""+file.Path+"\"");
-   else throw new IOException("Dòng theo phần mở rộng không có vị trí cụ thể để mở.");
+   else if(!quiet)throw new IOException("Dòng theo phần mở rộng không có vị trí cụ thể để mở.");
   }
 
   void ExportAnalyzer(){

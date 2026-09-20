@@ -23,7 +23,7 @@ namespace TweekPro {
    SetupList(dupeList,new[]{"Nhóm (bản giữ lại)","Số bản","Dung lượng mỗi tệp","Tiết kiệm được","Thư mục bản giữ lại"},new[]{340,80,150,150,430},true);
    dupeList.ItemCheck+=(s,e)=>{var g=(DuplicateGroup)dupeList.Items[e.Index].Tag;if(g.Count<2)e.NewValue=CheckState.Unchecked;};
    dupeList.ItemChecked+=(s,e)=>UpdateDupeSummary();
-   dupeList.DoubleClick+=(s,e)=>ShowDupeDetails();
+   dupeList.DoubleClick+=async(s,e)=>await Guard(()=>{if(dupeList.SelectedItems.Count>0)ShowDupeDetails();return Task.FromResult(0);});
    var host=Theme.ListHost(dupeList,out dupeOverlay);
 
    var bar=Bar();
@@ -139,7 +139,8 @@ namespace TweekPro {
    }
    dupeCancellation=new CancellationTokenSource();var token=dupeCancellation.Token;dupeStage.Visible=true;dupeStage.Text=direct?"Đang xóa thẳng…":"Đang chuyển vào kho…";
    Log("Tìm trùng lặp: bắt đầu "+(direct?"xóa thẳng ":"chuyển vào kho ")+copies.ToString("N0")+" bản trùng trong "+selected.Count+" nhóm.");
-   string root=dupeRoot;var groups=selected;
+   // Snapshot the groups so a keeper switch on the UI thread cannot change what the worker removes.
+   string root=dupeRoot;var groups=selected.Select(g=>new DuplicateGroup{Hash=g.Hash,Bytes=g.Bytes,Files=g.Files.ToList(),Keeper=g.Keeper}).ToList();
    DuplicateReport report;
    try{report=await Task.Run(()=>DuplicateFinder.Quarantine(root,groups,direct,token,ReportDupe),token);}
    catch(OperationCanceledException){dupeStage.Text="Đã dừng dọn.";return;}

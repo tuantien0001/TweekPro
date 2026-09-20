@@ -20,7 +20,7 @@ namespace TweekPro {
    netTab=new TabPage("Mạng");tabs.TabPages.Add(netTab);
    SetupList(netList,new[]{"Tiến trình","Hướng","PID","Nhà phát hành","Giao thức","Cục bộ","Từ xa","Trạng thái","Máy từ xa","Đã gửi","Đã nhận","Gửi/s","Nhận/s"},new[]{190,60,70,170,70,190,210,120,200,90,90,90,90},false,true);
    netIcons.ColorDepth=ColorDepth.Depth32Bit;netIcons.ImageSize=new Size(16,16);
-   foreach(string k in new[]{"out","in","both","listen","idle"})netIcons.Images.Add(k,NetworkGlyphs.Icon(k,16));
+   foreach(string k in new[]{"out","in","both","listen","idle"})using(var bmp=NetworkGlyphs.Icon(k,16))netIcons.Images.Add(k,bmp);
    netList.SmallImageList=netIcons;
    netList.DoubleClick+=(s,e)=>ShowConnectionDetails();
    var host=Theme.ListHost(netList,out netOverlay);

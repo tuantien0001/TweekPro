@@ -12,13 +12,14 @@ namespace TweekPro {
  public partial class MainForm {
   ListView emptyList=new SmoothListView();Label emptyOverlay,emptySummary,emptyStage,emptyRootLabel;TabPage emptyTab;
   EmptyFolderResult emptyResult=new EmptyFolderResult();string emptyRoot;CancellationTokenSource emptyCancellation;
+  Dictionary<string,int> emptySubCounts=new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
 
   /// <summary>Builds the Empty Folders tab: pick a folder, find truly empty directory branches and delete the selected ones.</summary>
   void BuildEmptyTab(){
    var tab=emptyTab=new TabPage("Thư mục rỗng");
    SetupList(emptyList,new[]{"Thư mục rỗng (xóa sẽ dọn cả nhánh con rỗng)","Số nhánh con"},new[]{700,110},true);
    emptyList.ItemChecked+=(s,e)=>UpdateEmptySummary();
-   emptyList.DoubleClick+=(s,e)=>OpenEmptyLocation();
+   emptyList.DoubleClick+=async(s,e)=>await Guard(()=>{if(emptyList.SelectedItems.Count>0)OpenEmptyLocation();return Task.FromResult(0);});
    var host=Theme.ListHost(emptyList,out emptyOverlay);
 
    var bar=Bar();
@@ -55,7 +56,7 @@ namespace TweekPro {
   void RenderEmpty(){
    emptyList.BeginUpdate();emptyList.Items.Clear();
    foreach(string folder in emptyResult.Folders){
-    int subBranches=CountSubdirectories(folder);
+    int subBranches;if(!emptySubCounts.TryGetValue(folder,out subBranches))subBranches=0;
     var row=new ListViewItem(new[]{Presentation.ShortPath(folder,90),subBranches.ToString("N0")}){Tag=folder,ToolTipText=folder,Checked=true};
     Theme.StripeRow(row,emptyList.Items.Count);emptyList.Items.Add(row);
    }
@@ -83,7 +84,7 @@ namespace TweekPro {
    Log("Thư mục rỗng: đang quét (chỉ đọc) "+emptyRoot+".");
    string root=emptyRoot;
    try{
-    emptyResult=await Task.Run(()=>EmptyFolders.Find(root,token,ReportEmpty),token);
+    emptyResult=await Task.Run(()=>{var found=EmptyFolders.Find(root,token,ReportEmpty);emptySubCounts=found.Folders.ToDictionary(f=>f,CountSubdirectories,StringComparer.OrdinalIgnoreCase);return found;},token);
     RenderEmpty();
     emptyStage.Text="Quét xong: "+emptyResult.Folders.Count+" nhánh rỗng trong "+emptyResult.Scanned.ToString("N0")+" thư mục đã duyệt"+(emptyResult.Partial?"  •  (chưa đủ)":"");
     Log("Thư mục rỗng: tìm thấy "+emptyResult.Folders.Count+" nhánh rỗng.");

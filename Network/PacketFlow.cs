@@ -9,6 +9,7 @@ namespace TweekPro.Network {
  public static class PacketFlowRenderer {
   static readonly Color Surface=Color.White,Muted=Color.FromArgb(100,116,139),Track=Color.FromArgb(226,232,240);
   static readonly Color OutColor=Color.FromArgb(37,99,235),InColor=Color.FromArgb(22,163,74);
+  static readonly Font LaneFont=new Font("Segoe UI",8.25f,FontStyle.Bold);
 
   public static void Draw(Graphics g,Rectangle r,IEnumerable<NetworkPacket> packets,double outRate,double inRate){
    var saved=g.SmoothingMode;g.SmoothingMode=SmoothingMode.AntiAlias;
@@ -29,10 +30,8 @@ namespace TweekPro.Network {
     int alpha=Math.Max(70,Math.Min(255,(int)(235*fade)));
     using(var b=new SolidBrush(Color.FromArgb(alpha,c)))g.FillRectangle(b,x-3f,y-3f,6f,6f);
    }
-   using(var f=new Font("Segoe UI",8.25f,FontStyle.Bold)){
-    using(var ob=new SolidBrush(OutColor))g.DrawString("Ra ↑  "+RateText(outRate),f,ob,r.X+10,r.Y+4);
-    using(var ib=new SolidBrush(InColor))g.DrawString("Vào ↓  "+RateText(inRate),f,ib,mid+10,r.Y+4);
-   }
+   using(var ob=new SolidBrush(OutColor))g.DrawString("Ra ↑  "+RateText(outRate),LaneFont,ob,r.X+10,r.Y+4);
+   using(var ib=new SolidBrush(InColor))g.DrawString("Vào ↓  "+RateText(inRate),LaneFont,ib,mid+10,r.Y+4);
    g.SmoothingMode=saved;
   }
 

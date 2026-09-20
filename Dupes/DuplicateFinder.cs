@@ -153,28 +153,50 @@ namespace TweekPro.Dupes {
    var report=new DuplicateReport{Direct=direct};
    var forbidden=DupeSafety.ForbiddenRoots();
    string canonRoot=Engine.Canon(root);
-   var targets=new List<DuplicateFile>();
-   foreach(var group in groups)foreach(var file in group.Redundant)targets.Add(file);
+   var targets=new List<RemovalTarget>();
+   foreach(var group in groups){
+    // Never trust the scan snapshot blindly: the keeper must still exist unchanged, otherwise the whole group is skipped.
+    if(group.Keeper==null)group.Keeper=SelectKeeper(group.Files,false);
+    if(group.Keeper==null||!Unchanged(group.Keeper,group.Bytes)){report.Failed++;if(report.Errors.Count<50)report.Errors.Add((group.Keeper==null?"(nhóm "+group.Hash+")":group.Keeper.Path)+": bản giữ lại đã thay đổi hoặc không còn sau khi quét; bỏ qua cả nhóm.");continue;}
+    foreach(var file in group.Redundant)targets.Add(new RemovalTarget{File=file,Group=group});
+   }
    if(targets.Count==0)return report;
    if(direct)DeleteDirect(targets,canonRoot,forbidden,report,cancel,progress);
    else MoveToVault(targets,canonRoot,forbidden,report,cancel,progress);
    return report;
   }
 
-  static void MoveToVault(List<DuplicateFile> targets,string root,IList<string> forbidden,DuplicateReport report,CancellationToken cancel,Action<DuplicateProgress> progress){
+  class RemovalTarget { public DuplicateFile File; public DuplicateGroup Group; }
+
+  /// <summary>True when the file on disk still has the size and last-write time recorded at scan time.</summary>
+  public static bool Unchanged(DuplicateFile file,long expectedBytes){
+   try{var info=new FileInfo(file.Path);if(!info.Exists)return false;if(info.Length!=expectedBytes)return false;return info.LastWriteTime==file.LastWrite;}
+   catch(Exception){return false;}
+  }
+
+  /// <summary>Rejects a redundant copy that changed since the scan; direct deletion additionally re-hashes the content.</summary>
+  static bool StillDuplicate(RemovalTarget t,bool rehash,DuplicateReport report){
+   if(!Unchanged(t.File,t.Group.Bytes)){report.Failed++;if(report.Errors.Count<50)report.Errors.Add(t.File.Path+": tệp đã thay đổi sau khi quét; không xóa.");return false;}
+   if(rehash&&!String.Equals(HashFile(t.File.Path),t.Group.Hash,StringComparison.OrdinalIgnoreCase)){report.Failed++;if(report.Errors.Count<50)report.Errors.Add(t.File.Path+": nội dung không còn trùng với bản giữ lại; không xóa.");return false;}
+   return true;
+  }
+
+  static void MoveToVault(List<RemovalTarget> targets,string root,IList<string> forbidden,DuplicateReport report,CancellationToken cancel,Action<DuplicateProgress> progress){
    Engine.NoLinks(Engine.Vault,false);
    var backup=new Backup{Id=Guid.NewGuid().ToString("N"),Created=DateTime.Now.ToString("s"),State="Pending",Kind="Duplicate",Purpose="Duplicate",AppName="Tệp trùng lặp",Original=root,Payload="content"};
    string folder=Path.Combine(Engine.Vault,backup.Id);string content=Path.Combine(folder,"content");
    Directory.CreateDirectory(content);Engine.SaveBackup(backup);
    var moved=new List<JunkMoved>();int index=0;string indexPath=Path.Combine(folder,"files.xml");
    try{
-    foreach(var item in targets){
+    foreach(var target in targets){
+     var item=target.File;
      cancel.ThrowIfCancellationRequested();index++;
      if(progress!=null&&index%50==0)progress(new DuplicateProgress{Stage="Đang chuyển vào kho",Current=item.Path,Files=report.Quarantined});
      try{
       DupeSafety.ValidateRemovable(item.Path,root,forbidden);
       if(!File.Exists(item.Path))continue;
       if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)continue;
+      if(!StillDuplicate(target,false,report))continue;
       if(!JunkCleaner.CanTake(item.Path)){report.SkippedInUse++;continue;}
       string stored=JunkCleaner.StoredName(index,item.Path);
       File.Move(item.Path,Path.Combine(content,stored));
@@ -196,15 +218,17 @@ namespace TweekPro.Dupes {
    }
   }
 
-  static void DeleteDirect(List<DuplicateFile> targets,string root,IList<string> forbidden,DuplicateReport report,CancellationToken cancel,Action<DuplicateProgress> progress){
+  static void DeleteDirect(List<RemovalTarget> targets,string root,IList<string> forbidden,DuplicateReport report,CancellationToken cancel,Action<DuplicateProgress> progress){
    int index=0;
-   foreach(var item in targets){
+   foreach(var target in targets){
+    var item=target.File;
     cancel.ThrowIfCancellationRequested();index++;
     if(progress!=null&&index%50==0)progress(new DuplicateProgress{Stage="Đang xóa thẳng",Current=item.Path,Files=report.Quarantined});
     try{
      DupeSafety.ValidateRemovable(item.Path,root,forbidden);
      if(!File.Exists(item.Path))continue;
      if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)continue;
+     if(!StillDuplicate(target,true,report))continue;
      if(!JunkCleaner.CanTake(item.Path)){report.SkippedInUse++;continue;}
      File.SetAttributes(item.Path,FileAttributes.Normal);
      File.Delete(item.Path);report.Quarantined++;report.Bytes+=item.Bytes;

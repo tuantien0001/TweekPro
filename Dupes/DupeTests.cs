@@ -78,6 +78,37 @@ namespace TweekPro.Dupes {
      report=DuplicateFinder.Quarantine(scanRoot,new[]{group},true,CancellationToken.None);
      Assert(report.SkippedInUse>=1&&File.Exists(victim.Path),"In-use duplicate skipped");
     }
+
+    // Stale snapshot guard: a copy edited after the scan is no longer a duplicate and must survive both modes.
+    File.WriteAllBytes(dupe1,payload);File.WriteAllBytes(dupe2,payload);
+    result=DuplicateFinder.Scan(scanRoot,1024,CancellationToken.None);group=result.Groups[0];
+    var edited=group.Redundant.First();var other=group.Redundant.Skip(1).First();
+    var changed=(byte[])payload.Clone();changed[0]^=0xFF;File.WriteAllBytes(edited.Path,changed);File.SetLastWriteTime(edited.Path,DateTime.Now.AddMinutes(5));
+    Assert(!DuplicateFinder.Unchanged(edited,group.Bytes)&&DuplicateFinder.Unchanged(other,group.Bytes),"Unchanged detects the edited copy only");
+    report=DuplicateFinder.Quarantine(scanRoot,new[]{group},true,CancellationToken.None);
+    Assert(File.Exists(edited.Path)&&!File.Exists(other.Path)&&report.Quarantined==1&&report.Failed==1&&report.Errors.Any(e=>e.Contains("đã thay đổi")),"Edited copy kept, untouched copy removed, failure reported");
+
+    // Same-size rewrite with identical timestamp still fails the direct-mode rehash.
+    File.WriteAllBytes(dupe1,payload);File.WriteAllBytes(dupe2,payload);
+    result=DuplicateFinder.Scan(scanRoot,1024,CancellationToken.None);group=result.Groups[0];
+    var tampered=group.Redundant.First();File.WriteAllBytes(tampered.Path,changed);tampered.LastWrite=new FileInfo(tampered.Path).LastWriteTime;
+    Assert(DuplicateFinder.Unchanged(tampered,group.Bytes),"Size and timestamp look unchanged, only the hash differs");
+    report=DuplicateFinder.Quarantine(scanRoot,new[]{group},true,CancellationToken.None);
+    Assert(File.Exists(tampered.Path)&&report.Errors.Any(e=>e.Contains("không còn trùng")),"Direct mode re-hashes and refuses the tampered copy");
+
+    // Missing keeper: the whole group is skipped rather than deleting the remaining copies.
+    File.WriteAllBytes(dupe1,payload);File.WriteAllBytes(dupe2,payload);
+    result=DuplicateFinder.Scan(scanRoot,1024,CancellationToken.None);group=result.Groups[0];
+    File.Delete(group.Keeper.Path);
+    report=DuplicateFinder.Quarantine(scanRoot,new[]{group},false,CancellationToken.None);
+    Assert(report.Quarantined==0&&report.Failed==1&&group.Redundant.All(f=>File.Exists(f.Path))&&report.Backups.Count==0,"Group without its keeper is skipped entirely");
+
+    // Group handed over without a keeper gets one chosen instead of losing every copy.
+    File.WriteAllBytes(keeper,payload);File.WriteAllBytes(dupe1,payload);File.WriteAllBytes(dupe2,payload);
+    result=DuplicateFinder.Scan(scanRoot,1024,CancellationToken.None);group=result.Groups[0];group.Keeper=null;
+    report=DuplicateFinder.Quarantine(scanRoot,new[]{group},false,CancellationToken.None);
+    Assert(group.Keeper!=null&&File.Exists(group.Keeper.Path)&&report.Quarantined==2,"Keeper auto-selected when missing");
+    foreach(var b in Engine.Backups().Where(x=>x.Kind=="Duplicate"))Engine.Purge(b);
    }finally{
     Engine.Vault=originalVault;
     if(Path.GetFileName(baseDir).StartsWith("TweekProDupe")&&Engine.Under(Engine.Canon(baseDir),Engine.Canon(Path.Combine(local,"Temp")))&&Directory.Exists(baseDir))Directory.Delete(baseDir,true);

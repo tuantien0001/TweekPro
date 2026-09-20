@@ -18,7 +18,7 @@ namespace TweekPro {
   void BuildHealthTab(){
    var tab=healthTab=new TabPage("Tổng quan");
    SetupList(healthList,new[]{"Khu vực","Đánh giá","Chi tiết","Có thể giải phóng","Mức","Xử lý ở tab"},new[]{180,210,470,130,90,150},false);
-   healthList.DoubleClick+=(s,e)=>OpenHealthTab();
+   healthList.DoubleClick+=async(s,e)=>await Guard(()=>{if(healthList.SelectedItems.Count>0)OpenHealthTab();return Task.FromResult(0);});
    var host=Theme.ListHost(healthList,out healthOverlay);
 
    var bar=Bar();
@@ -39,6 +39,7 @@ namespace TweekPro {
    var inputs=new HealthInputs{LeftoverCandidates=candidates.Count};
    bool elevated=Core.Elevation.IsElevated;int minAge=settings.JunkMinAgeHours;
    Action<string> stage=text=>{try{BeginInvoke((Action)(()=>healthStage.Text=text));}catch(InvalidOperationException){}};
+   try{
    await Task.Run(()=>{
     stage("Đang đo tệp rác theo quy tắc…");
     try{var rules=JunkRules.Load(Core.Paths.JunkRulesOverride).Rules;var preview=JunkCleaner.Preview(rules,elevated,minAge,CancellationToken.None);
@@ -52,16 +53,24 @@ namespace TweekPro {
     try{inputs.AutorunEntries=Advanced.Autoruns().Count(a=>a.State=="Có đăng ký");}
     catch(Exception e){inputs.AutorunMeasured=false;Core.Log.Warn("Health: autorun probe failed: "+e.Message);}
     stage("Đang tìm thư mục rỗng trong Downloads…");
-    try{string root=DefaultEmptyRoot();if(root==null)inputs.EmptyMeasured=false;else{inputs.EmptyRoot=root;inputs.EmptyFolders=EmptyFolders.Find(root,CancellationToken.None).Folders.Count;}}
+    // Only Downloads is probed: falling back to the whole profile could take minutes while the window is busy.
+    try{string root=DownloadsFolder();if(root==null)inputs.EmptyMeasured=false;else{inputs.EmptyRoot=root;inputs.EmptyFolders=EmptyFolders.Find(root,CancellationToken.None).Folders.Count;}}
     catch(Exception e){inputs.EmptyMeasured=false;Core.Log.Warn("Health: empty-folder probe failed: "+e.Message);}
     stage("Đang đọc dung lượng trống…");
     try{var drive=new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory));inputs.DiskName="Ổ "+drive.Name.TrimEnd('\\','/');inputs.DiskFreeBytes=drive.AvailableFreeSpace;inputs.DiskTotalBytes=drive.TotalSize;}
     catch(Exception e){inputs.DiskMeasured=false;Core.Log.Warn("Health: disk probe failed: "+e.Message);}
    });
+   }finally{if(!IsDisposed){healthStage.Visible=false;healthGauge.BusyText=null;}}
+   if(IsDisposed)return;
    healthReport=HealthCheck.Evaluate(inputs);
-   healthStage.Visible=false;healthGauge.Report=healthReport;
+   healthGauge.Report=healthReport;
    RenderHealth();
    Log("Kiểm tra sức khỏe: "+healthReport.Score+"/100 ("+healthReport.Grade+"). "+healthReport.Headline);
+  }
+
+  static string DownloadsFolder(){
+   try{string profile=Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);if(String.IsNullOrWhiteSpace(profile))return null;string d=Path.Combine(profile,"Downloads");return Directory.Exists(d)?d:null;}
+   catch(Exception){return null;}
   }
 
   void RenderHealth(){

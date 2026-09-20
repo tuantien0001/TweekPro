@@ -118,8 +118,8 @@ namespace TweekPro {
   }
   /// <summary>Configures the tab strip with flat, owner-drawn headers and an accent underline for the active tab.</summary>
   void BuildTabs(){
-   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(152,46);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
-   // Eleven tabs exceed the default width, so wrap into rows instead of showing scroll arrows.
+   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(172,46);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
+   // Twelve tabs exceed the default width, so wrap into rows (6 × 172 px fits the 1120 px minimum) instead of showing scroll arrows.
    tabs.Multiline=true;
    tabs.DrawItem+=(s,e)=>{
     bool active=e.Index==tabs.SelectedIndex;var bounds=e.Bounds;string text=tabs.TabPages[e.Index].Text;
