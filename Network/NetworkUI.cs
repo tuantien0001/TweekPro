@@ -12,7 +12,7 @@ namespace TweekPro {
  public partial class MainForm {
   ListView netList=new SmoothListView();Label netOverlay,netSummary,netNote;TabPage netTab;
   TextBox netSearch=new TextBox();NumericUpDown netInterval=new NumericUpDown();CheckBox netResolve=new CheckBox(),netHideLoopback=new CheckBox();
-  Button netPause,netBandwidth;Timer netTimer=new Timer();EtwNetworkSession etw;ImageList netIcons=new ImageList();
+  Button netPause,netBandwidth;Timer netTimer=new Timer();EtwNetworkSession etw;ImageList netIcons=new ImageList();PacketFlowStrip netFlow;
   bool netPaused,netRefreshing;List<ConnectionInfo> netRows=new List<ConnectionInfo>();Dictionary<int,TrafficSample> netTraffic=new Dictionary<int,TrafficSample>();
 
   /// <summary>Builds the read-only Network tab: live connection table per process, optional ETW bandwidth when elevated.</summary>
@@ -43,13 +43,14 @@ namespace TweekPro {
 
    netNote=Theme.Note(EtwNetworkSession.CanStart?"Chỉ xem: bảng kết nối TCP/UDP theo tiến trình từ Windows (không chặn, không driver). Bật băng thông (ETW) để xem byte gửi/nhận và tốc độ theo tiến trình.":"Chỉ xem: bảng kết nối TCP/UDP theo tiến trình từ Windows (không chặn, không driver). Byte gửi/nhận và tốc độ cần quyền quản trị — dùng nút Khởi động lại với quyền quản trị ở đầu cửa sổ.",NoteKind.Info);
    netSummary=new Label{Dock=DockStyle.Bottom,Height=34,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true};Theme.BorderTop(netSummary);
-   netTab.Controls.Add(host);netTab.Controls.Add(netSummary);netTab.Controls.Add(netNote);netTab.Controls.Add(bar);
+   netFlow=new PacketFlowStrip{Dock=DockStyle.Top,Height=70,BackColor=Theme.Surface};Theme.BorderBottom(netFlow);
+   netTab.Controls.Add(host);netTab.Controls.Add(netSummary);netTab.Controls.Add(netFlow);netTab.Controls.Add(netNote);netTab.Controls.Add(bar);
    Theme.SetOverlay(netOverlay,"Chưa đọc bảng kết nối.\r\nMở tab này để bắt đầu làm mới tự động theo chu kỳ đã chọn, hoặc bấm Làm mới.",NoteKind.Info);
 
    netTimer.Interval=(int)netInterval.Value*1000;
    netTimer.Tick+=async(s,e)=>{if(!netPaused&&tabs.SelectedTab==netTab&&!IsDisposed)await RefreshNetwork(false);};
-   tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==netTab){netTimer.Start();if(netRows.Count==0)await RefreshNetwork(false);}else netTimer.Stop();};
-   FormClosed+=(s,e)=>{netTimer.Stop();if(etw!=null){etw.Dispose();etw=null;}netIcons.Dispose();};
+   tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==netTab){netTimer.Start();netFlow.Begin();if(netRows.Count==0)await RefreshNetwork(false);}else{netTimer.Stop();netFlow.End();}};
+   FormClosed+=(s,e)=>{netTimer.Stop();netFlow.End();if(etw!=null){etw.Dispose();etw=null;}netIcons.Dispose();};
    UpdateNetworkSummary();
   }
 
@@ -114,6 +115,7 @@ namespace TweekPro {
    if(netRows.Count==0)Theme.SetOverlay(netOverlay,"Không có kết nối nào được Windows báo cáo.",NoteKind.Info);
    else if(shown==0)Theme.SetOverlay(netOverlay,"Không có kết nối khớp với bộ lọc hiện tại.",NoteKind.Info);
    else Theme.SetOverlay(netOverlay,null,NoteKind.Info);
+   if(netFlow!=null){double up=0,down=0;foreach(var s in netTraffic.Values){up+=s.SentPerSecond;down+=s.ReceivedPerSecond;}netFlow.SetRates(up,down);}
    UpdateNetworkSummary(shown,processes.Count);
   }
 
