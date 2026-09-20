@@ -14,6 +14,14 @@ namespace AppCare {
  public class ScanResult {
   public List<Candidate> Items=new List<Candidate>(); public List<string> Notes=new List<string>(); public int Visited;
  }
+ /// <summary>Snapshot of deep-scan progress reported from the worker thread to the UI.</summary>
+ public class ScanProgress {
+  public string Stage, Current; public int Visited, Found;
+ }
+ /// <summary>Measured on-disk footprint of a leftover candidate; Bytes is negative when not applicable.</summary>
+ public class Footprint {
+  public long Bytes=-1; public int Files; public bool Partial; public string Detail="";
+ }
  public class AutorunEntry {
   public string Name,Command,Source,Publisher,State; public Candidate Item; public Backup Saved;
  }
@@ -177,8 +185,12 @@ namespace AppCare {
     if(queue.Count>0)result.Notes.Add("Đã chạm giới hạn khóa trong nhánh "+basePath);
    }
   }
-  public static ScanResult DeepScan(AppEntry app,System.Threading.CancellationToken cancel,string[] folderRoots=null){
-   var result=new ScanResult();result.Items.AddRange(Engine.Scan(app));
+  /// <summary>Runs the bounded deep scan for one application, optionally reporting stage and folder progress.</summary>
+  public static ScanResult DeepScan(AppEntry app,System.Threading.CancellationToken cancel,string[] folderRoots=null,Action<ScanProgress> progress=null){
+   var result=new ScanResult();
+   Action<string,string> report=(stage,current)=>{if(progress!=null)progress(new ScanProgress{Stage=stage,Current=current,Visited=result.Visited,Found=result.Items.Count});};
+   report("Đang đối chiếu thông tin cài đặt đã ghi nhận…",null);
+   result.Items.AddRange(Engine.Scan(app));
    // Exclude broad shared install roots before correlating executable paths.
    var others=Engine.Inventory().Where(a=>a.Id!=app.Id).ToList();
    var identity=new AppEntry{Name=app.Name,Location=app.Location,KnownExecutables=(app.KnownExecutables??new List<string>()).ToList()};
@@ -187,12 +199,14 @@ namespace AppCare {
    // Bounded breadth-first traversal through application data roots; never whole-disk fuzzy deletion.
    foreach(string root in folderRoots??Engine.Roots()){
     var queue=new Queue<Tuple<string,int>>();queue.Enqueue(Tuple.Create(root,0));
+    report("Đang duyệt thư mục trong "+root,root);
     while(queue.Count>0){
      cancel.ThrowIfCancellationRequested();if(result.Visited>=30000||watch.Elapsed.TotalSeconds>45){result.Notes.Add("Đã chạm giới hạn 30.000 thư mục / 45 giây; kết quả có thể chưa đủ.");queue.Clear();break;}
      var current=queue.Dequeue();try{
       Engine.NoLinks(current.Item1,false);
       foreach(string dir in Directory.EnumerateDirectories(current.Item1)){
        cancel.ThrowIfCancellationRequested();if(result.Visited>=30000||watch.Elapsed.TotalSeconds>45)break;result.Visited++;
+       if(result.Visited%150==0)report("Đang duyệt thư mục trong "+root,dir);
        if((File.GetAttributes(dir)&(FileAttributes.ReparsePoint|FileAttributes.Offline))!=0)continue;
        string leaf=Path.GetFileName(dir);
        if(new[]{"Microsoft","Windows","Common Files","Packages","AppCare","node_modules",".git"}.Contains(leaf,StringComparer.OrdinalIgnoreCase))continue;
@@ -206,6 +220,7 @@ namespace AppCare {
     }
     if(result.Visited>=30000||watch.Elapsed.TotalSeconds>45)break;
    }
+   report("Đang kiểm tra Run, RunOnce và AppCompatFlags…",null);
    foreach(string h in new[]{"HKCU","HKLM"})foreach(string v in Views)foreach(string path in new[]{Run,RunOnce,Compat,Layers}){
     cancel.ThrowIfCancellationRequested();try{using(var root=Engine.Base(h,v))using(var key=root.OpenSubKey(path)){
      if(key==null)continue;foreach(string n in key.GetValueNames()){
@@ -214,6 +229,7 @@ namespace AppCare {
      }
     }}catch(UnauthorizedAccessException){result.Notes.Add("Không đọc được: "+h+"\\"+path);}catch(System.Security.SecurityException){result.Notes.Add("Không đủ quyền Registry: "+path);}
    }
+   report("Đang kiểm tra shortcut trong Start Menu, Desktop và Startup…",null);
    foreach(string root in ShortcutRoots()){
     if(!Directory.Exists(root))continue;var queue=new Queue<Tuple<string,int>>();queue.Enqueue(Tuple.Create(root,0));int count=0;
     while(queue.Count>0&&count<5000){cancel.ThrowIfCancellationRequested();var current=queue.Dequeue();try{
@@ -225,16 +241,53 @@ namespace AppCare {
     if(count>=5000)result.Notes.Add("Đã chạm giới hạn shortcut tại "+root);
    }
    // Registered application paths and service ImagePath are reviewed, never deleted as a shared parent.
+   report("Đang kiểm tra App Paths và dịch vụ Windows…",null);
    foreach(string h in new[]{"HKCU","HKLM"})foreach(string v in Views)try{using(var root=Engine.Base(h,v))using(var key=root.OpenSubKey(AppPaths)){
     if(key==null)continue;foreach(string sub in key.GetSubKeyNames()){cancel.ThrowIfCancellationRequested();using(var k=key.OpenSubKey(sub))if(k!=null&&MatchesPath(identity,Engine.Read(k,"").Trim('"')))result.Items.Add(new Candidate{Kind="Review",Path=h+"\\"+AppPaths+"\\"+sub,ReviewOnly=true,Reason="App Paths liên hệ với executable; chỉ xem, chưa tự xóa đăng ký hệ thống."});}
    }}catch(UnauthorizedAccessException){result.Notes.Add("Không đọc được App Paths.");}
    using(var root=Engine.Base("HKLM",Views[0]))using(var services=root.OpenSubKey(@"SYSTEM\CurrentControlSet\Services"))if(services!=null)foreach(string name in services.GetSubKeyNames())try{
     cancel.ThrowIfCancellationRequested();using(var key=services.OpenSubKey(name))if(key!=null&&MatchesPath(identity,CommandExe(Engine.Read(key,"ImagePath"))))result.Items.Add(new Candidate{Kind="Review",Path="Service: "+name,ReviewOnly=true,Reason="Dịch vụ tham chiếu đường dẫn ứng dụng; kiểm tra trong Windows Tools → Services."});
    }catch(UnauthorizedAccessException){result.Notes.Add("Không đọc được dịch vụ "+name);}
+   report("Đang kiểm tra nhánh Registry nhà phát hành và tác vụ theo lịch…",null);
    ScanVendorRegistry(app,names,result,cancel);ScanTasks(identity,result,cancel);
    foreach(var c in result.Items){c.AppId=app.Id;c.AppName=app.Name;}
    result.Items=result.Items.GroupBy(Id,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).ToList();
-   result.Notes=result.Notes.Distinct().ToList();return result;
+   result.Notes=result.Notes.Distinct().ToList();
+   report("Hoàn tất quét",null);
+   return result;
+  }
+  /// <summary>Wraps the basic scan in a ScanResult so both scan modes share the same presentation path.</summary>
+  public static ScanResult QuickScan(AppEntry app,Action<ScanProgress> progress=null){
+   var result=new ScanResult();
+   if(progress!=null)progress(new ScanProgress{Stage="Đang kiểm tra thư mục cài và khóa Registry trùng tên…"});
+   result.Items.AddRange(Engine.Scan(app));
+   if(progress!=null)progress(new ScanProgress{Stage="Hoàn tất quét",Found=result.Items.Count});
+   return result;
+  }
+  /// <summary>Measures a candidate's footprint with bounded effort; folders stop after 20,000 files or five seconds.</summary>
+  public static Footprint Measure(Candidate c,System.Threading.CancellationToken cancel){
+   var fp=new Footprint();
+   try{
+    if(c.Kind=="File"){fp.Bytes=new FileInfo(c.Path).Length;fp.Files=1;fp.Detail="1 tệp";}
+    else if(c.Kind=="Folder"){
+     var watch=Stopwatch.StartNew();var queue=new Queue<string>();queue.Enqueue(c.Path);long total=0;int files=0;
+     while(queue.Count>0){
+      cancel.ThrowIfCancellationRequested();
+      if(files>=20000||watch.Elapsed.TotalSeconds>5){fp.Partial=true;break;}
+      string dir=queue.Dequeue();
+      try{
+       foreach(string file in Directory.EnumerateFiles(dir)){files++;try{total+=new FileInfo(file).Length;}catch(IOException){}catch(UnauthorizedAccessException){}}
+       foreach(string sub in Directory.EnumerateDirectories(dir))if((File.GetAttributes(sub)&FileAttributes.ReparsePoint)==0)queue.Enqueue(sub);
+      }catch(UnauthorizedAccessException){fp.Partial=true;}catch(IOException){fp.Partial=true;}
+     }
+     fp.Bytes=total;fp.Files=files;fp.Detail=files.ToString("N0")+(fp.Partial?"+ tệp":" tệp");
+    }
+    else if(c.Kind=="Registry"){
+     using(var root=Engine.Base(c.Hive,c.View))using(var key=root.OpenSubKey(c.Path))if(key!=null)fp.Detail=key.ValueCount+" giá trị, "+key.SubKeyCount+" khóa con";
+    }
+    else if(c.Kind=="RegistryValue")fp.Detail="1 giá trị";
+   }catch(OperationCanceledException){throw;}catch(Exception){fp.Partial=true;}
+   return fp;
   }
  }
  public class WindowsTool {public string Name,File,Arguments,Description;public bool Admin;public bool Available{get{return File.StartsWith("ms-settings:")||System.IO.File.Exists(File);}}}

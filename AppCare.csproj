@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Secondary build path for `dotnet build` (Windows, or Linux/macOS with
+    -p:EnableWindowsTargeting=true). build.ps1 remains the primary script that
+    produces the single-file AppCare-0.5.exe with the in-box Framework compiler.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>5</LangVersion>
+    <AssemblyName>AppCare</AssemblyName>
+    <RootNamespace>AppCare</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>0.5.0</Version>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableDefaultItems>false</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Engine.cs" />
+    <Compile Include="App.cs" />
+    <Compile Include="Presentation.cs" />
+    <Compile Include="Advanced.cs" />
+    <Compile Include="AdvancedUI.cs" />
+    <Compile Include="AdvancedTests.cs" />
+    <Compile Include="ScanWindow.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+
+</Project>
