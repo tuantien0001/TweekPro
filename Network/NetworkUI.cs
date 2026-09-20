@@ -12,13 +12,16 @@ namespace TweekPro {
  public partial class MainForm {
   ListView netList=new SmoothListView();Label netOverlay,netSummary,netNote;TabPage netTab;
   TextBox netSearch=new TextBox();NumericUpDown netInterval=new NumericUpDown();CheckBox netResolve=new CheckBox(),netHideLoopback=new CheckBox();
-  Button netPause,netBandwidth;Timer netTimer=new Timer();EtwNetworkSession etw;
+  Button netPause,netBandwidth;Timer netTimer=new Timer();EtwNetworkSession etw;ImageList netIcons=new ImageList();
   bool netPaused,netRefreshing;List<ConnectionInfo> netRows=new List<ConnectionInfo>();Dictionary<int,TrafficSample> netTraffic=new Dictionary<int,TrafficSample>();
 
   /// <summary>Builds the read-only Network tab: live connection table per process, optional ETW bandwidth when elevated.</summary>
   void BuildNetworkTab(){
    netTab=new TabPage("Mạng");tabs.TabPages.Add(netTab);
-   SetupList(netList,new[]{"Tiến trình","PID","Nhà phát hành","Giao thức","Cục bộ","Từ xa","Trạng thái","Máy từ xa","Đã gửi","Đã nhận","Gửi/s","Nhận/s"},new[]{190,70,170,70,190,210,120,200,90,90,90,90},false,true);
+   SetupList(netList,new[]{"Tiến trình","Hướng","PID","Nhà phát hành","Giao thức","Cục bộ","Từ xa","Trạng thái","Máy từ xa","Đã gửi","Đã nhận","Gửi/s","Nhận/s"},new[]{190,60,70,170,70,190,210,120,200,90,90,90,90},false,true);
+   netIcons.ColorDepth=ColorDepth.Depth32Bit;netIcons.ImageSize=new Size(16,16);
+   foreach(string k in new[]{"out","in","both","listen","idle"})netIcons.Images.Add(k,NetworkGlyphs.Icon(k,16));
+   netList.SmallImageList=netIcons;
    netList.DoubleClick+=(s,e)=>ShowConnectionDetails();
    var host=Theme.ListHost(netList,out netOverlay);
 
@@ -46,7 +49,7 @@ namespace TweekPro {
    netTimer.Interval=(int)netInterval.Value*1000;
    netTimer.Tick+=async(s,e)=>{if(!netPaused&&tabs.SelectedTab==netTab&&!IsDisposed)await RefreshNetwork(false);};
    tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==netTab){netTimer.Start();if(netRows.Count==0)await RefreshNetwork(false);}else netTimer.Stop();};
-   FormClosed+=(s,e)=>{netTimer.Stop();if(etw!=null){etw.Dispose();etw=null;}};
+   FormClosed+=(s,e)=>{netTimer.Stop();if(etw!=null){etw.Dispose();etw=null;}netIcons.Dispose();};
    UpdateNetworkSummary();
   }
 
@@ -96,7 +99,8 @@ namespace TweekPro {
     string hostName=resolve&&c.RemoteAddress!=null?HostResolver.Lookup(c.RemoteAddress,true):"";
     if(q!=""){string hay=id.Display+" "+id.Path+" "+c.Pid+" "+c.Protocol+" "+c.Local+" "+c.Remote+" "+c.State+" "+hostName+" "+id.Publisher;if(hay.IndexOf(q,StringComparison.CurrentCultureIgnoreCase)<0)continue;}
     TrafficSample t;netTraffic.TryGetValue(c.Pid,out t);
-    var row=new ListViewItem(new[]{id.Display,c.Pid.ToString(),id.Publisher,c.Protocol,c.Local,c.Remote,c.State,hostName,t==null?"":Presentation.BytesLabel(t.Sent),t==null?"":Presentation.BytesLabel(t.Received),t==null?"":Rate(t.SentPerSecond),t==null?"":Rate(t.ReceivedPerSecond)}){Tag=c,ToolTipText=(id.Path==""?id.Display:id.Path)+"\r\n"+c.Protocol+" "+c.Local+(c.Remote==""?"":" → "+c.Remote)+(c.State==""?"":"  ["+c.State+"]")};
+    string dirKey=NetworkStats.DirectionKey(c,netTraffic,NetworkStats.MinRate);
+    var row=new ListViewItem(new[]{id.Display,NetworkStats.DirectionArrows(dirKey),c.Pid.ToString(),id.Publisher,c.Protocol,c.Local,c.Remote,c.State,hostName,t==null?"":Presentation.BytesLabel(t.Sent),t==null?"":Presentation.BytesLabel(t.Received),t==null?"":Rate(t.SentPerSecond),t==null?"":Rate(t.ReceivedPerSecond)}){Tag=c,ImageKey=dirKey,ToolTipText=(id.Path==""?id.Display:id.Path)+"\r\n"+c.Protocol+" "+c.Local+(c.Remote==""?"":" → "+c.Remote)+(c.State==""?"":"  ["+c.State+"]")};
     if(c.State=="Đang lắng nghe")row.ForeColor=Theme.Muted;
     if(t!=null&&(t.SentPerSecond>1024||t.ReceivedPerSecond>1024))row.Font=Theme.Strong;
     string groupKey=id.Display.ToLowerInvariant()+"|"+c.Pid.ToString("D8");
@@ -138,7 +142,7 @@ namespace TweekPro {
    string p=SavePath("TweekPro-network.csv");if(p==null)return;
    var lines=new List<string>{"Process,PID,Path,Publisher,Protocol,Local,Remote,State,RemoteHost,SentBytes,ReceivedBytes"};
    foreach(ListViewItem item in netList.Items){var c=(ConnectionInfo)item.Tag;var id=ProcessResolver.Resolve(c.Pid);TrafficSample t;netTraffic.TryGetValue(c.Pid,out t);
-    lines.Add(String.Join(",",new[]{id.Display,c.Pid.ToString(),id.Path,id.Publisher,c.Protocol,c.Local,c.Remote,c.State,item.SubItems[7].Text,t==null?"":t.Sent.ToString(),t==null?"":t.Received.ToString()}.Select(Engine.Csv)));}
+    lines.Add(String.Join(",",new[]{id.Display,c.Pid.ToString(),id.Path,id.Publisher,c.Protocol,c.Local,c.Remote,c.State,item.SubItems[8].Text,t==null?"":t.Sent.ToString(),t==null?"":t.Received.ToString()}.Select(Engine.Csv)));}
    File.WriteAllLines(p,lines,new UTF8Encoding(true));Log("Đã xuất bảng kết nối: "+p);
   }
  }
