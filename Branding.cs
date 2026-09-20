@@ -54,9 +54,11 @@ namespace TweekPro {
    using(var pen=new Pen(color,2f){StartCap=LineCap.Round,EndCap=LineCap.Round,LineJoin=LineJoin.Round})
    using(var brush=new SolidBrush(color)){
     switch(GlyphKey(tabTitle)){
+     case "pulse":Pulse(g,r,pen);break;
      case "apps":Apps(g,r,pen,brush);break;
      case "magnifier":Magnifier(g,r,pen);break;
      case "trash":Trash(g,r,pen);break;
+     case "folder":Folder(g,r,pen);break;
      case "duplicate":Duplicate(g,r,pen);break;
      case "chart":Chart(g,r,brush);break;
      case "shield":Shield(g,r,pen);break;
@@ -73,10 +75,12 @@ namespace TweekPro {
   /// <summary>Maps a Vietnamese tab title to a glyph key.</summary>
   public static string GlyphKey(string title){
    string t=title??"";
+   if(t.IndexOf("Tổng quan",StringComparison.OrdinalIgnoreCase)>=0)return "pulse";
    if(t.IndexOf("Ứng dụng",StringComparison.OrdinalIgnoreCase)>=0)return "apps";
    if(t.IndexOf("còn sót",StringComparison.OrdinalIgnoreCase)>=0)return "magnifier";
    if(t.IndexOf("trùng",StringComparison.OrdinalIgnoreCase)>=0)return "duplicate";
    if(t.IndexOf("rác",StringComparison.OrdinalIgnoreCase)>=0)return "trash";
+   if(t.IndexOf("rỗng",StringComparison.OrdinalIgnoreCase)>=0)return "folder";
    if(t.IndexOf("Phân tích",StringComparison.OrdinalIgnoreCase)>=0)return "chart";
    if(t.IndexOf("Kho",StringComparison.OrdinalIgnoreCase)>=0)return "shield";
    if(t.IndexOf("Autorun",StringComparison.OrdinalIgnoreCase)>=0||t.IndexOf("Khởi động",StringComparison.OrdinalIgnoreCase)>=0)return "bolt";
@@ -96,6 +100,17 @@ namespace TweekPro {
    path.CloseFigure();return path;
   }
 
+  static void Pulse(Graphics g,Rectangle r,Pen pen){
+   int mid=r.Y+r.Height/2;int w=r.Width;
+   var points=new[]{new Point(r.X,mid),new Point(r.X+w*3/10,mid),new Point(r.X+w*4/10,r.Y+2),new Point(r.X+w*55/100,r.Bottom-2),new Point(r.X+w*65/100,mid),new Point(r.Right,mid)};
+   g.DrawLines(pen,points);
+  }
+  static void Folder(Graphics g,Rectangle r,Pen pen){
+   int top=r.Y+3,tab=r.Y+r.Height/4;
+   var body=new Rectangle(r.X,tab,r.Width,r.Bottom-tab);
+   using(var path=Rounded(body,2))g.DrawPath(pen,path);
+   g.DrawLines(pen,new[]{new Point(r.X+1,tab),new Point(r.X+1,top),new Point(r.X+r.Width*2/5,top),new Point(r.X+r.Width/2,tab)});
+  }
   static void Apps(Graphics g,Rectangle r,Pen pen,Brush brush){
    int s=(r.Width-4)/2;int gap=4;
    for(int i=0;i<2;i++)for(int j=0;j<2;j++){

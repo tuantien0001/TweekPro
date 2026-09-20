@@ -14,7 +14,7 @@ namespace TweekPro {
   ListView apps=new SmoothListView(),remnants=new SmoothListView(),backups=new SmoothListView();
   TextBox search=new TextBox(),details=new TextBox(),log=new TextBox();
   Label selectionSummary=new Label(),backupSummary=new Label();Label status=Theme.StatusBar();TabControl tabs=new TabControl();
-  Label appsOverlay,remnantsOverlay,backupsOverlay;
+  Label appsOverlay,remnantsOverlay,backupsOverlay;TabPage remnantsTab;
   List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
   ImageList appIcons=new ImageList(); Label appCount=new Label();
@@ -31,7 +31,7 @@ namespace TweekPro {
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;
    try{brandIcon=Branding.AppIcon(32);Icon=brandIcon;ShowIcon=true;}catch(Exception){}
    FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();};
-   var header=Theme.HeaderBand(AppTitle+" – "+Tagline,"Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác theo quy tắc  •  Theo dõi mạng theo tiến trình  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
+   var header=Theme.HeaderBand(AppTitle+" – "+Tagline,"Kiểm tra sức khỏe một nút  •  Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác, tệp trùng, thư mục rỗng  •  Theo dõi mạng realtime  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
    BuildHeaderActions(header);
    status.Text="Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.";
    BuildTabs();
@@ -94,14 +94,16 @@ namespace TweekPro {
    Add(logbar,"Lưu cài đặt ngay",()=>{SaveSettings();Log("Đã lưu settings.json.");return Task.FromResult(0);});
    var logNote=Theme.Note("Nhật ký phiên hiện tại. Tệp nhật ký xoay vòng theo ngày trong "+Core.Paths.Logs+" (giữ "+settings.LogRetentionDays+" ngày). Cài đặt: "+Core.Paths.SettingsFile+".",NoteKind.Info);
    var logWrap=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Surface};logWrap.Controls.Add(log);logs.Controls.Add(logWrap);logs.Controls.Add(logNote);logs.Controls.Add(logbar);
+   BuildHealthTab();
    BuildAdvancedTabs();
    BuildJunkTab();
    BuildEmptyTab();
    BuildDuplicateTab();
    BuildAnalyzerTab();
    BuildNetworkTab();
-   // Canonical tab order: inventory → cleanup family → recovery → system → diagnostics.
-   var ordered=new TabPage[]{installed,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,toolsTab,logs};
+   // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics.
+   remnantsTab=clean;
+   var ordered=new TabPage[]{healthTab,installed,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,toolsTab,logs};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
@@ -166,7 +168,7 @@ namespace TweekPro {
   AppEntry Selected(){return apps.SelectedItems.Count==0?null:(AppEntry)apps.SelectedItems[0].Tag;}
   List<AppEntry> CheckedApps(){var list=apps.CheckedItems.Cast<ListViewItem>().Select(i=>(AppEntry)i.Tag).ToList();if(list.Count==0&&Selected()!=null)list.Add(Selected());return list;}
   public void PopulateForPreview(){inventory=Engine.Inventory();LoadAppIcons();Filter();LoadBackups();}
-  public void PreviewRemnants(){PresentCandidates(new[]{new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Program Files\Example App",Reason="Dữ liệu minh họa giao diện, không phải kết quả quét."},new Candidate{Kind="Registry",AppName="Ứng dụng mẫu",Path=@"SOFTWARE\Example App",Hive="HKCU",View="64",Reason="Dữ liệu minh họa giao diện."}});tabs.SelectedIndex=1;SetRemnantChecks(true);}
+  public void PreviewRemnants(){PresentCandidates(new[]{new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Program Files\Example App",Reason="Dữ liệu minh họa giao diện, không phải kết quả quét."},new Candidate{Kind="Registry",AppName="Ứng dụng mẫu",Path=@"SOFTWARE\Example App",Hive="HKCU",View="64",Reason="Dữ liệu minh họa giao diện."}});tabs.SelectedTab=remnantsTab;SetRemnantChecks(true);}
   async Task Reload(){
    Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nTweek Pro đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
    Log("Đang đọc danh sách ứng dụng…");
@@ -213,7 +215,7 @@ namespace TweekPro {
     }catch(Exception e){Log(a.Name+": "+e.Message);MessageBox.Show(this,a.Name+"\r\n"+e.Message,"Không hoàn tất thao tác");}
    }
    await Reload();
-   if(candidates.Count>0)tabs.SelectedIndex=1;
+   if(candidates.Count>0)tabs.SelectedTab=remnantsTab;
    Log("Đã kết thúc hàng đợi. Còn "+candidates.Count+" mục chờ duyệt ở tab Phần còn sót.");
   }
   /// <summary>Opens the dedicated leftover window for the given applications and merges what the user left behind into the review tab.</summary>
@@ -225,12 +227,12 @@ namespace TweekPro {
     Log(String.Join(", ",entries.Select(a=>a.Name))+": tìm thấy "+window.Found+" mục, đã xóa "+window.Deleted+", lỗi "+window.Failed+", còn "+window.Remaining.Count+" mục chờ duyệt.");
    }
   }
-  async Task ScanSelected(){var a=Selected();if(a==null)throw new IOException("Chọn một dòng ứng dụng trước.");await Task.Run(()=>Advanced.Capture(a));Remember(new[]{a});ReviewLeftovers(new[]{a},deepMode.Checked);if(candidates.Count>0)tabs.SelectedIndex=1;}
+  async Task ScanSelected(){var a=Selected();if(a==null)throw new IOException("Chọn một dòng ứng dụng trước.");await Task.Run(()=>Advanced.Capture(a));Remember(new[]{a});ReviewLeftovers(new[]{a},deepMode.Checked);if(candidates.Count>0)tabs.SelectedTab=remnantsTab;}
   async Task ScanHistory(){if(history.Count==0)throw new IOException("Chưa có lịch sử. Hãy chọn ứng dụng và quét hoặc gỡ trước.");await ScanEntries(history.ToArray());}
   async Task ScanEntries(IEnumerable<AppEntry> entries,bool append=false){
    var input=entries.ToArray();Log("Đang quét "+input.Length+" ứng dụng…");
    var found=await Task.Run(()=>input.SelectMany(a=>Engine.Scan(a)).ToList());
-   PresentCandidates(append?candidates.Concat(found):found);tabs.SelectedIndex=1;
+   PresentCandidates(append?candidates.Concat(found):found);tabs.SelectedTab=remnantsTab;
    Log("Tìm thấy "+candidates.Count+" mục cần duyệt. Không tìm thấy không có nghĩa đã sạch toàn bộ.");
   }
   internal void PresentCandidates(IEnumerable<Candidate> items){
@@ -337,7 +339,7 @@ namespace TweekPro {
      if(args.Length>1&&args[1]=="junk")Tests07.Run();
      if(!coreOnly){Tests.Run();AdvancedTests.Run();Tests07.Run();}
      bool junkMode=args.Length>1&&args[1]=="junk";
-     File.WriteAllText(results,(junkMode?"PASS (core + junk cleaner/vault/purge, no registry/UI): ":coreOnly?"PASS (core only): ":"PASS: ")+"junk rule parsing/expansion/glob/safety, purge selection by age, data-dir migration, settings round-trip, log rotation, stored-name mapping"+(junkMode?", junk preview/clean/restore via vault, direct delete, in-use skip, locked rule, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore, disk analyzer totals/folders/extensions/largest, network per-process aggregation/direction, packet-flow animation, empty folder finder":"")+(coreOnly?"":", path boundaries, protected folders, command parsing, file backup/restore, registry value round-trip, destination collision, live inventory (read-only), exact install-folder alias scan, bulk selection, deduplication, install-date formatting, icon resource parsing, autorun value/shortcut backup and restore, stale-value conflict protection, deep scan, tool catalog, junk vault round-trip, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore, disk analyzer totals/folders/extensions/largest, network per-process aggregation/direction, packet-flow animation, empty folder finder, connection table snapshot")+".\r\n"+DateTime.Now.ToString("s"));
+     File.WriteAllText(results,(junkMode?"PASS (core + junk cleaner/vault/purge, no registry/UI): ":coreOnly?"PASS (core only): ":"PASS: ")+"junk rule parsing/expansion/glob/safety, purge selection by age, data-dir migration, settings round-trip, log rotation, stored-name mapping"+(junkMode?", junk preview/clean/restore via vault, direct delete, in-use skip, locked rule, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore, disk analyzer totals/folders/extensions/largest, network per-process aggregation/direction, packet-flow animation, empty folder finder, health score/grades/thresholds":"")+(coreOnly?"":", path boundaries, protected folders, command parsing, file backup/restore, registry value round-trip, destination collision, live inventory (read-only), exact install-folder alias scan, bulk selection, deduplication, install-date formatting, icon resource parsing, autorun value/shortcut backup and restore, stale-value conflict protection, deep scan, tool catalog, junk vault round-trip, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore, disk analyzer totals/folders/extensions/largest, network per-process aggregation/direction, packet-flow animation, empty folder finder, health score/grades/thresholds, connection table snapshot")+".\r\n"+DateTime.Now.ToString("s"));
      Environment.ExitCode=0;
     }catch(Exception e){File.WriteAllText(results,e.ToString());Console.Error.WriteLine(e);Environment.ExitCode=1;}
     return;

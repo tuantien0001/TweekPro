@@ -13,6 +13,7 @@ Mặc định chạy với quyền người dùng; đầu cửa sổ có huy hi�
 
 | Tab | Chức năng | Ghi chú an toàn |
 |---|---|---|
+| **Tổng quan** (mới) | Kiểm tra sức khỏe máy một nút: điểm 0–100 với vòng đo màu và hạng A–E, danh sách khu vực cần chú ý (tệp rác, phần còn sót, thư mục rỗng, kho khôi phục, mục khởi động, dung lượng trống) kèm dung lượng có thể giải phóng; bấm đúp để mở tab xử lý; sao chép báo cáo | Hoàn toàn chỉ đọc; chỉ tính là "giải phóng được" phần Tweek Pro có thể dọn an toàn (tệp rác theo quy tắc, bản đã khôi phục trong Kho) |
 | Ứng dụng | Danh sách ứng dụng desktop (Uninstall HKLM/HKCU), gỡ theo hàng đợi, quét mục đang xem, CSV | Không dùng Win32_Product; chặn lệnh gỡ qua cmd/PowerShell/script |
 | Phần còn sót | Kết quả quét nhanh/sâu chờ duyệt; Chọn/Bỏ chọn/Xem/Xóa (có sao lưu) | Từ chối dọn khi ứng dụng còn đăng ký; mục Chỉ xem không thể tích |
 | **Dọn rác** (mới) | Xem trước theo quy tắc với số tệp và dung lượng; chọn từng nhóm; hai chế độ: vào Kho (mặc định) hoặc **Xóa thẳng** (nhãn đỏ, xác nhận hai lần) | Bỏ qua tệp mới hơn 24 giờ (cache trình duyệt: 0 giờ), tệp đang mở, liên kết; nhóm cache trình duyệt bị khóa khi trình duyệt còn chạy; không bao giờ chạm Documents/Desktop/Downloads/OneDrive |
@@ -32,6 +33,12 @@ Quy tắc là dữ liệu JSON đóng gói trong exe (`Cleaner/junk-rules.json`)
 Hàng rào nằm trong mã, không trong JSON: một quy tắc chỉ được trỏ vào các vùng rác cho phép (Temp, CrashDumps, WER, Explorer cache, INetCache, cache GPU) hoặc vào thư mục hồ sơ trình duyệt **với điều kiện** đường dẫn có một thư mục cache (`Cache`, `Code Cache`, `GPUCache`, `cache2`…). Đường dẫn chạm Documents, Desktop, Pictures, Music, Videos, Downloads, OneDrive, Program Files, System32 hay thư mục dữ liệu của Tweek Pro bị từ chối. Mỗi quy tắc dừng ở 100.000 tệp / 30 giây và báo "chưa đủ".
 
 Chế độ vào Kho tạo một bản sao lưu loại **Rác** cho mỗi nhóm, gồm `files.xml` ánh xạ từng tệp về đường dẫn gốc; khôi phục bỏ qua tệp đã tồn tại ở đích. Dung lượng chỉ được giải phóng khi xóa vĩnh viễn trong Kho. Thư mục con rỗng sau khi dọn được xóa (gốc quy tắc giữ nguyên).
+
+## Tổng quan (kiểm tra sức khỏe): cơ chế
+
+Tab **Tổng quan** là điểm đến đầu tiên cho người dùng không chuyên: một nút **Kiểm tra ngay** chạy sáu phép đo chỉ đọc trên luồng nền — xem trước tệp rác theo quy tắc (`JunkCleaner.Preview`, bỏ qua nhóm đang khóa), số mục còn sót đang chờ duyệt, thư mục rỗng trong `Downloads`, dung lượng các bản **đã khôi phục** còn nằm trong Kho, số mục khởi động đang bật và tỉ lệ trống của ổ hệ thống. Kết quả đi qua `Health/HealthCheck.Evaluate`, một hàm thuần không phụ thuộc Windows: mỗi khu vực nhận mức **Tốt / Nên xem / Cần dọn / Khẩn** theo ngưỡng cố định (ví dụ rác ≥100 MB nên xem, ≥500 MB cần dọn, ≥2 GB khẩn; ổ trống <20 % nên xem, <10 % cần dọn, <5 % khẩn), điểm bắt đầu từ 100 và trừ 5/12/25 cho mỗi khu vực theo mức, hạng A ≥90, B ≥75, C ≥60, D ≥40, còn lại E. Khu vực không đo được (thiếu quyền, lỗi đọc) hiển thị "Chưa đo" và **không bị trừ điểm**.
+
+Thẻ điểm được vẽ bằng GDI+ (`HealthRenderer`, vòng cung 270° đổi màu xanh → cam → đỏ theo điểm, huy hiệu hạng, câu tóm tắt, dung lượng có thể giải phóng). Mỗi dòng kết quả chỉ ra tab xử lý; bấm đúp hoặc **Mở tab xử lý** để chuyển ngay. **Sao chép báo cáo** đưa bản văn bản vào clipboard. Tab này không xóa gì.
 
 ## Tệp trùng lặp: cơ chế
 
@@ -70,7 +77,7 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 ## Kiểm chứng đã thực hiện
 
 - `dotnet build -c Release -p:EnableWindowsTargeting=true` trên Linux: 0 lỗi, 0 cảnh báo.
-- `TweekPro-0.7.exe --self-test junk` chạy bằng Mono trên Linux: PASS (xem `test-results.txt`) — phân tích quy tắc JSON, mở rộng đường dẫn, glob, hàng rào an toàn, chọn bản cần xóa theo tuổi, di trú thư mục dữ liệu, `settings.json`, xoay vòng nhật ký, xem trước/dọn/khôi phục rác qua kho, xóa thẳng, bỏ qua tệp đang mở, khóa quy tắc khi tiến trình chạy, xóa vĩnh viễn, liệt kê kho cũ, **tìm tệp trùng lặp** (chọn bản giữ lại, gom theo kích thước + SHA-256, bỏ qua thư mục được bảo vệ, chuyển vào kho/khôi phục/xóa thẳng), **phân tích ổ đĩa** (tổng dung lượng, theo thư mục con và phần mở rộng, thứ tự tệp lớn nhất, bounded top-N), **mạng** (gộp theo tiến trình, phân loại hướng, mô hình animation packet), **thư mục rỗng** (phát hiện nhánh rỗng cao nhất, từ chối thư mục bảo vệ, xóa). Chạy headless không cần màn hình.
+- `TweekPro-0.7.exe --self-test junk` chạy bằng Mono trên Linux: PASS (xem `test-results.txt`) — phân tích quy tắc JSON, mở rộng đường dẫn, glob, hàng rào an toàn, chọn bản cần xóa theo tuổi, di trú thư mục dữ liệu, `settings.json`, xoay vòng nhật ký, xem trước/dọn/khôi phục rác qua kho, xóa thẳng, bỏ qua tệp đang mở, khóa quy tắc khi tiến trình chạy, xóa vĩnh viễn, liệt kê kho cũ, **tìm tệp trùng lặp** (chọn bản giữ lại, gom theo kích thước + SHA-256, bỏ qua thư mục được bảo vệ, chuyển vào kho/khôi phục/xóa thẳng), **phân tích ổ đĩa** (tổng dung lượng, theo thư mục con và phần mở rộng, thứ tự tệp lớn nhất, bounded top-N), **mạng** (gộp theo tiến trình, phân loại hướng, mô hình animation packet), **thư mục rỗng** (phát hiện nhánh rỗng cao nhất, từ chối thư mục bảo vệ, xóa), **kiểm tra sức khỏe** (ngưỡng từng khu vực, cộng dồn và kẹp điểm, ranh giới hạng, khu vực chưa đo không trừ điểm, tổng dung lượng giải phóng). Chạy headless không cần màn hình.
 - **Chưa chạy trên Windows** trong lần phát hành này: giao diện WinForms, `--self-test` đầy đủ (Registry, deep scan, autorun), bảng kết nối iphlpapi, phiên ETW, khởi động lại với quyền quản trị. Xem `TEST-PLAN.md` trước khi dùng thật; chỉ thử tính năng phá hủy trong máy ảo.
 
 ## Mã nguồn và biên dịch
@@ -85,6 +92,7 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 | `Dupes/` | `DuplicateFinder` (quét theo kích thước + SHA-256, chọn bản giữ lại, chuyển vào kho/xóa/khôi phục), `DupeSafety`, `DuplicateUI`, `DupeTests` |
 | `Analyzer/` | `DiskAnalyzer` (quét chỉ đọc: tổng dung lượng, thư mục con, theo phần mở rộng, tệp lớn nhất), `DiskAnalyzerUI`, `AnalyzerTests` |
 | `Network/` | `ConnectionTable` (iphlpapi), `ProcessResolver`, `EtwNetworkSession` (TraceEvent), `NetworkStats` (gộp theo tiến trình + phân loại hướng), `NetworkGlyphs` (icon packet ra/vào), `PacketAnimator`/`PacketFlow` (animation luồng packet realtime), `NetworkUI`, `NetworkStatsTests`, `PacketAnimatorTests` |
+| `Health/` | `HealthCheck` (ngưỡng, điểm, hạng — thuần logic), `HealthGauge` (`HealthRenderer` + panel vẽ thẻ điểm), `HealthUI` (tab Tổng quan, các phép đo), `HealthTests` |
 | `Branding.cs` | Logo ứng dụng và icon tab vẽ bằng mã (GDI+) |
 | `Vault/PurgeForm.cs` | Hộp thoại dọn kho theo tuổi |
 | `CoreTests.cs`, `Tests07.cs` | Kiểm thử không cần Windows / kiểm thử 0.7 |
@@ -148,5 +156,6 @@ Tệp trùng lặp v1: quét chỉ đọc một thư mục để tìm tệp gi�
 Phân tích ổ đĩa v1: quét chỉ đọc một thư mục, hiển thị thư mục con nặng nhất, dung lượng theo phần mở rộng và các tệp lớn nhất; mở vị trí trong Explorer và xuất CSV. Không xóa hay di chuyển gì.
 Thư mục rỗng v1: tìm và xóa các nhánh thư mục hoàn toàn rỗng, kiểm tra lại ngay trước khi xóa.
 Mạng: gộp theo ứng dụng với icon packet ra/vào theo hướng và dải animation luồng packet realtime.
-Giao diện: logo riêng, icon vector cho từng tab, nhãn tab tiếng Việt; thứ tự tab chuẩn: Ứng dụng → Phần còn sót → Dọn rác → Thư mục rỗng → Tệp trùng lặp → Phân tích ổ đĩa → Kho khôi phục → Khởi động → Mạng → Công cụ → Nhật ký.
-Kiểm thử: `CoreTests` (chạy được ngoài Windows), `Tests07` (dọn rác/kho/purge/kho cũ/bảng kết nối + gọi `DupeTests`, `AnalyzerTests`, `NetworkStatsTests`, `PacketAnimatorTests`, `EmptyFolderTests`); `--self-test` chạy trước khi khởi tạo WinForms nên không cần màn hình; `TEST-PLAN.md` cho máy ảo.
+Tổng quan v1: kiểm tra sức khỏe một nút với điểm 0–100, hạng A–E, sáu khu vực đo chỉ đọc, dung lượng có thể giải phóng, nhảy tới tab xử lý, sao chép báo cáo.
+Giao diện: logo riêng, icon vector cho từng tab, nhãn tab tiếng Việt; thứ tự tab chuẩn: Tổng quan → Ứng dụng → Phần còn sót → Dọn rác → Thư mục rỗng → Tệp trùng lặp → Phân tích ổ đĩa → Kho khôi phục → Khởi động → Mạng → Công cụ → Nhật ký.
+Kiểm thử: `CoreTests` (chạy được ngoài Windows), `Tests07` (dọn rác/kho/purge/kho cũ/bảng kết nối + gọi `DupeTests`, `AnalyzerTests`, `NetworkStatsTests`, `PacketAnimatorTests`, `EmptyFolderTests`, `HealthTests`); `--self-test` chạy trước khi khởi tạo WinForms nên không cần màn hình; `TEST-PLAN.md` cho máy ảo.
