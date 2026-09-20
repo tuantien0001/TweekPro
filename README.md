@@ -35,6 +35,7 @@ Chế độ vào Kho tạo một bản sao lưu loại **Rác** cho mỗi nhóm,
 - Bảng kết nối: `GetExtendedTcpTable`/`GetExtendedUdpTable` (iphlpapi, `TCP_TABLE_OWNER_PID_ALL`, IPv4 và IPv6), không cần quyền. Tên/đường dẫn tiến trình qua `QueryFullProcessImageName` với quyền truy vấn hạn chế; nhà phát hành lấy từ chữ ký Authenticode của tệp exe (cache theo đường dẫn).
 - Băng thông: phiên ETW thời gian thực trên nhà cung cấp TCP/IP của kernel (cùng nguồn Task Manager dùng) qua thư viện `Microsoft.Diagnostics.Tracing.TraceEvent`; sự kiện send/recv TCP/UDP v4/v6 được cộng theo PID trên luồng riêng, giao diện chỉ đọc ảnh chụp mỗi chu kỳ. Cần quyền quản trị. Số liệu tính từ lúc bật ETW, gồm cả loopback (có thể ẩn). Bộ đếm `EventsLost` hiển thị ở dòng tóm tắt khi có mất sự kiện.
 - Phân giải tên máy ngược là tùy chọn, bất đồng bộ, có cache; tắt thì không gửi truy vấn DNS nào.
+- Mỗi dòng có **icon packet theo hướng** vẽ bằng GDI+: mũi tên lên xanh dương = gửi ra (outbound), mũi tên xuống xanh lá = nhận vào (inbound), hai mũi tên = hai chiều, vòng tròn = đang lắng nghe, chấm xám = nhàn rỗi. Hướng suy ra từ tốc độ gửi/nhận theo tiến trình khi bật ETW (ngưỡng nhiễu 16 B/s), hoặc từ trạng thái kết nối khi chưa bật. Cột "Hướng" hiển thị mũi tên tương ứng. Lớp `Network/NetworkStats` (gộp theo tiến trình, phân loại hướng) chạy được ngoài Windows và có self-test.
 
 ## Dữ liệu Tweek Pro
 
@@ -61,7 +62,7 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 | `ScanWindow.cs`, `Presentation.cs`, `Advanced.cs`, `AdvancedUI.cs`, `AdvancedTests.cs` | Cửa sổ quét, Theme, quét sâu, Autorun, Windows Tools (kế thừa 0.6) |
 | `Core/` | `Paths` (thư mục dữ liệu + di trú), `Settings` (JSON), `Log` (xoay vòng), `Elevation` |
 | `Cleaner/` | `JunkRules` (JSON, mở rộng đường dẫn, `JunkSafety`), `JunkCleaner` (xem trước/dọn/khôi phục), `JunkUI`, `junk-rules.json` |
-| `Network/` | `ConnectionTable` (iphlpapi), `ProcessResolver`, `EtwNetworkSession` (TraceEvent), `NetworkUI` |
+| `Network/` | `ConnectionTable` (iphlpapi), `ProcessResolver`, `EtwNetworkSession` (TraceEvent), `NetworkStats` (gộp theo tiến trình + phân loại hướng), `NetworkGlyphs` (icon packet ra/vào), `NetworkUI`, `NetworkStatsTests` |
 | `Vault/PurgeForm.cs` | Hộp thoại dọn kho theo tuổi |
 | `CoreTests.cs`, `Tests07.cs` | Kiểm thử không cần Windows / kiểm thử 0.7 |
 
