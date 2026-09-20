@@ -18,7 +18,7 @@ namespace TweekPro {
   List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
   ImageList appIcons=new ImageList(); Label appCount=new Label();
-  bool busy;string inventoryError;string sessions=Core.Paths.Sessions;
+  bool busy;string inventoryError;string sessions=Core.Paths.Sessions;Icon brandIcon;
   Core.Settings settings=Core.Settings.Load(Core.Paths.SettingsFile);
   public const string Version="0.7";
   public const string AppTitle="Tweek Pro";
@@ -29,6 +29,8 @@ namespace TweekPro {
    Text=AppTitle+" "+Version+" – "+Tagline;Size=new Size(1240,820);MinimumSize=new Size(1120,700);StartPosition=FormStartPosition.CenterScreen;
    if(settings.WindowWidth>=MinimumSize.Width&&settings.WindowHeight>=MinimumSize.Height)Size=new Size(settings.WindowWidth,settings.WindowHeight);
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;
+   try{brandIcon=Branding.AppIcon(32);Icon=brandIcon;ShowIcon=true;}catch(Exception){}
+   FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();};
    var header=Theme.HeaderBand(AppTitle+" – "+Tagline,"Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác theo quy tắc  •  Theo dõi mạng theo tiến trình  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
    BuildHeaderActions(header);
    status.Text="Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.";
@@ -94,8 +96,12 @@ namespace TweekPro {
    var logWrap=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Surface};logWrap.Controls.Add(log);logs.Controls.Add(logWrap);logs.Controls.Add(logNote);logs.Controls.Add(logbar);
    BuildAdvancedTabs();
    BuildJunkTab();
+   BuildEmptyTab();
+   BuildDuplicateTab();
+   BuildAnalyzerTab();
    BuildNetworkTab();
-   var ordered=new TabPage[]{installed,clean,junkTab,vault,autorunTab,netTab,toolsTab,logs};
+   // Canonical tab order: inventory → cleanup family → recovery → system → diagnostics.
+   var ordered=new TabPage[]{installed,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,toolsTab,logs};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
@@ -110,11 +116,17 @@ namespace TweekPro {
   }
   /// <summary>Configures the tab strip with flat, owner-drawn headers and an accent underline for the active tab.</summary>
   void BuildTabs(){
-   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(136,44);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
+   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(152,46);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
+   // Eleven tabs exceed the default width, so wrap into rows instead of showing scroll arrows.
+   tabs.Multiline=true;
    tabs.DrawItem+=(s,e)=>{
-    bool active=e.Index==tabs.SelectedIndex;var bounds=e.Bounds;
+    bool active=e.Index==tabs.SelectedIndex;var bounds=e.Bounds;string text=tabs.TabPages[e.Index].Text;
     using(var bg=new SolidBrush(active?Theme.Surface:Theme.Canvas))e.Graphics.FillRectangle(bg,bounds);
-    TextRenderer.DrawText(e.Graphics,tabs.TabPages[e.Index].Text,active?Theme.Strong:Theme.Body,bounds,active?Theme.Primary:Theme.Muted,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+    Color accent=active?Theme.Primary:Theme.Muted;
+    int glyph=18;var glyphRect=new Rectangle(bounds.X+16,bounds.Y+(bounds.Height-glyph)/2-1,glyph,glyph);
+    Branding.DrawTabGlyph(e.Graphics,text,glyphRect,accent);
+    var textRect=new Rectangle(glyphRect.Right+8,bounds.Y,bounds.Right-glyphRect.Right-14,bounds.Height);
+    TextRenderer.DrawText(e.Graphics,text,active?Theme.Strong:Theme.Body,textRect,accent,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
     if(active)using(var line=new Pen(Theme.Primary,3))e.Graphics.DrawLine(line,bounds.Left+16,bounds.Bottom-2,bounds.Right-16,bounds.Bottom-2);
    };
   }
@@ -255,7 +267,7 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary+"\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng.","Kết quả dọn",MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
   static string StateLabel(Backup b){return b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":"Cần kiểm tra";}
-  static string KindLabel(Backup b){return b.Kind=="Junk"?"Rác":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
+  static string KindLabel(Backup b){return b.Kind=="Junk"?"Rác":b.Kind=="Duplicate"?"Bản trùng":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){
@@ -317,7 +329,7 @@ namespace TweekPro {
    else if(migration.Outcome==Core.MigrationOutcome.Failed)Core.Log.Warn("Không chuyển được thư mục AppCare cũ ("+migration.Error+"); kho cũ vẫn được đọc tại "+Core.Paths.LegacyBackups+".");
   }
   [STAThread]public static void Main(string[] args){
-   Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
+   // Handle the headless self-test before any WinForms initialization so it needs no X display / desktop session.
    if(args.Length>0&&args[0]=="--self-test"){
     bool coreOnly=args.Length>1&&(args[1]=="core"||args[1]=="junk");string results=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"test-results.txt");
     try{
@@ -325,11 +337,12 @@ namespace TweekPro {
      if(args.Length>1&&args[1]=="junk")Tests07.Run();
      if(!coreOnly){Tests.Run();AdvancedTests.Run();Tests07.Run();}
      bool junkMode=args.Length>1&&args[1]=="junk";
-     File.WriteAllText(results,(junkMode?"PASS (core + junk cleaner/vault/purge, no registry/UI): ":coreOnly?"PASS (core only): ":"PASS: ")+"junk rule parsing/expansion/glob/safety, purge selection by age, data-dir migration, settings round-trip, log rotation, stored-name mapping"+(junkMode?", junk preview/clean/restore via vault, direct delete, in-use skip, locked rule, vault purge, legacy vault listing":"")+(coreOnly?"":", path boundaries, protected folders, command parsing, file backup/restore, registry value round-trip, destination collision, live inventory (read-only), exact install-folder alias scan, bulk selection, deduplication, install-date formatting, icon resource parsing, autorun value/shortcut backup and restore, stale-value conflict protection, deep scan, tool catalog, junk vault round-trip, vault purge, legacy vault listing, connection table snapshot")+".\r\n"+DateTime.Now.ToString("s"));
+     File.WriteAllText(results,(junkMode?"PASS (core + junk cleaner/vault/purge, no registry/UI): ":coreOnly?"PASS (core only): ":"PASS: ")+"junk rule parsing/expansion/glob/safety, purge selection by age, data-dir migration, settings round-trip, log rotation, stored-name mapping"+(junkMode?", junk preview/clean/restore via vault, direct delete, in-use skip, locked rule, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore, disk analyzer totals/folders/extensions/largest, network per-process aggregation/direction, packet-flow animation, empty folder finder":"")+(coreOnly?"":", path boundaries, protected folders, command parsing, file backup/restore, registry value round-trip, destination collision, live inventory (read-only), exact install-folder alias scan, bulk selection, deduplication, install-date formatting, icon resource parsing, autorun value/shortcut backup and restore, stale-value conflict protection, deep scan, tool catalog, junk vault round-trip, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore, disk analyzer totals/folders/extensions/largest, network per-process aggregation/direction, packet-flow animation, empty folder finder, connection table snapshot")+".\r\n"+DateTime.Now.ToString("s"));
      Environment.ExitCode=0;
     }catch(Exception e){File.WriteAllText(results,e.ToString());Console.Error.WriteLine(e);Environment.ExitCode=1;}
     return;
    }
+   Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
    Bootstrap();
    if(args.Length>0&&args[0]=="--scan-smoke"){try{var app=Engine.Inventory().First(a=>a.Name=="Brave");Advanced.Capture(app);var result=Advanced.DeepScan(app,System.Threading.CancellationToken.None);File.WriteAllLines(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"scan-smoke.txt"),new[]{"Read-only deep scan: "+app.Name,"Visited folders: "+result.Visited,"Candidates: "+result.Items.Count,"Notes: "+result.Notes.Count}.Concat(result.Notes));}catch(Exception error){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"scan-smoke.txt"),error.ToString());Environment.ExitCode=1;}return;}
    if(args.Length>0&&args[0]=="--preview"){try{

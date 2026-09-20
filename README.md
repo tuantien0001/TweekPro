@@ -16,10 +16,13 @@ Mặc định chạy với quyền người dùng; đầu cửa sổ có huy hi�
 | Ứng dụng | Danh sách ứng dụng desktop (Uninstall HKLM/HKCU), gỡ theo hàng đợi, quét mục đang xem, CSV | Không dùng Win32_Product; chặn lệnh gỡ qua cmd/PowerShell/script |
 | Phần còn sót | Kết quả quét nhanh/sâu chờ duyệt; Chọn/Bỏ chọn/Xem/Xóa (có sao lưu) | Từ chối dọn khi ứng dụng còn đăng ký; mục Chỉ xem không thể tích |
 | **Dọn rác** (mới) | Xem trước theo quy tắc với số tệp và dung lượng; chọn từng nhóm; hai chế độ: vào Kho (mặc định) hoặc **Xóa thẳng** (nhãn đỏ, xác nhận hai lần) | Bỏ qua tệp mới hơn 24 giờ (cache trình duyệt: 0 giờ), tệp đang mở, liên kết; nhóm cache trình duyệt bị khóa khi trình duyệt còn chạy; không bao giờ chạm Documents/Desktop/Downloads/OneDrive |
+| **Thư mục rỗng** (mới) | Chọn một thư mục, quét chỉ đọc để tìm các nhánh thư mục hoàn toàn rỗng; xóa nhánh đã chọn (thư mục rỗng không có dữ liệu) | Chỉ liệt kê thư mục không chứa tệp ở mọi cấp; bỏ qua liên kết; không đụng thư mục hệ thống/Program Files/dữ liệu Tweek Pro; kiểm tra lại rỗng ngay trước khi xóa |
+| **Tệp trùng lặp** (mới) | Chọn một thư mục, quét chỉ đọc để tìm tệp giống hệt nhau (gom nhóm theo kích thước rồi SHA-256); chọn giữ bản cũ nhất/mới nhất; hai chế độ: vào Kho (mặc định) hoặc **Xóa thẳng** (xác nhận hai lần) | Bản giữ lại không bao giờ bị xóa; bỏ qua liên kết và tệp đang mở; không quét thư mục hệ thống, Program Files hay dữ liệu Tweek Pro; bản dư chuyển vào Kho có thể khôi phục |
+| **Phân tích ổ đĩa** (mới) | Chọn một thư mục, quét chỉ đọc để xem thư mục con nặng nhất, dung lượng theo phần mở rộng và các tệp lớn nhất; mở vị trí, xuất CSV | Chỉ đọc, không thay đổi gì trên đĩa; bỏ qua liên kết (junction/symlink); giới hạn 1.000.000 tệp / 120 giây |
 | Kho khôi phục | Khôi phục mục đang chọn; **Xóa vĩnh viễn mục đã đánh dấu**; **Dọn kho theo tuổi…** (xem trước số mục và dung lượng) | Xóa vĩnh viễn không hoàn tác được; mặc định chỉ xóa bản đã khôi phục; kho AppCare cũ vẫn hiển thị và khôi phục được |
-| Autorun Manager | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
+| Khởi động (Autorun) | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
 | **Mạng** (mới) | Kết nối TCP/UDP theo tiến trình (tên, PID, nhà phát hành chữ ký, endpoint, trạng thái), làm mới 1–30 giây, tạm dừng, tìm kiếm, ẩn loopback, phân giải tên máy (tắt mặc định), CSV; khi có quyền quản trị: **Bật băng thông (ETW)** hiển thị byte gửi/nhận và tốc độ theo tiến trình | Chỉ xem, không chặn, không driver; phiên ETW tên `TweekPro-Network` luôn được dừng khi đóng |
-| Windows Tools | 19 lối mở công cụ có sẵn | SFC hỏi xác nhận quyền quản trị |
+| Công cụ (Windows Tools) | 19 lối mở công cụ có sẵn | SFC hỏi xác nhận quyền quản trị |
 | Nhật ký | Nhật ký phiên, nút mở thư mục nhật ký/dữ liệu, lưu cài đặt | Nhật ký xoay vòng theo ngày |
 
 ## Dọn rác: quy tắc và giới hạn
@@ -30,8 +33,26 @@ Hàng rào nằm trong mã, không trong JSON: một quy tắc chỉ được tr
 
 Chế độ vào Kho tạo một bản sao lưu loại **Rác** cho mỗi nhóm, gồm `files.xml` ánh xạ từng tệp về đường dẫn gốc; khôi phục bỏ qua tệp đã tồn tại ở đích. Dung lượng chỉ được giải phóng khi xóa vĩnh viễn trong Kho. Thư mục con rỗng sau khi dọn được xóa (gốc quy tắc giữ nguyên).
 
+## Tệp trùng lặp: cơ chế
+
+Tab **Tệp trùng lặp** tìm các tệp có nội dung giống hệt nhau trong một thư mục do người dùng chọn (mặc định gợi ý `Downloads`). Quét theo hai bước để nhanh và chính xác: trước tiên gom theo kích thước, chỉ những kích thước có từ hai tệp trở lên mới được băm nội dung bằng **SHA-256**; các tệp cùng mã băm là bản trùng thật sự. Mỗi nhóm chọn một **bản giữ lại** (mặc định là bản cũ nhất, có thể đổi sang mới nhất); bản giữ lại không bao giờ bị đụng tới.
+
+Hàng rào an toàn nằm trong mã (`Dupes/DupeSafety`): không quét gốc ổ đĩa, thư mục Windows/System32, Program Files hay thư mục dữ liệu của Tweek Pro; bỏ qua liên kết (reparse point) và tệp đang mở. Giới hạn 500.000 tệp / 90 giây rồi báo "chưa đủ". Chế độ vào Kho tạo một bản sao lưu loại **Bản trùng** với `files.xml` ánh xạ từng bản dư về đường dẫn gốc; khôi phục bỏ qua tệp đã tồn tại ở đích. Chế độ **Xóa thẳng** xóa vĩnh viễn sau khi xác nhận hai lần. Dung lượng chỉ được giải phóng khi xóa vĩnh viễn trong Kho. Ngưỡng kích thước tối thiểu (`duplicateMinKB`) và lựa chọn giữ bản mới nhất (`duplicateKeepNewest`) được lưu trong `settings.json`.
+
+## Phân tích ổ đĩa: cơ chế
+
+Tab **Phân tích ổ đĩa** quét chỉ đọc một thư mục do người dùng chọn (mặc định gợi ý thư mục hồ sơ người dùng) và trả về ba nhóm kết quả: dung lượng đệ quy của từng thư mục con trực tiếp (kèm bucket cho tệp nằm ngay ở gốc), tổng dung lượng theo phần mở rộng tệp, và danh sách các tệp lớn nhất. Tất cả sắp xếp giảm dần theo dung lượng để thấy ngay thứ chiếm chỗ.
+
+Quét bằng duyệt lặp (stack) một lần, bỏ qua liên kết (reparse point) để tránh vòng lặp, cộng dồn tổng số tệp/dung lượng, gom theo phần mở rộng và giữ danh sách top tệp lớn nhất bằng ngưỡng động (bounded top-N) để không tốn bộ nhớ trên cây thư mục lớn. Có giới hạn 1.000.000 tệp / 120 giây rồi báo "chưa đủ". Tab này **hoàn toàn chỉ đọc** — không xóa, không di chuyển, không sao lưu; hành động duy nhất là mở vị trí trong Explorer và xuất CSV, để người dùng tự quyết định.
+
+## Thư mục rỗng: cơ chế
+
+Tab **Thư mục rỗng** quét một thư mục do người dùng chọn và chỉ liệt kê những nhánh **hoàn toàn rỗng** (không có tệp ở bất kỳ cấp nào), gom về nhánh cao nhất để xóa một lần. Bỏ qua liên kết; từ chối gốc ổ đĩa, Windows, Program Files và dữ liệu Tweek Pro (`EmptyFolders.ForbiddenRoots`). Ngay trước khi xóa, mỗi nhánh được kiểm tra rỗng lại lần nữa; nếu đã có tệp xuất hiện thì bỏ qua và báo lại. Vì thư mục rỗng không có dữ liệu nên không cần đưa vào Kho.
+
 ## Mạng: cơ chế
 
+- Đầu tab có **dải luồng packet realtime** (`PacketFlowStrip`): packet bay lên ở làn "Ra ↑" (xanh dương) và bay xuống ở làn "Vào ↓" (xanh lá), mật độ tỉ lệ với tốc độ gửi/nhận hiện tại (một packet ≈ 32 KB/s), cập nhật ~20 khung/giây. Mô hình animation `PacketAnimator` không dùng ngẫu nhiên nên tất định và có self-test; phần vẽ `PacketFlowRenderer` là GDI+ thuần.
+- Mỗi dòng có **icon packet theo hướng** vẽ bằng GDI+: mũi tên lên xanh dương = gửi ra (outbound), mũi tên xuống xanh lá = nhận vào (inbound), hai mũi tên = hai chiều, vòng tròn = đang lắng nghe, chấm xám = nhàn rỗi. Hướng suy ra từ tốc độ gửi/nhận theo tiến trình khi bật ETW (ngưỡng nhiễu 16 B/s), hoặc từ trạng thái kết nối khi chưa bật. Cột "Hướng" hiển thị mũi tên tương ứng. Lớp `Network/NetworkStats` (gộp theo tiến trình, phân loại hướng) chạy được ngoài Windows và có self-test.
 - Bảng kết nối: `GetExtendedTcpTable`/`GetExtendedUdpTable` (iphlpapi, `TCP_TABLE_OWNER_PID_ALL`, IPv4 và IPv6), không cần quyền. Tên/đường dẫn tiến trình qua `QueryFullProcessImageName` với quyền truy vấn hạn chế; nhà phát hành lấy từ chữ ký Authenticode của tệp exe (cache theo đường dẫn).
 - Băng thông: phiên ETW thời gian thực trên nhà cung cấp TCP/IP của kernel (cùng nguồn Task Manager dùng) qua thư viện `Microsoft.Diagnostics.Tracing.TraceEvent`; sự kiện send/recv TCP/UDP v4/v6 được cộng theo PID trên luồng riêng, giao diện chỉ đọc ảnh chụp mỗi chu kỳ. Cần quyền quản trị. Số liệu tính từ lúc bật ETW, gồm cả loopback (có thể ẩn). Bộ đếm `EventsLost` hiển thị ở dòng tóm tắt khi có mất sự kiện.
 - Phân giải tên máy ngược là tùy chọn, bất đồng bộ, có cache; tắt thì không gửi truy vấn DNS nào.
@@ -49,7 +70,7 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 ## Kiểm chứng đã thực hiện
 
 - `dotnet build -c Release -p:EnableWindowsTargeting=true` trên Linux: 0 lỗi, 0 cảnh báo.
-- `TweekPro-0.7.exe --self-test junk` chạy bằng Mono trên Linux: PASS (xem `test-results.txt`) — phân tích quy tắc JSON, mở rộng đường dẫn, glob, hàng rào an toàn, chọn bản cần xóa theo tuổi, di trú thư mục dữ liệu, `settings.json`, xoay vòng nhật ký, xem trước/dọn/khôi phục rác qua kho, xóa thẳng, bỏ qua tệp đang mở, khóa quy tắc khi tiến trình chạy, xóa vĩnh viễn, liệt kê kho cũ.
+- `TweekPro-0.7.exe --self-test junk` chạy bằng Mono trên Linux: PASS (xem `test-results.txt`) — phân tích quy tắc JSON, mở rộng đường dẫn, glob, hàng rào an toàn, chọn bản cần xóa theo tuổi, di trú thư mục dữ liệu, `settings.json`, xoay vòng nhật ký, xem trước/dọn/khôi phục rác qua kho, xóa thẳng, bỏ qua tệp đang mở, khóa quy tắc khi tiến trình chạy, xóa vĩnh viễn, liệt kê kho cũ, **tìm tệp trùng lặp** (chọn bản giữ lại, gom theo kích thước + SHA-256, bỏ qua thư mục được bảo vệ, chuyển vào kho/khôi phục/xóa thẳng), **phân tích ổ đĩa** (tổng dung lượng, theo thư mục con và phần mở rộng, thứ tự tệp lớn nhất, bounded top-N), **mạng** (gộp theo tiến trình, phân loại hướng, mô hình animation packet), **thư mục rỗng** (phát hiện nhánh rỗng cao nhất, từ chối thư mục bảo vệ, xóa). Chạy headless không cần màn hình.
 - **Chưa chạy trên Windows** trong lần phát hành này: giao diện WinForms, `--self-test` đầy đủ (Registry, deep scan, autorun), bảng kết nối iphlpapi, phiên ETW, khởi động lại với quyền quản trị. Xem `TEST-PLAN.md` trước khi dùng thật; chỉ thử tính năng phá hủy trong máy ảo.
 
 ## Mã nguồn và biên dịch
@@ -60,14 +81,17 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 | `App.cs` | Cửa sổ chính, header (huy hiệu quyền, khởi động lại quản trị), tab Kho, `Program.Main`, `Tests` |
 | `ScanWindow.cs`, `Presentation.cs`, `Advanced.cs`, `AdvancedUI.cs`, `AdvancedTests.cs` | Cửa sổ quét, Theme, quét sâu, Autorun, Windows Tools (kế thừa 0.6) |
 | `Core/` | `Paths` (thư mục dữ liệu + di trú), `Settings` (JSON), `Log` (xoay vòng), `Elevation` |
-| `Cleaner/` | `JunkRules` (JSON, mở rộng đường dẫn, `JunkSafety`), `JunkCleaner` (xem trước/dọn/khôi phục), `JunkUI`, `junk-rules.json` |
-| `Network/` | `ConnectionTable` (iphlpapi), `ProcessResolver`, `EtwNetworkSession` (TraceEvent), `NetworkUI` |
+| `Cleaner/` | `JunkRules` (JSON, mở rộng đường dẫn, `JunkSafety`), `JunkCleaner` (xem trước/dọn/khôi phục), `JunkUI`, `junk-rules.json`; `EmptyFolders` (tìm/xóa thư mục rỗng, `EmptyFolderTests`), `EmptyFolderUI` |
+| `Dupes/` | `DuplicateFinder` (quét theo kích thước + SHA-256, chọn bản giữ lại, chuyển vào kho/xóa/khôi phục), `DupeSafety`, `DuplicateUI`, `DupeTests` |
+| `Analyzer/` | `DiskAnalyzer` (quét chỉ đọc: tổng dung lượng, thư mục con, theo phần mở rộng, tệp lớn nhất), `DiskAnalyzerUI`, `AnalyzerTests` |
+| `Network/` | `ConnectionTable` (iphlpapi), `ProcessResolver`, `EtwNetworkSession` (TraceEvent), `NetworkStats` (gộp theo tiến trình + phân loại hướng), `NetworkGlyphs` (icon packet ra/vào), `PacketAnimator`/`PacketFlow` (animation luồng packet realtime), `NetworkUI`, `NetworkStatsTests`, `PacketAnimatorTests` |
+| `Branding.cs` | Logo ứng dụng và icon tab vẽ bằng mã (GDI+) |
 | `Vault/PurgeForm.cs` | Hộp thoại dọn kho theo tuổi |
 | `CoreTests.cs`, `Tests07.cs` | Kiểm thử không cần Windows / kiểm thử 0.7 |
 
 Biên dịch (đường chính): cần .NET SDK 6+ (khuyến nghị 8): `dotnet build -c Release` → `bin\Release\net48\TweekPro-0.7.exe`. Trên Linux/macOS thêm `-p:EnableWindowsTargeting=true` để kiểm tra biên dịch. `build.ps1` trên Windows gọi lệnh trên, in hướng dẫn cài SDK nếu thiếu (`winget install Microsoft.DotNet.SDK.8`); thêm `-SelfTest` để chạy `--self-test` sau khi build. Ngôn ngữ C# 7.3 (mức tối đa của net48); gói NuGet duy nhất: `Microsoft.Diagnostics.Tracing.TraceEvent` 3.1.30.
 
-Dòng lệnh: `--self-test` (đầy đủ, Windows; tạo và dọn fixture `TweekProTest*`/`TweekProFixture*` trong AppData và HKCU), `--self-test core` (không cần Windows), `--self-test junk` (core + dọn rác/kho, không Registry/UI), `--preview [scan|autorun|tools|junk|network]` kết xuất PNG, `--scan-smoke`.
+Dòng lệnh: `--self-test` (đầy đủ, Windows; tạo và dọn fixture `TweekProTest*`/`TweekProFixture*` trong AppData và HKCU), `--self-test core` (không cần Windows, chạy headless không cần màn hình), `--self-test junk` (core + dọn rác/kho, không Registry/UI), `--preview [scan|autorun|tools|junk|network]` kết xuất PNG, `--scan-smoke`.
 
 Tham khảo định dạng đăng ký cài đặt của Microsoft:
 https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key
@@ -108,6 +132,10 @@ Giao diện: Theme dùng chung trên mọi tab (Ứng dụng, Phần còn sót, 
 Phần còn sót theo từng tài khoản: quét `%LOCALAPPDATA%`, `%LOCALAPPDATA%\Programs` (cài kiểu Devin/Electron), `%APPDATA%`, LocalLow, ProgramData và InstallLocation. Không duyệt mù toàn bộ Temp; chỉ thêm `%LOCALAPPDATA%\Temp` khi trùng đúng tên ứng dụng, nhà phát hành\ứng dụng, thư mục cuối của InstallLocation hoặc thư mục executable đã ghi nhận. Thư mục `Programs` gốc vẫn được giữ; chỉ các thư mục con khớp dấu vân tay mới được đề xuất. Xóa vẫn cần Chọn / Xóa đã chọn, xác nhận và sao lưu vào kho. Dịch vụ/driver/tác vụ lịch vẫn chỉ xem.
 build.ps1 đóng gói AppCare-0.6.exe.
 
+## Giao diện và nhận diện
+
+Ứng dụng có biểu tượng riêng vẽ bằng mã (không dùng icon mặc định của WinForms): một huy hiệu bo góc chuyển sắc xanh với chữ "T" và một chấm sáng, dùng làm icon cửa sổ/thanh tác vụ và logo trên dải tiêu đề đậm. Mỗi tab có một icon vector nhỏ vẽ bằng GDI+ (ứng dụng, kính lúp, thùng rác, chart, khiên, tia sét, quả cầu, bánh răng, tài liệu…) cùng dải gạch chân nhấn màu cho tab đang chọn, giúp người dùng không chuyên nhận diện nhanh. Các tab tiếng Anh được đổi sang nhãn tiếng Việt ngắn gọn ("Khởi động", "Công cụ"). Toàn bộ được vẽ bằng vector nên nét ở mọi mức phóng đại và DPI. Xem `Branding.cs`.
+
 ## Cập nhật 0.7
 
 Đổi tên thành **Tweek Pro – Trình quản lý Windows**; namespace `TweekPro`, exe `TweekPro-0.7.exe`; thư mục dữ liệu `%LOCALAPPDATA%\TweekPro` với di trú tự động từ `AppCare` và khả năng đọc kho cũ tại chỗ.
@@ -116,4 +144,9 @@ Kho khôi phục: xóa vĩnh viễn theo mục đánh dấu hoặc theo tuổi (
 Dọn rác v1: quy tắc JSON (Temp, Windows\Temp, CrashDumps, WER, thumbnail cache, cache Chrome/Edge/Brave/Firefox chỉ khi trình duyệt đã đóng), xem trước theo nhóm với dung lượng, hai chế độ (vào Kho / xóa thẳng có nhãn đỏ và xác nhận hai lần), bỏ qua tệp đang mở và tệp mới, báo cáo kết quả, khôi phục từng tệp từ kho.
 Mạng (chỉ xem): bảng TCP/UDP theo tiến trình không cần quyền; băng thông và tốc độ theo tiến trình qua ETW khi chạy quản trị; chu kỳ làm mới, tạm dừng, tìm kiếm, ẩn loopback, phân giải tên máy tùy chọn, CSV.
 Huy hiệu quyền và nút Khởi động lại với quyền quản trị; `settings.json`; nhật ký xoay vòng theo ngày; bắt lỗi chưa xử lý ghi vào nhật ký.
-Kiểm thử: `CoreTests` (chạy được ngoài Windows), `Tests07` (dọn rác/kho/purge/kho cũ/bảng kết nối); `TEST-PLAN.md` cho máy ảo.
+Tệp trùng lặp v1: quét chỉ đọc một thư mục để tìm tệp giống hệt nhau (gom theo kích thước rồi SHA-256), chọn giữ bản cũ nhất/mới nhất, chuyển bản dư vào Kho (khôi phục được) hoặc xóa thẳng; hàng rào an toàn `DupeSafety` chặn thư mục hệ thống và dữ liệu Tweek Pro, bỏ qua liên kết và tệp đang mở.
+Phân tích ổ đĩa v1: quét chỉ đọc một thư mục, hiển thị thư mục con nặng nhất, dung lượng theo phần mở rộng và các tệp lớn nhất; mở vị trí trong Explorer và xuất CSV. Không xóa hay di chuyển gì.
+Thư mục rỗng v1: tìm và xóa các nhánh thư mục hoàn toàn rỗng, kiểm tra lại ngay trước khi xóa.
+Mạng: gộp theo ứng dụng với icon packet ra/vào theo hướng và dải animation luồng packet realtime.
+Giao diện: logo riêng, icon vector cho từng tab, nhãn tab tiếng Việt; thứ tự tab chuẩn: Ứng dụng → Phần còn sót → Dọn rác → Thư mục rỗng → Tệp trùng lặp → Phân tích ổ đĩa → Kho khôi phục → Khởi động → Mạng → Công cụ → Nhật ký.
+Kiểm thử: `CoreTests` (chạy được ngoài Windows), `Tests07` (dọn rác/kho/purge/kho cũ/bảng kết nối + gọi `DupeTests`, `AnalyzerTests`, `NetworkStatsTests`, `PacketAnimatorTests`, `EmptyFolderTests`); `--self-test` chạy trước khi khởi tạo WinForms nên không cần màn hình; `TEST-PLAN.md` cho máy ảo.

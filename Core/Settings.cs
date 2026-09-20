@@ -15,6 +15,8 @@ namespace TweekPro.Core {
   [DataMember(Name="networkStartBandwidthWhenElevated")] public bool NetworkStartBandwidthWhenElevated=true;
   [DataMember(Name="purgeDefaultDays")] public int PurgeDefaultDays=90;
   [DataMember(Name="junkMinAgeHours")] public int JunkMinAgeHours=24;
+  [DataMember(Name="duplicateMinKB")] public int DuplicateMinKB=1;
+  [DataMember(Name="duplicateKeepNewest")] public bool DuplicateKeepNewest=false;
   [DataMember(Name="logRetentionDays")] public int LogRetentionDays=14;
   [DataMember(Name="windowWidth")] public int WindowWidth=0;
   [DataMember(Name="windowHeight")] public int WindowHeight=0;
@@ -24,6 +26,7 @@ namespace TweekPro.Core {
    if(NetworkRefreshSeconds<1)NetworkRefreshSeconds=1;if(NetworkRefreshSeconds>30)NetworkRefreshSeconds=30;
    if(PurgeDefaultDays<0)PurgeDefaultDays=0;if(PurgeDefaultDays>3650)PurgeDefaultDays=3650;
    if(JunkMinAgeHours<0)JunkMinAgeHours=0;if(JunkMinAgeHours>24*30)JunkMinAgeHours=24*30;
+   if(DuplicateMinKB<0)DuplicateMinKB=0;if(DuplicateMinKB>1048576)DuplicateMinKB=1048576;
    if(LogRetentionDays<1)LogRetentionDays=1;if(LogRetentionDays>365)LogRetentionDays=365;
    if(WindowWidth<0)WindowWidth=0;if(WindowHeight<0)WindowHeight=0;
   }

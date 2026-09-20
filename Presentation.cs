@@ -149,7 +149,9 @@ namespace TweekPro {
   }
   /// <summary>Creates the dark header band with a title and an explanatory subtitle.</summary>
   public static Panel HeaderBand(string title,string subtitle,int height){
-   var band=new Panel{Dock=DockStyle.Top,Height=height,BackColor=Header,Padding=new Padding(28,18,28,0)};
+   var band=new Panel{Dock=DockStyle.Top,Height=height,BackColor=Header,Padding=new Padding(92,18,28,0)};
+   int logo=44;
+   band.Paint+=(s,e)=>Branding.DrawLogo(e.Graphics,new Rectangle(28,(height-logo)/2,logo,logo));
    var sub=new Label{Text=subtitle,Dock=DockStyle.Top,Height=24,Font=Body,ForeColor=HeaderMuted,AutoEllipsis=true};
    var main=new Label{Text=title,Dock=DockStyle.Top,Height=38,Font=Title,ForeColor=HeaderText,AutoEllipsis=true};
    band.Controls.Add(sub);
