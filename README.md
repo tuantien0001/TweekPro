@@ -1,19 +1,19 @@
-﻿# AppCare — bản thử nghiệm 0.4
+﻿# AppCare — bản thử nghiệm 0.5
 
 Ứng dụng Windows 64-bit để quản lý phần mềm desktop, chạy trình gỡ chính thức theo hàng đợi, duyệt các mục nghi còn sót và sao lưu/khôi phục chúng.
 
 ## Mở ứng dụng
 
-Nhấp đúp AppCare-0.4.exe. Không cần cài thêm gói hay tải SDK trên máy này.
+Nhấp đúp AppCare-0.5.exe. Không cần cài thêm gói hay tải SDK trên máy này.
 Mặc định chạy với quyền người dùng. Nếu thao tác trong Program Files/HKLM báo thiếu quyền, đóng ứng dụng rồi chọn Run as administrator bằng cùng tài khoản Windows. Không cần quyền quản trị để xem danh sách thông thường.
 
 ## Quy trình sử dụng
 
 1. Ở tab Ứng dụng, tìm theo tên/nhà phát hành và đánh dấu các ứng dụng muốn gỡ.
 2. Chọn Gỡ mục đã chọn. AppCare lưu thông tin các ứng dụng trước khi mở trình gỡ chính thức lần lượt. Xác nhận trong từng trình gỡ. Bạn có thể dừng hàng đợi trước ứng dụng tiếp theo.
-3. Sau mỗi lần gỡ, khi đăng ký cài đặt biến mất, AppCare tự quét và mở tab Phần còn sót. Không cần bấm Scan. Nếu ứng dụng vẫn còn đăng ký, AppCare không tự quét lần đó và yêu cầu kiểm tra cửa sổ gỡ phụ. Nếu trình gỡ chuyển sang cửa sổ khác, phải chờ cửa sổ đó hoàn tất trước khi xác nhận tiếp tục trong AppCare.
+3. Sau mỗi lần gỡ, khi đăng ký cài đặt biến mất, AppCare tự mở cửa sổ **Quét phần còn sót** (xem mục Cập nhật 0.5). Nếu ứng dụng vẫn còn đăng ký, AppCare không tự quét lần đó và yêu cầu kiểm tra cửa sổ gỡ phụ. Nếu trình gỡ chuyển sang cửa sổ khác, phải chờ cửa sổ đó hoàn tất trước khi xác nhận tiếp tục trong AppCare.
 4. Kiểm tra từng đường dẫn. Tên trùng hoặc InstallLocation không chứng minh mọi nội dung thuộc riêng ứng dụng. Thư mục có thể chứa dự án, hồ sơ và dữ liệu cá nhân.
-5. Đánh dấu các mục đã kiểm tra, hoặc bấm Chọn tất cả; dùng Bỏ chọn tất cả để bỏ đánh dấu. Sau đó chọn Xóa đã chọn (có sao lưu). Số mục được chọn nằm dưới danh sách. Sau khi xử lý có báo cáo số thư mục/khóa đã dọn và số mục chưa dọn. Nếu đăng ký cài đặt vẫn tồn tại, AppCare từ chối dọn. Chạy Quét lại lịch sử gỡ để cập nhật sau khi gỡ hoặc khởi động lại.
+5. Trong cửa sổ quét, đánh dấu các mục đã kiểm tra hoặc bấm Chọn tất cả; dùng Bỏ chọn để bỏ đánh dấu; rồi bấm Xóa đã chọn và xác nhận. Kết quả (số mục đã xóa, số mục lỗi và lý do) hiển thị ngay trong cửa sổ. Mục chưa xử lý được chuyển sang tab Phần còn sót để duyệt sau với cùng bộ nút. Nếu đăng ký cài đặt vẫn tồn tại, AppCare từ chối dọn. Chạy Quét lại lịch sử gỡ để cập nhật sau khi gỡ hoặc khởi động lại.
 6. Ở Kho khôi phục, chọn một mục rồi Khôi phục mục đang chọn. Không ghi đè nếu vị trí gốc đã tồn tại.
 
 ## Cơ chế và phạm vi
@@ -47,9 +47,13 @@ Kết quả kiểm thử ở test-results.txt. Kiểm thử chỉ tạo và dọ
 
 ## Mã nguồn và biên dịch
 
-Engine.cs: phần lõi. App.cs: giao diện và bộ kiểm thử.
-Chạy build.ps1 trong PowerShell để biên dịch bằng trình biên dịch .NET Framework có sẵn.
-AppCare-0.4.exe --self-test: kiểm thử mẫu. AppCare-0.4.exe --preview: kết xuất ảnh giao diện bằng cửa sổ ẩn.
+Engine.cs: phần lõi. App.cs: cửa sổ chính và bộ kiểm thử. ScanWindow.cs: cửa sổ quét phần còn sót. Presentation.cs: định dạng, biểu tượng và Theme dùng chung. Advanced.cs/AdvancedUI.cs: quét sâu, Autorun Manager, Windows Tools.
+
+Cách 1 — không cần cài gì thêm: chạy `build.ps1` trong PowerShell để biên dịch bằng trình biên dịch .NET Framework có sẵn trong Windows; kết quả là `AppCare-0.5.exe` cạnh mã nguồn.
+
+Cách 2 — có .NET SDK (6 trở lên): `dotnet build -c Release`; kết quả ở `bin\Release\net48\AppCare.exe`. Trên Linux/macOS thêm `-p:EnableWindowsTargeting=true` để chỉ kiểm tra biên dịch (ứng dụng chỉ chạy trên Windows).
+
+`AppCare-0.5.exe --self-test`: kiểm thử mẫu. `--preview`: kết xuất ảnh cửa sổ chính; `--preview scan`: kết xuất ảnh cửa sổ quét với dữ liệu minh họa.
 
 Tham khảo định dạng đăng ký cài đặt của Microsoft:
 https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key
@@ -76,3 +80,10 @@ Windows Tools: 19 lối mở công cụ có sẵn. Không chạy tự động c�
 Quét sâu: duyệt thư mục lồng, nhánh Registry nhà phát hành, giá trị Run/RunOnce/AppCompatFlags, shortcut và hiển thị chỉ xem các App Paths/dịch vụ/tác vụ liên quan. Có hủy quét, đối chiếu chống thay đổi, giới hạn và ghi chú kết quả chưa đầy đủ.
 Xem SCAN-GUIDE.md để biết phạm vi chính xác, tài liệu Microsoft và hướng dẫn truy vết với Process Monitor. Các mục mô tả giới hạn ở những phiên bản trước được cập nhật bởi phần này.
 Các tệp mới: Advanced.cs, AdvancedUI.cs, AdvancedTests.cs. build.ps1 đóng gói AppCare-0.4.exe.
+
+## Cập nhật 0.5
+
+Cửa sổ Quét phần còn sót: ngay sau khi trình gỡ kết thúc và đăng ký cài đặt biến mất, AppCare mở một cửa sổ riêng (tương tự Revo Uninstaller) thay cho việc chuyển tab. Cửa sổ hiển thị giai đoạn quét đang chạy, số thư mục đã duyệt và số mục tìm thấy theo thời gian thực; danh sách gồm loại, đường dẫn, dung lượng (tính sau khi quét, có giới hạn 20.000 tệp/5 giây mỗi thư mục), trạng thái và cơ sở đề xuất. Các nút **Chọn tất cả**, **Bỏ chọn**, **Xóa đã chọn**, **Dừng quét** và **Đóng** nằm ở chân cửa sổ. Xóa chỉ diễn ra khi bấm Xóa đã chọn và xác nhận; từng mục được sao lưu vào kho trước, dòng đã xóa được gạch ngang, dòng lỗi tô đỏ với lý do trong tooltip, và dải kết quả cho biết số mục đã xóa/thất bại. Nhấp đúp một dòng để mở thư mục hoặc xem chi tiết. Nếu ứng dụng vẫn còn đăng ký cài đặt, cửa sổ chỉ cho xem. Mục chưa xử lý được gộp vào tab Phần còn sót khi đóng cửa sổ.
+Nút Quét mục đang xem cũng mở cửa sổ này (quét sâu khi tùy chọn Quét sâu sau khi gỡ đang bật).
+Giao diện: bảng màu, phông chữ và khoảng cách thống nhất qua lớp Theme; đầu trang gọn hơn, thanh công cụ tự xuống dòng, nút chính/nút xóa được phân biệt rõ, dải ghi chú theo loại (thông tin/cảnh báo/kết quả), dòng xen kẽ và tooltip đường dẫn trong mọi danh sách, kho khôi phục hiển thị ngày giờ dễ đọc và tô màu trạng thái.
+Tệp mới: ScanWindow.cs, AppCare.csproj. build.ps1 đóng gói AppCare-0.5.exe.

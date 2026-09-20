@@ -1,9 +1,9 @@
-# AppCare 0.4 — Quét sâu và truy vết phần còn sót
+# AppCare 0.5 — Quét sâu và truy vết phần còn sót
 
 ## Sử dụng trong AppCare
 
-1. Mở AppCare-0.4.exe. Tùy chọn **Quét sâu sau gỡ** đang bật mặc định.
-2. Trước khi gỡ, AppCare ghi nhận tên, thư mục cài và một số đường dẫn executable. Sau khi đăng ký cài đặt biến mất, AppCare quét sâu tự động.
+1. Mở AppCare-0.5.exe. Tùy chọn **Quét sâu sau khi gỡ** đang bật mặc định.
+2. Trước khi gỡ, AppCare ghi nhận tên, thư mục cài và một số đường dẫn executable. Sau khi đăng ký cài đặt biến mất, AppCare mở cửa sổ **Quét phần còn sót** và quét sâu tự động; cửa sổ hiển thị giai đoạn quét, số thư mục đã duyệt, dung lượng từng mục và có các nút Chọn tất cả / Bỏ chọn / Xóa đã chọn.
 3. Với ứng dụng đã được ghi nhận ở các lần trước, vào **Phần còn sót → Quét siêu sâu**. Nút này quét các ứng dụng trong lịch sử. Với ứng dụng chưa ghi nhận, chọn nó ở tab Ứng dụng rồi bấm Quét mục đang xem trước.
 4. Xem cột cơ sở đề xuất, dùng **Chọn tất cả** hoặc đánh dấu riêng, rồi **Xóa đã chọn (có sao lưu)**. Mục **Chỉ xem** không thể được đánh dấu xóa.
 5. Xem Nhật ký để biết giới hạn đã chạm hoặc đường dẫn bị bỏ qua. **Dừng quét sâu** giữ kết quả của các ứng dụng đã hoàn tất, không giữ kết quả dở dang của ứng dụng đang quét.
@@ -29,7 +29,7 @@ Không đi theo junction/symlink và bỏ qua vùng hệ thống/dùng chung b�
 
 Tên thư mục trùng là **gợi ý**, không chứng minh quyền sở hữu. Đường dẫn executable là bằng chứng cụ thể hơn nhưng vẫn có thể liên quan thành phần dùng chung. AppCare không dùng tên nhà phát hành một mình làm lý do xóa cả thư mục nhà phát hành. Thư mục cài trùng/giao với ứng dụng còn cài bị loại khỏi việc đối chiếu đường dẫn rộng và bị chặn khi dọn.
 
-Các giá trị Registry và shortcut được so dấu vân tay với lúc quét; nếu đã thay đổi, phải quét lại. Giá trị được sao lưu trước khi xóa, giữ nguyên khóa cha. Các bản sao lưu này không bao gồm quyền Registry ACL. File được chuyển vào kho trên cùng ổ đĩa nên chưa giải phóng dung lượng. Không có xóa vĩnh viễn kho trong bản 0.4.
+Các giá trị Registry và shortcut được so dấu vân tay với lúc quét; nếu đã thay đổi, phải quét lại. Giá trị được sao lưu trước khi xóa, giữ nguyên khóa cha. Các bản sao lưu này không bao gồm quyền Registry ACL. File được chuyển vào kho trên cùng ổ đĩa nên chưa giải phóng dung lượng. Không có xóa vĩnh viễn kho trong bản 0.5.
 
 ## Truy vết bằng Process Monitor khi cần chứng cứ chi tiết hơn
 
@@ -42,7 +42,7 @@ Quy trình thực hành đề xuất:
 3. Phân biệt thao tác đọc/mở với tạo/ghi thành công. Chỉ việc một đường dẫn xuất hiện trong log không chứng minh ứng dụng tạo hoặc sở hữu nó.
 4. Sau khi gỡ, đối chiếu những đường dẫn thực sự được tạo/ghi và vẫn tồn tại; kiểm tra xem có ứng dụng khác sử dụng chúng không.
 
-AppCare 0.4 **chưa có driver theo dõi cài đặt, chưa thu log Procmon trực tiếp và chưa nhập log Procmon tự động**. Hướng dẫn này để đối chiếu thủ công; không biến mọi dòng log thành mục được phép xóa.
+AppCare 0.5 **chưa có driver theo dõi cài đặt, chưa thu log Procmon trực tiếp và chưa nhập log Procmon tự động**. Hướng dẫn này để đối chiếu thủ công; không biến mọi dòng log thành mục được phép xóa.
 
 ## Autorun Manager
 

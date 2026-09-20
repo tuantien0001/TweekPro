@@ -26,7 +26,7 @@ namespace AppCare {
   readonly Dictionary<Candidate,Footprint> footprints=new Dictionary<Candidate,Footprint>();
   readonly Stopwatch throttle=Stopwatch.StartNew();
   CancellationTokenSource cancellation;
-  bool scanning,deleting,locked,previewMode,closeRequested;
+  bool scanning,measuring,deleting,locked,previewMode,closeRequested;
   int visited,noteCount;
 
   public List<Candidate> Remaining=new List<Candidate>();
@@ -89,6 +89,7 @@ namespace AppCare {
    FormClosing+=(s,e)=>{
     if(deleting){e.Cancel=true;MessageBox.Show(this,"Đang sao lưu và xóa. Hãy chờ thao tác hoàn tất.","AppCare",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
     if(scanning&&cancellation!=null){closeRequested=true;cancellation.Cancel();e.Cancel=true;return;}
+    if(measuring&&cancellation!=null)cancellation.Cancel();
     Remaining=list.Items.Cast<ListViewItem>().Where(i=>!IsDone(i)).Select(i=>(Candidate)i.Tag).ToList();
    };
    UpdateSummary();
@@ -111,11 +112,13 @@ namespace AppCare {
    }catch(OperationCanceledException){cancelled=true;}
    catch(Exception e){ShowBanner("Không hoàn tất quét: "+e.Message,NoteKind.Error);log("LỖI quét: "+e.Message);}
    finally{scanning=false;}
-   if(!token.IsCancellationRequested){
-    stage.Text="Đang tính dung lượng các mục tìm thấy…";
-    try{await MeasureAll(token);}catch(OperationCanceledException){cancelled=true;}
+   if(!token.IsCancellationRequested&&!IsDisposed){
+    measuring=true;SetBusy(false);stage.Text="Đang tính dung lượng các mục tìm thấy…";
+    try{await MeasureAll(token);}catch(OperationCanceledException){}
+    measuring=false;
    }
    cancellation.Dispose();cancellation=null;
+   if(IsDisposed)return;
    progress.Style=ProgressBarStyle.Continuous;progress.Value=100;
    Found=list.Items.Count;
    stage.Text=(cancelled?"Đã dừng quét — kết quả có thể chưa đầy đủ.":"Hoàn tất quét.")+"  Tìm thấy "+Found+" mục.";
@@ -129,7 +132,8 @@ namespace AppCare {
 
   /// <summary>Marshals a worker-thread progress snapshot to the UI, throttled to avoid flooding the message loop.</summary>
   void Report(ScanProgress p){
-   if(IsDisposed||throttle.ElapsedMilliseconds<120&&p.Stage!="Hoàn tất quét")return;
+   if(IsDisposed)return;
+   if(p.Current!=null&&throttle.ElapsedMilliseconds<120)return;
    throttle.Restart();
    try{BeginInvoke((Action)(()=>{
     if(IsDisposed)return;
@@ -159,7 +163,8 @@ namespace AppCare {
     foreach(var c in pending){
      token.ThrowIfCancellationRequested();
      var fp=Advanced.Measure(c,token);var candidate=c;
-     BeginInvoke((Action)(()=>{
+     if(IsDisposed||!IsHandleCreated)return;
+     try{BeginInvoke((Action)(()=>{
       if(IsDisposed)return;
       footprints[candidate]=fp;ListViewItem item;
       if(rows.TryGetValue(candidate,out item)){
@@ -167,7 +172,7 @@ namespace AppCare {
        if(fp.Detail!="")item.ToolTipText=PathOf(candidate)+"\r\n"+fp.Detail+"\r\n"+candidate.Reason;
       }
       UpdateSummary();
-     }));
+     }));}catch(InvalidOperationException){return;}
     }
    },token);
   }
@@ -228,10 +233,10 @@ namespace AppCare {
   /// <summary>Enables or disables the action buttons while scanning or deleting is in progress.</summary>
   void SetBusy(bool busy){
    bool hasDeletable=list.Items.Cast<ListViewItem>().Any(i=>!((Candidate)i.Tag).ReviewOnly&&!IsDone(i));
-   stop.Visible=scanning;stop.Enabled=scanning;
+   stop.Visible=scanning||measuring;stop.Enabled=scanning||measuring;stop.Text=scanning?"Dừng quét":"Bỏ qua tính dung lượng";
    selectAll.Enabled=!busy&&hasDeletable;selectNone.Enabled=!busy&&hasDeletable;
-   delete.Enabled=!busy&&hasDeletable&&!locked;
-   close.Enabled=!busy||scanning;
+   delete.Enabled=!busy&&!measuring&&hasDeletable&&!locked;
+   close.Enabled=!busy||scanning||measuring;
    list.Enabled=!deleting;
   }
 
