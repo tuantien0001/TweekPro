@@ -16,7 +16,7 @@ namespace TweekPro.Health {
  /// <summary>Raw measurements gathered by the UI probes; keeping them as plain data makes scoring pure and testable.</summary>
  public class HealthInputs {
   public long JunkBytes; public int JunkFiles; public int JunkLockedRules; public bool JunkMeasured=true;
-  public int VaultBackups; public long VaultBytes; public int VaultRestored; public long VaultRestoredBytes; public bool VaultMeasured=true;
+  public int VaultBackups; public long VaultBytes; public int VaultStale; public long VaultStaleBytes; public int VaultStaleDays=90; public bool VaultMeasured=true;
   public int AutorunEntries; public bool AutorunMeasured=true;
   public int EmptyFolders; public string EmptyRoot; public bool EmptyMeasured=true;
   public int LeftoverCandidates; public bool LeftoverMeasured=true;
@@ -32,7 +32,8 @@ namespace TweekPro.Health {
 
  /// <summary>
  /// Aggregates junk, leftovers, empty folders, vault, autorun and free-space measurements into one 0–100 score.
- /// Thresholds are deliberately conservative: only space that Tweek Pro can free safely counts as reclaimable.
+ /// Thresholds are deliberately conservative: only space that Tweek Pro can free safely counts as reclaimable
+ /// (rule-matched junk and vault backups older than the purge age; restored backups are already empty).
  /// </summary>
  public static class HealthCheck {
   public const long MB=1024L*1024, GB=1024L*MB;
@@ -109,11 +110,11 @@ namespace TweekPro.Health {
   }
 
   static HealthFinding Vault(HealthInputs i){
-   var f=new HealthFinding{Area="Kho khôi phục",Tab=TabVault,Measured=i.VaultMeasured,Bytes=i.VaultRestoredBytes,Count=i.VaultRestored};
+   var f=new HealthFinding{Area="Kho khôi phục",Tab=TabVault,Measured=i.VaultMeasured,Bytes=i.VaultStaleBytes,Count=i.VaultStale};
    if(!i.VaultMeasured){Unmeasured(f);return f;}
-   f.Severity=i.VaultRestoredBytes>=1*GB?HealthSeverity.Medium:i.VaultRestoredBytes>=200*MB?HealthSeverity.Low:HealthSeverity.Good;
-   f.Verdict=i.VaultBackups==0?"Kho trống":f.Severity==HealthSeverity.Good?"Kho gọn":"Bản đã khôi phục còn chiếm chỗ";
-   f.Detail=i.VaultBackups==0?"Chưa có bản sao lưu.":i.VaultBackups+" bản sao lưu ("+Presentation.BytesLabel(i.VaultBytes)+"); "+i.VaultRestored+" bản đã khôi phục có thể xóa vĩnh viễn ("+Presentation.BytesLabel(i.VaultRestoredBytes)+").";
+   f.Severity=i.VaultStaleBytes>=1*GB?HealthSeverity.Medium:i.VaultStaleBytes>=200*MB?HealthSeverity.Low:HealthSeverity.Good;
+   f.Verdict=i.VaultBackups==0?"Kho trống":f.Severity==HealthSeverity.Good?"Kho gọn":"Kho giữ bản sao lưu cũ";
+   f.Detail=i.VaultBackups==0?"Chưa có bản sao lưu.":i.VaultBackups+" bản sao lưu ("+Presentation.BytesLabel(i.VaultBytes)+"); "+i.VaultStale+" bản cũ hơn "+i.VaultStaleDays+" ngày có thể xóa vĩnh viễn bằng Dọn kho theo tuổi… ("+Presentation.BytesLabel(i.VaultStaleBytes)+").";
    return f;
   }
 

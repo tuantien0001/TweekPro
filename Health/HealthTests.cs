@@ -37,12 +37,13 @@ namespace TweekPro.Health {
    var empty=Clean();empty.EmptyFolders=400;empty.EmptyRoot=@"C:\Users\a\Downloads";var er=HealthCheck.Evaluate(empty);
    Assert(er.Findings[2].Severity==HealthSeverity.Low&&er.Findings[2].Detail.Contains("Downloads"),"empty folders low with root");
 
-   // Vault: only restored backups count as reclaimable; 200 MB low, 1 GB medium.
-   var vault=Clean();vault.VaultBackups=5;vault.VaultBytes=3*HealthCheck.GB;vault.VaultRestored=0;
-   Assert(HealthCheck.Evaluate(vault).Findings[3].Severity==HealthSeverity.Good&&HealthCheck.Evaluate(vault).Reclaimable==0,"unrestored backups are not reclaimable");
-   vault.VaultRestored=2;vault.VaultRestoredBytes=200*HealthCheck.MB;Assert(HealthCheck.Evaluate(vault).Findings[3].Severity==HealthSeverity.Low,"restored 200MB low");
-   vault.VaultRestoredBytes=HealthCheck.GB;var vr=HealthCheck.Evaluate(vault);
-   Assert(vr.Findings[3].Severity==HealthSeverity.Medium&&vr.Reclaimable==HealthCheck.GB,"restored 1GB medium and reclaimable");
+   // Vault: only backups older than the purge age count as reclaimable; 200 MB low, 1 GB medium.
+   var vault=Clean();vault.VaultBackups=5;vault.VaultBytes=3*HealthCheck.GB;vault.VaultStale=0;
+   Assert(HealthCheck.Evaluate(vault).Findings[3].Severity==HealthSeverity.Good&&HealthCheck.Evaluate(vault).Reclaimable==0,"recent backups are not reclaimable");
+   vault.VaultStale=2;vault.VaultStaleBytes=200*HealthCheck.MB;vault.VaultStaleDays=60;var vl=HealthCheck.Evaluate(vault);
+   Assert(vl.Findings[3].Severity==HealthSeverity.Low&&vl.Findings[3].Detail.Contains("2 bản cũ hơn 60 ngày"),"stale 200MB low, detail names the age");
+   vault.VaultStaleBytes=HealthCheck.GB;var vr=HealthCheck.Evaluate(vault);
+   Assert(vr.Findings[3].Severity==HealthSeverity.Medium&&vr.Reclaimable==HealthCheck.GB&&vr.Findings[3].Verdict=="Kho giữ bản sao lưu cũ","stale 1GB medium and reclaimable");
    var emptyVault=Clean();Assert(HealthCheck.Evaluate(emptyVault).Findings[3].Verdict=="Kho trống","empty vault verdict");
 
    // Autorun: ≤8 good, ≤15 low, ≤25 medium, else high.
@@ -64,7 +65,7 @@ namespace TweekPro.Health {
    Assert(HealthCheck.Summary(pr).Contains("[chưa đo]"),"summary marks unmeasured");
 
    // Penalties accumulate and clamp at zero.
-   var worst=new HealthInputs{JunkBytes=10*HealthCheck.GB,LeftoverCandidates=50,EmptyFolders=10,VaultBackups=3,VaultRestored=3,VaultRestoredBytes=5*HealthCheck.GB,AutorunEntries=40,DiskFreeBytes=1,DiskTotalBytes=100*HealthCheck.GB};
+   var worst=new HealthInputs{JunkBytes=10*HealthCheck.GB,LeftoverCandidates=50,EmptyFolders=10,VaultBackups=3,VaultStale=3,VaultStaleBytes=5*HealthCheck.GB,AutorunEntries=40,DiskFreeBytes=1,DiskTotalBytes=100*HealthCheck.GB};
    var wr=HealthCheck.Evaluate(worst);
    int expected=100-HealthCheck.PenaltyHigh-HealthCheck.PenaltyMedium-HealthCheck.PenaltyLow-HealthCheck.PenaltyMedium-HealthCheck.PenaltyHigh-HealthCheck.PenaltyHigh;
    Assert(wr.Score==Math.Max(0,expected),"cumulative penalties: "+wr.Score+" vs "+expected);

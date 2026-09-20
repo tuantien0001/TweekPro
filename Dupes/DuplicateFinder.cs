@@ -156,6 +156,7 @@ namespace TweekPro.Dupes {
    var targets=new List<RemovalTarget>();
    foreach(var group in groups){
     // Never trust the scan snapshot blindly: the keeper must still exist unchanged, otherwise the whole group is skipped.
+    if(group.Files.Count==0)continue;
     if(group.Keeper==null)group.Keeper=SelectKeeper(group.Files,false);
     if(group.Keeper==null||!Unchanged(group.Keeper,group.Bytes)){report.Failed++;if(report.Errors.Count<50)report.Errors.Add((group.Keeper==null?"(nhóm "+group.Hash+")":group.Keeper.Path)+": bản giữ lại đã thay đổi hoặc không còn sau khi quét; bỏ qua cả nhóm.");continue;}
     foreach(var file in group.Redundant)targets.Add(new RemovalTarget{File=file,Group=group});
