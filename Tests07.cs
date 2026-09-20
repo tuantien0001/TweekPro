@@ -35,6 +35,8 @@ namespace TweekPro {
 
     // Network application view: direction classification, per-process rollup and labels (platform-neutral).
     Network.NetworkStatsTests.Run();
+    // Realtime packet-flow animation model.
+    Network.PacketAnimatorTests.Run();
 
     // Safety boundary: rules cannot reach user documents, the data folder or a whole AppData root.
     MustFail(()=>JunkSafety.ValidateRoot(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)),"Documents refused");
