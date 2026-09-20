@@ -67,7 +67,7 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 
 Biên dịch (đường chính): cần .NET SDK 6+ (khuyến nghị 8): `dotnet build -c Release` → `bin\Release\net48\TweekPro-0.7.exe`. Trên Linux/macOS thêm `-p:EnableWindowsTargeting=true` để kiểm tra biên dịch. `build.ps1` trên Windows gọi lệnh trên, in hướng dẫn cài SDK nếu thiếu (`winget install Microsoft.DotNet.SDK.8`); thêm `-SelfTest` để chạy `--self-test` sau khi build. Ngôn ngữ C# 7.3 (mức tối đa của net48); gói NuGet duy nhất: `Microsoft.Diagnostics.Tracing.TraceEvent` 3.1.30.
 
-Dòng lệnh: `--self-test` (đầy đủ, Windows; tạo và dọn fixture `TweekProTest*`/`TweekProFixture*` trong AppData và HKCU), `--self-test core` (không cần Windows), `--self-test junk` (core + dọn rác/kho, không Registry/UI), `--preview [scan|autorun|tools|junk|network]` kết xuất PNG, `--scan-smoke`.
+Dòng lệnh: `--self-test` (đầy đủ, Windows; tạo và dọn fixture `TweekProTest*`/`TweekProFixture*` trong AppData và HKCU), `--self-test core` (không cần Windows, chạy headless không cần màn hình), `--self-test junk` (core + dọn rác/kho, không Registry/UI), `--preview [scan|autorun|tools|junk|network]` kết xuất PNG, `--scan-smoke`.
 
 Tham khảo định dạng đăng ký cài đặt của Microsoft:
 https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key

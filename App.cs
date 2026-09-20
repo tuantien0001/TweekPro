@@ -317,7 +317,7 @@ namespace TweekPro {
    else if(migration.Outcome==Core.MigrationOutcome.Failed)Core.Log.Warn("Không chuyển được thư mục AppCare cũ ("+migration.Error+"); kho cũ vẫn được đọc tại "+Core.Paths.LegacyBackups+".");
   }
   [STAThread]public static void Main(string[] args){
-   Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
+   // Handle the headless self-test before any WinForms initialization so it needs no X display / desktop session.
    if(args.Length>0&&args[0]=="--self-test"){
     bool coreOnly=args.Length>1&&(args[1]=="core"||args[1]=="junk");string results=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"test-results.txt");
     try{
@@ -330,6 +330,7 @@ namespace TweekPro {
     }catch(Exception e){File.WriteAllText(results,e.ToString());Console.Error.WriteLine(e);Environment.ExitCode=1;}
     return;
    }
+   Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
    Bootstrap();
    if(args.Length>0&&args[0]=="--scan-smoke"){try{var app=Engine.Inventory().First(a=>a.Name=="Brave");Advanced.Capture(app);var result=Advanced.DeepScan(app,System.Threading.CancellationToken.None);File.WriteAllLines(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"scan-smoke.txt"),new[]{"Read-only deep scan: "+app.Name,"Visited folders: "+result.Visited,"Candidates: "+result.Items.Count,"Notes: "+result.Notes.Count}.Concat(result.Notes));}catch(Exception error){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"scan-smoke.txt"),error.ToString());Environment.ExitCode=1;}return;}
    if(args.Length>0&&args[0]=="--preview"){try{
