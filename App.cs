@@ -18,7 +18,7 @@ namespace TweekPro {
   List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
   ImageList appIcons=new ImageList(); Label appCount=new Label();
-  bool busy;string inventoryError;string sessions=Core.Paths.Sessions;
+  bool busy;string inventoryError;string sessions=Core.Paths.Sessions;Icon brandIcon;
   Core.Settings settings=Core.Settings.Load(Core.Paths.SettingsFile);
   public const string Version="0.7";
   public const string AppTitle="Tweek Pro";
@@ -29,6 +29,8 @@ namespace TweekPro {
    Text=AppTitle+" "+Version+" – "+Tagline;Size=new Size(1240,820);MinimumSize=new Size(1120,700);StartPosition=FormStartPosition.CenterScreen;
    if(settings.WindowWidth>=MinimumSize.Width&&settings.WindowHeight>=MinimumSize.Height)Size=new Size(settings.WindowWidth,settings.WindowHeight);
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;
+   try{brandIcon=Branding.AppIcon(32);Icon=brandIcon;ShowIcon=true;}catch(Exception){}
+   FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();};
    var header=Theme.HeaderBand(AppTitle+" – "+Tagline,"Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác theo quy tắc  •  Theo dõi mạng theo tiến trình  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
    BuildHeaderActions(header);
    status.Text="Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.";
@@ -110,11 +112,15 @@ namespace TweekPro {
   }
   /// <summary>Configures the tab strip with flat, owner-drawn headers and an accent underline for the active tab.</summary>
   void BuildTabs(){
-   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(136,44);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
+   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(152,46);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
    tabs.DrawItem+=(s,e)=>{
-    bool active=e.Index==tabs.SelectedIndex;var bounds=e.Bounds;
+    bool active=e.Index==tabs.SelectedIndex;var bounds=e.Bounds;string text=tabs.TabPages[e.Index].Text;
     using(var bg=new SolidBrush(active?Theme.Surface:Theme.Canvas))e.Graphics.FillRectangle(bg,bounds);
-    TextRenderer.DrawText(e.Graphics,tabs.TabPages[e.Index].Text,active?Theme.Strong:Theme.Body,bounds,active?Theme.Primary:Theme.Muted,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+    Color accent=active?Theme.Primary:Theme.Muted;
+    int glyph=18;var glyphRect=new Rectangle(bounds.X+16,bounds.Y+(bounds.Height-glyph)/2-1,glyph,glyph);
+    Branding.DrawTabGlyph(e.Graphics,text,glyphRect,accent);
+    var textRect=new Rectangle(glyphRect.Right+8,bounds.Y,bounds.Right-glyphRect.Right-14,bounds.Height);
+    TextRenderer.DrawText(e.Graphics,text,active?Theme.Strong:Theme.Body,textRect,accent,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
     if(active)using(var line=new Pen(Theme.Primary,3))e.Graphics.DrawLine(line,bounds.Left+16,bounds.Bottom-2,bounds.Right-16,bounds.Bottom-2);
    };
   }
