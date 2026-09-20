@@ -16,6 +16,7 @@ Mặc định chạy với quyền người dùng; đầu cửa sổ có huy hi�
 | Ứng dụng | Danh sách ứng dụng desktop (Uninstall HKLM/HKCU), gỡ theo hàng đợi, quét mục đang xem, CSV | Không dùng Win32_Product; chặn lệnh gỡ qua cmd/PowerShell/script |
 | Phần còn sót | Kết quả quét nhanh/sâu chờ duyệt; Chọn/Bỏ chọn/Xem/Xóa (có sao lưu) | Từ chối dọn khi ứng dụng còn đăng ký; mục Chỉ xem không thể tích |
 | **Dọn rác** (mới) | Xem trước theo quy tắc với số tệp và dung lượng; chọn từng nhóm; hai chế độ: vào Kho (mặc định) hoặc **Xóa thẳng** (nhãn đỏ, xác nhận hai lần) | Bỏ qua tệp mới hơn 24 giờ (cache trình duyệt: 0 giờ), tệp đang mở, liên kết; nhóm cache trình duyệt bị khóa khi trình duyệt còn chạy; không bao giờ chạm Documents/Desktop/Downloads/OneDrive |
+| **Thư mục rỗng** (mới) | Chọn một thư mục, quét chỉ đọc để tìm các nhánh thư mục hoàn toàn rỗng; xóa nhánh đã chọn (thư mục rỗng không có dữ liệu) | Chỉ liệt kê thư mục không chứa tệp ở mọi cấp; bỏ qua liên kết; không đụng thư mục hệ thống/Program Files/dữ liệu Tweek Pro; kiểm tra lại rỗng ngay trước khi xóa |
 | Kho khôi phục | Khôi phục mục đang chọn; **Xóa vĩnh viễn mục đã đánh dấu**; **Dọn kho theo tuổi…** (xem trước số mục và dung lượng) | Xóa vĩnh viễn không hoàn tác được; mặc định chỉ xóa bản đã khôi phục; kho AppCare cũ vẫn hiển thị và khôi phục được |
 | Autorun Manager | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
 | **Mạng** (mới) | Kết nối TCP/UDP theo tiến trình (tên, PID, nhà phát hành chữ ký, endpoint, trạng thái), làm mới 1–30 giây, tạm dừng, tìm kiếm, ẩn loopback, phân giải tên máy (tắt mặc định), CSV; khi có quyền quản trị: **Bật băng thông (ETW)** hiển thị byte gửi/nhận và tốc độ theo tiến trình | Chỉ xem, không chặn, không driver; phiên ETW tên `TweekPro-Network` luôn được dừng khi đóng |
@@ -60,7 +61,7 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 | `App.cs` | Cửa sổ chính, header (huy hiệu quyền, khởi động lại quản trị), tab Kho, `Program.Main`, `Tests` |
 | `ScanWindow.cs`, `Presentation.cs`, `Advanced.cs`, `AdvancedUI.cs`, `AdvancedTests.cs` | Cửa sổ quét, Theme, quét sâu, Autorun, Windows Tools (kế thừa 0.6) |
 | `Core/` | `Paths` (thư mục dữ liệu + di trú), `Settings` (JSON), `Log` (xoay vòng), `Elevation` |
-| `Cleaner/` | `JunkRules` (JSON, mở rộng đường dẫn, `JunkSafety`), `JunkCleaner` (xem trước/dọn/khôi phục), `JunkUI`, `junk-rules.json` |
+| `Cleaner/` | `JunkRules` (JSON, mở rộng đường dẫn, `JunkSafety`), `JunkCleaner` (xem trước/dọn/khôi phục), `JunkUI`, `junk-rules.json`; `EmptyFolders` (tìm/xóa thư mục rỗng, `EmptyFolderTests`), `EmptyFolderUI` |
 | `Network/` | `ConnectionTable` (iphlpapi), `ProcessResolver`, `EtwNetworkSession` (TraceEvent), `NetworkUI` |
 | `Vault/PurgeForm.cs` | Hộp thoại dọn kho theo tuổi |
 | `CoreTests.cs`, `Tests07.cs` | Kiểm thử không cần Windows / kiểm thử 0.7 |
