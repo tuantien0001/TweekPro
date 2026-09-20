@@ -1,0 +1,193 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using System.Diagnostics;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml.Serialization;
+using Microsoft.Win32;
+
+namespace AppCare {
+ public class AppEntry {
+  public string Name, Publisher, Version, Location, Command, Key, Hive, View, InstallDate, DisplayIcon;
+  public bool Msi; public long Size; public List<string> KnownExecutables=new List<string>();
+  public string Id { get { return Hive+"|"+View+"|"+Key; } }
+ }
+ public class Candidate {
+  public string Kind, Path, Hive, View, Reason, AppId, AppName, ValueName, ExpectedHash; public bool ReviewOnly;
+  public override string ToString(){return Kind+": "+Path;}
+ }
+ public class RegValue { public string Name; public RegistryValueKind Kind; public string Text; public string[] Texts; public byte[] Bytes; }
+ public class RegNode { public List<RegValue> Values=new List<RegValue>(); public List<RegChild> Children=new List<RegChild>(); }
+ public class RegChild { public string Name; public RegNode Node; }
+ public class Backup {
+  public string Id, Created, State, Original, Payload, Kind, Hive, View, AppName, Error, ValueName, Purpose;
+ }
+ public static class Engine {
+  public static string Vault=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"AppCare","Backups");
+  const string Uninstall=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+  public static RegistryKey Base(string hive,string view){return RegistryKey.OpenBaseKey(hive=="HKLM"?RegistryHive.LocalMachine:RegistryHive.CurrentUser,view=="64"?RegistryView.Registry64:RegistryView.Registry32);}
+  public static string Read(RegistryKey k,string n){return Convert.ToString(k.GetValue(n,""));}
+  public static List<AppEntry> Inventory(){
+   var list=new List<AppEntry>();
+   foreach(string h in new[]{"HKLM","HKCU"}) foreach(string v in (Environment.Is64BitOperatingSystem?new[]{"64","32"}:new[]{"32"})) {
+    using(var b=Base(h,v)) using(var r=b.OpenSubKey(Uninstall)) {
+     if(r==null)continue;
+     foreach(string name in r.GetSubKeyNames()) { try { using(var k=r.OpenSubKey(name)) {
+      if(k==null||Read(k,"DisplayName")==""||Read(k,"SystemComponent")=="1"||Read(k,"ParentKeyName")!="")continue;
+      long size;long.TryParse(Read(k,"EstimatedSize"),out size);
+      list.Add(new AppEntry{Name=Read(k,"DisplayName"),Publisher=Read(k,"Publisher"),Version=Read(k,"DisplayVersion"),Location=Read(k,"InstallLocation").Trim().Trim('"'),Command=Read(k,"UninstallString"),Key=Uninstall+"\\"+name,Hive=h,View=v,Msi=Read(k,"WindowsInstaller")=="1",Size=size,InstallDate=Read(k,"InstallDate"),DisplayIcon=Read(k,"DisplayIcon")});
+     }}catch(System.Security.SecurityException){}catch(UnauthorizedAccessException){} }
+    }
+   }
+   return list.GroupBy(a=>a.Hive+"|"+a.Key+"|"+a.Name+"|"+a.Command).Select(g=>g.First()).OrderBy(a=>a.Name,StringComparer.CurrentCultureIgnoreCase).ToList();
+  }
+  public static bool Installed(string id){
+   var p=id.Split('|');if(p.Length!=3)throw new InvalidOperationException("Mã ứng dụng không hợp lệ.");
+   using(var b=Base(p[0],p[1]))using(var k=b.OpenSubKey(p[2]))return k!=null;
+  }
+  public static string Canon(string p){return Path.GetFullPath(Environment.ExpandEnvironmentVariables(p)).TrimEnd(Path.DirectorySeparatorChar);}
+  public static bool Under(string path,string root){return path.StartsWith(root.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase);}
+  public static void NoLinks(string path,bool tree){
+   string current=Canon(path);
+   while(!String.IsNullOrEmpty(current)){
+    if((Directory.Exists(current)||File.Exists(current))&&(File.GetAttributes(current)&FileAttributes.ReparsePoint)!=0)throw new IOException("Không xử lý đường dẫn liên kết: "+current);
+    current=Path.GetDirectoryName(current);
+   }
+   if(tree&&Directory.Exists(path))foreach(string entry in Directory.EnumerateFileSystemEntries(path)){
+    var attributes=File.GetAttributes(entry);
+    if((attributes&FileAttributes.ReparsePoint)!=0)throw new IOException("Thư mục chứa liên kết: "+entry);
+    if((attributes&FileAttributes.Directory)!=0)NoLinks(entry,true);
+   }
+  }
+  public static string[] Roots(){return new[]{Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}.Where(s=>s!="").Select(Canon).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();}
+  public static void ValidateFolder(string path,bool inspectTree=true){
+   string p=Canon(path); var roots=Roots();
+   if(!roots.Any(r=>Under(p,r))||roots.Any(r=>String.Equals(p,r,StringComparison.OrdinalIgnoreCase)))throw new IOException("Đường dẫn nằm ngoài vùng được phép dọn.");
+   string local=Canon(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+   string[] banned={Path.Combine(local,"Programs"),Path.Combine(local,"AppCare")};
+   if(banned.Any(r=>String.Equals(p,r,StringComparison.OrdinalIgnoreCase))||Under(p,Path.Combine(local,"AppCare")))throw new IOException("Đây là thư mục được bảo vệ.");
+   foreach(var r in roots)foreach(var name in new[]{"Microsoft","Windows","Common Files","Packages"}){
+    string blocked=Path.Combine(r,name);if(String.Equals(p,blocked,StringComparison.OrdinalIgnoreCase)||Under(p,blocked))throw new IOException("Không dọn vùng hệ thống hoặc thành phần dùng chung.");
+   }
+   NoLinks(p,inspectTree);
+  }
+  public static bool Overlap(string a,string b){return String.Equals(a,b,StringComparison.OrdinalIgnoreCase)||Under(a,b)||Under(b,a);}
+  public static bool SafeName(string name){return !String.IsNullOrWhiteSpace(name)&&name.Length>=3&&name.IndexOfAny(Path.GetInvalidFileNameChars())<0&&name!="."&&name!="..";}
+  public static List<Candidate> Scan(AppEntry app){
+   var found=new List<Candidate>();var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+   if(SafeName(app.Name))names.Add(app.Name);
+   // An exact leaf from the recorded install path supplies aliases such as GPU-Z.
+   if(!String.IsNullOrWhiteSpace(app.Location))try{
+    string location=Canon(app.Location);ValidateFolder(location,false);
+    string leaf=Path.GetFileName(location);
+    if(SafeName(leaf)&&!String.Equals(leaf,app.Publisher,StringComparison.OrdinalIgnoreCase))names.Add(leaf);
+   }catch(IOException){}catch(ArgumentException){}catch(UnauthorizedAccessException){}
+
+   if(!String.IsNullOrWhiteSpace(app.Location)){
+    try{string p=Canon(app.Location);ValidateFolder(p,false);if(Directory.Exists(p))found.Add(new Candidate{Kind="Folder",Path=p,Reason="Thư mục InstallLocation do ứng dụng khai báo; cần duyệt nội dung."});}catch(IOException){}catch(ArgumentException){}catch(UnauthorizedAccessException){}
+   }
+   foreach(string root in new[]{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)})foreach(string n in names){
+    foreach(string p in new[]{Path.Combine(root,n),SafeName(app.Publisher)?Path.Combine(root,app.Publisher,n):""}){
+     if(p=="")continue;try{ValidateFolder(p,false);if(Directory.Exists(p))found.Add(new Candidate{Kind="Folder",Path=p,Reason="Trùng tên ứng dụng hoặc tên thư mục cài đã ghi nhận; có thể chứa dữ liệu cá nhân."});}catch(IOException){}catch(UnauthorizedAccessException){}
+    }
+   }
+   foreach(string h in new[]{"HKCU","HKLM"})foreach(string v in (Environment.Is64BitOperatingSystem?new[]{"64","32"}:new[]{"32"}))foreach(string n in names){
+    foreach(string key in new[]{"SOFTWARE\\"+n,SafeName(app.Publisher)?"SOFTWARE\\"+app.Publisher+"\\"+n:""}){
+     if(key=="")continue;try{ValidateRegistry(key);using(var b=Base(h,v))using(var k=b.OpenSubKey(key))if(k!=null)found.Add(new Candidate{Kind="Registry",Path=key,Hive=h,View=v,Reason="Khóa trùng tên ứng dụng; cần kiểm tra quyền sở hữu trước khi dọn."});}catch(IOException){}catch(UnauthorizedAccessException){}catch(System.Security.SecurityException){}
+    }
+   }
+   foreach(var c in found){c.AppId=app.Id;c.AppName=app.Name;}
+   return found.GroupBy(c=>c.Kind+"|"+c.Path+"|"+c.Hive+"|"+c.View,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).ToList();
+  }
+  public static void ValidateRegistry(string key){
+   var p=key.Split('\\');if(p.Length<2||p.Length>3||!p[0].Equals("SOFTWARE",StringComparison.OrdinalIgnoreCase)||p.Any(s=>!SafeName(s))||new[]{"Microsoft","Windows","Classes","Policies","WOW6432Node"}.Contains(p[1],StringComparer.OrdinalIgnoreCase))throw new IOException("Khóa Registry nằm ngoài vùng được phép dọn.");
+  }
+  public static RegNode ReadTree(RegistryKey key){
+   var node=new RegNode();foreach(string n in key.GetValueNames()){
+    var kind=key.GetValueKind(n);var value=key.GetValue(n,null,RegistryValueOptions.DoNotExpandEnvironmentNames);var r=new RegValue{Name=n,Kind=kind};
+    if(kind==RegistryValueKind.Binary||kind==RegistryValueKind.None)r.Bytes=(byte[])value;
+    else if(kind==RegistryValueKind.MultiString)r.Texts=(string[])value;
+    else if(kind==RegistryValueKind.DWord)r.Text=((int)value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    else if(kind==RegistryValueKind.QWord)r.Text=((long)value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    else if(kind==RegistryValueKind.String||kind==RegistryValueKind.ExpandString)r.Text=(string)value;
+    else throw new IOException("Kiểu Registry chưa được hỗ trợ; giữ nguyên khóa.");
+    node.Values.Add(r);
+   }
+   foreach(string n in key.GetSubKeyNames())using(var child=key.OpenSubKey(n)){if(child==null)throw new IOException("Không đọc được khóa con.");node.Children.Add(new RegChild{Name=n,Node=ReadTree(child)});}return node;
+  }
+  public static void WriteTree(RegistryKey key,RegNode node){
+   foreach(var r in node.Values){object value=r.Text;
+    if(r.Kind==RegistryValueKind.Binary||r.Kind==RegistryValueKind.None)value=r.Bytes;
+    else if(r.Kind==RegistryValueKind.MultiString)value=r.Texts;
+    else if(r.Kind==RegistryValueKind.DWord)value=Int32.Parse(r.Text,System.Globalization.CultureInfo.InvariantCulture);
+    else if(r.Kind==RegistryValueKind.QWord)value=Int64.Parse(r.Text,System.Globalization.CultureInfo.InvariantCulture);
+    key.SetValue(r.Name,value,r.Kind);
+   }
+   foreach(var c in node.Children)using(var child=key.CreateSubKey(c.Name))WriteTree(child,c.Node);
+  }
+  public static void Save<T>(string path,T value){
+   string tmp=path+".tmp";using(var f=new FileStream(tmp,FileMode.Create,FileAccess.Write,FileShare.None)){new XmlSerializer(typeof(T)).Serialize(f,value);f.Flush(true);}
+   if(File.Exists(path))File.Replace(tmp,path,null);else File.Move(tmp,path);
+  }
+  public static T Load<T>(string path){using(var f=File.OpenRead(path))return (T)new XmlSerializer(typeof(T)).Deserialize(f);}
+  public static void SaveBackup(Backup b){Save(Path.Combine(Vault,b.Id,"manifest.xml"),b);}
+  public static Backup Quarantine(Candidate c){
+   if(c.ReviewOnly)throw new IOException("Mục này chỉ để kiểm tra.");
+   if(c.Kind=="File"||c.Kind=="RegistryValue")return Advanced.Store(c,false);
+   if(Installed(c.AppId))throw new IOException("Ứng dụng vẫn được đăng ký cài đặt. Hãy gỡ chính thức và chờ hoàn tất trước khi dọn.");
+   if(c.Kind=="Folder"){
+    ValidateFolder(c.Path);if(!Directory.Exists(c.Path))throw new IOException("Thư mục không còn tồn tại.");
+    foreach(var a in Inventory())if(!String.IsNullOrWhiteSpace(a.Location)){try{if(Overlap(Canon(c.Path),Canon(a.Location)))throw new IOException("Thư mục giao với ứng dụng còn cài: "+a.Name);}catch(ArgumentException){}}
+   }else { ValidateRegistry(c.Path); if(Inventory().Any(a=>String.Equals(a.Name,c.AppName,StringComparison.OrdinalIgnoreCase)))throw new IOException("Một ứng dụng cùng tên vẫn còn cài đặt; giữ lại Registry."); }
+   var backup=new Backup{Id=Guid.NewGuid().ToString("N"),Created=DateTime.Now.ToString("s"),State="Pending",Original=c.Kind=="Folder"?Canon(c.Path):c.Path,Kind=c.Kind,Hive=c.Hive,View=c.View,AppName=c.AppName};
+   NoLinks(Vault,false);Directory.CreateDirectory(Path.Combine(Vault,backup.Id));backup.Payload=c.Kind=="Folder"?"content":"registry.xml";SaveBackup(backup);
+   try{
+    string payload=Path.Combine(Vault,backup.Id,backup.Payload);
+    if(c.Kind=="Folder"){
+     if(!String.Equals(Path.GetPathRoot(backup.Original),Path.GetPathRoot(payload),StringComparison.OrdinalIgnoreCase))throw new IOException("Bản này chỉ chuyển vào kho trên cùng ổ đĩa.");
+     ValidateFolder(backup.Original);Directory.Move(backup.Original,payload);
+    }else{
+     using(var b=Base(c.Hive,c.View)){
+      RegNode node;using(var key=b.OpenSubKey(c.Path)){if(key==null)throw new IOException("Khóa không còn tồn tại.");node=ReadTree(key);}
+      Save(payload,node);Load<RegNode>(payload);if(Installed(c.AppId))throw new IOException("Ứng dụng đã xuất hiện lại; hủy dọn.");b.DeleteSubKeyTree(c.Path);
+     }
+    }
+    backup.State="BackedUp";SaveBackup(backup);return backup;
+   }catch(Exception e){backup.Error=e.Message;backup.State="NeedsReview";SaveBackup(backup);throw;}
+  }
+  public static List<Backup> Backups(){
+   var list=new List<Backup>();if(!Directory.Exists(Vault))return list;NoLinks(Vault,false);
+   foreach(string d in Directory.GetDirectories(Vault)){try{NoLinks(d,false);var b=Load<Backup>(Path.Combine(d,"manifest.xml"));if(b.Id==Path.GetFileName(d))list.Add(b);}catch(Exception){}}
+   return list.OrderByDescending(b=>b.Created).ToList();
+  }
+  public static void Restore(Backup b){
+   if(b.Kind=="File"||b.Kind=="RegistryValue"){Advanced.Restore(b);return;}
+   Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");
+   string payload=Path.Combine(Vault,b.Id,b.Kind=="Folder"?"content":"registry.xml");NoLinks(payload,true);
+   if(b.Kind=="Folder"){
+    ValidateFolder(b.Original);if(Directory.Exists(b.Original)||File.Exists(b.Original))throw new IOException("Đích đã tồn tại; không ghi đè dữ liệu.");
+    if(!Directory.Exists(payload))throw new IOException("Không có dữ liệu trong kho.");
+    Directory.CreateDirectory(Path.GetDirectoryName(b.Original));NoLinks(b.Original,false);Directory.Move(payload,b.Original);
+   }else if(b.Kind=="Registry"){
+    ValidateRegistry(b.Original);var node=Load<RegNode>(payload);using(var root=Base(b.Hive,b.View)){
+     using(var existing=root.OpenSubKey(b.Original))if(existing!=null)throw new IOException("Khóa đã tồn tại; không ghi đè dữ liệu.");
+     using(var key=root.CreateSubKey(b.Original))WriteTree(key,node);
+    }
+   }else throw new IOException("Loại sao lưu không hợp lệ.");
+   b.State="Restored";b.Error="";SaveBackup(b);
+  }
+  public static ProcessStartInfo UninstallInfo(AppEntry a){
+   Guid product;string leaf=a.Key.Substring(a.Key.LastIndexOf('\\')+1);
+   if(a.Msi&&Guid.TryParse(leaf,out product))return new ProcessStartInfo(Path.Combine(Environment.SystemDirectory,"msiexec.exe"),"/x "+product.ToString("B")){UseShellExecute=true};
+   string cmd=Environment.ExpandEnvironmentVariables(a.Command??"").Trim();string exe,args;
+   if(cmd.StartsWith("\"")){int end=cmd.IndexOf('"',1);if(end<2)throw new IOException("Lệnh gỡ thiếu dấu ngoặc kép.");exe=cmd.Substring(1,end-1);args=cmd.Substring(end+1).Trim();}
+   else {var m=Regex.Match(cmd,@"^(.*?\.exe)(?:\s+(.*))?$",RegexOptions.IgnoreCase);if(!m.Success)throw new IOException("Lệnh gỡ không được hỗ trợ. Dùng Windows Settings để gỡ ứng dụng này.");exe=m.Groups[1].Value;args=m.Groups[2].Value;}
+   if(!Path.IsPathRooted(exe)||!File.Exists(exe)||!Path.GetExtension(exe).Equals(".exe",StringComparison.OrdinalIgnoreCase))throw new IOException("Không tìm thấy trình gỡ .exe với đường dẫn tuyệt đối.");
+   var deny=new[]{"cmd.exe","powershell.exe","pwsh.exe","wscript.exe","cscript.exe","mshta.exe"};if(deny.Contains(Path.GetFileName(exe),StringComparer.OrdinalIgnoreCase))throw new IOException("Lệnh gỡ qua trình thông dịch chưa được hỗ trợ; hãy dùng Windows Settings.");
+   return new ProcessStartInfo(exe,args){UseShellExecute=true,WorkingDirectory=Path.GetDirectoryName(exe)};
+  }
+  public static string Csv(string value){if(!String.IsNullOrEmpty(value)&&"=+-@\t\r\n".IndexOf(value[0])>=0)value="'"+value;return "\""+(value??"").Replace("\"","\"\"")+"\"";}
+ }
+}

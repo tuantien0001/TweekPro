@@ -1,0 +1,21 @@
+Read-only deep scan: Brave
+Visited folders: 17060
+Candidates: 14
+Notes: 17
+Không đủ quyền đọc: C:\Program Files\WindowsApps
+Không đủ quyền đọc: C:\Program Files\ExpressVPN\data\api_client
+Không đủ quyền đọc: C:\Program Files\ExpressVPN\data\csdk
+Không đủ quyền đọc: C:\Program Files\Windows Defender Advanced Threat Protection\Classification\Configuration
+Không đủ quyền đọc: C:\Program Files (x86)\Google\CrashReports
+Không đủ quyền đọc: C:\ProgramData\WindowsHolographicDevices
+Không đủ quyền đọc: C:\ProgramData\NVIDIA Corporation\NvTelemetry
+Không đủ quyền đọc: C:\ProgramData\VMware\VMware USB Arbitration Service
+Không đủ quyền đọc: C:\ProgramData\Norton\Antivirus\aggregator\.private
+Không đủ quyền đọc: C:\ProgramData\Norton\Antivirus\journal\.private
+Không đủ quyền đọc: C:\ProgramData\Norton\Antivirus\log\.private
+Không đủ quyền đọc: C:\ProgramData\Norton\Suite\Cache\.private
+Không đủ quyền đọc: C:\ProgramData\Norton\Suite\log\.private
+Không đủ quyền đọc: C:\ProgramData\Norton\Suite\taskperflogs\.private
+Không đủ quyền đọc: C:\ProgramData\Norton\VPN\EBWebView\.private
+Không đủ quyền đọc: C:\ProgramData\Norton\VPN\log\.private
+Không đủ quyền đọc: C:\ProgramData\NVIDIA Corporation\NVIDIA App\NvDriverDiagnostics\storage
