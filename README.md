@@ -17,9 +17,9 @@ Mặc định chạy với quyền người dùng; đầu cửa sổ có huy hi�
 | Phần còn sót | Kết quả quét nhanh/sâu chờ duyệt; Chọn/Bỏ chọn/Xem/Xóa (có sao lưu) | Từ chối dọn khi ứng dụng còn đăng ký; mục Chỉ xem không thể tích |
 | **Dọn rác** (mới) | Xem trước theo quy tắc với số tệp và dung lượng; chọn từng nhóm; hai chế độ: vào Kho (mặc định) hoặc **Xóa thẳng** (nhãn đỏ, xác nhận hai lần) | Bỏ qua tệp mới hơn 24 giờ (cache trình duyệt: 0 giờ), tệp đang mở, liên kết; nhóm cache trình duyệt bị khóa khi trình duyệt còn chạy; không bao giờ chạm Documents/Desktop/Downloads/OneDrive |
 | Kho khôi phục | Khôi phục mục đang chọn; **Xóa vĩnh viễn mục đã đánh dấu**; **Dọn kho theo tuổi…** (xem trước số mục và dung lượng) | Xóa vĩnh viễn không hoàn tác được; mặc định chỉ xóa bản đã khôi phục; kho AppCare cũ vẫn hiển thị và khôi phục được |
-| Autorun Manager | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
+| Khởi động (Autorun) | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
 | **Mạng** (mới) | Kết nối TCP/UDP theo tiến trình (tên, PID, nhà phát hành chữ ký, endpoint, trạng thái), làm mới 1–30 giây, tạm dừng, tìm kiếm, ẩn loopback, phân giải tên máy (tắt mặc định), CSV; khi có quyền quản trị: **Bật băng thông (ETW)** hiển thị byte gửi/nhận và tốc độ theo tiến trình | Chỉ xem, không chặn, không driver; phiên ETW tên `TweekPro-Network` luôn được dừng khi đóng |
-| Windows Tools | 19 lối mở công cụ có sẵn | SFC hỏi xác nhận quyền quản trị |
+| Công cụ (Windows Tools) | 19 lối mở công cụ có sẵn | SFC hỏi xác nhận quyền quản trị |
 | Nhật ký | Nhật ký phiên, nút mở thư mục nhật ký/dữ liệu, lưu cài đặt | Nhật ký xoay vòng theo ngày |
 
 ## Dọn rác: quy tắc và giới hạn
@@ -107,6 +107,10 @@ Tệp mới: ScanWindow.cs, AppCare.csproj. build.ps1 đóng gói AppCare-0.5.ex
 Giao diện: Theme dùng chung trên mọi tab (Ứng dụng, Phần còn sót, Kho khôi phục, Autorun, Windows Tools, Nhật ký) — cùng khoảng cách, phông, màu, nút chính/nút xóa, dải ghi chú, dòng xen kẽ và tooltip đường dẫn. Cửa sổ quét nhóm kết quả theo loại (thư mục / tệp / shortcut / registry / chỉ xem), có trạng thái trống, lỗi, và dải “quét chưa đầy đủ” khi dừng giữa chừng hoặc bị từ chối quyền. Danh sách ứng dụng có trạng thái đang tải, không có ứng dụng, không khớp tìm kiếm, và lỗi đọc danh sách.
 Phần còn sót theo từng tài khoản: quét `%LOCALAPPDATA%`, `%LOCALAPPDATA%\Programs` (cài kiểu Devin/Electron), `%APPDATA%`, LocalLow, ProgramData và InstallLocation. Không duyệt mù toàn bộ Temp; chỉ thêm `%LOCALAPPDATA%\Temp` khi trùng đúng tên ứng dụng, nhà phát hành\ứng dụng, thư mục cuối của InstallLocation hoặc thư mục executable đã ghi nhận. Thư mục `Programs` gốc vẫn được giữ; chỉ các thư mục con khớp dấu vân tay mới được đề xuất. Xóa vẫn cần Chọn / Xóa đã chọn, xác nhận và sao lưu vào kho. Dịch vụ/driver/tác vụ lịch vẫn chỉ xem.
 build.ps1 đóng gói AppCare-0.6.exe.
+
+## Giao diện và nhận diện
+
+Ứng dụng có biểu tượng riêng vẽ bằng mã (không dùng icon mặc định của WinForms): một huy hiệu bo góc chuyển sắc xanh với chữ "T" và một chấm sáng, dùng làm icon cửa sổ/thanh tác vụ và logo trên dải tiêu đề đậm. Mỗi tab có một icon vector nhỏ vẽ bằng GDI+ (ứng dụng, kính lúp, thùng rác, chart, khiên, tia sét, quả cầu, bánh răng, tài liệu…) cùng dải gạch chân nhấn màu cho tab đang chọn, giúp người dùng không chuyên nhận diện nhanh. Các tab tiếng Anh được đổi sang nhãn tiếng Việt ngắn gọn ("Khởi động", "Công cụ"). Toàn bộ được vẽ bằng vector nên nét ở mọi mức phóng đại và DPI. Xem `Branding.cs`.
 
 ## Cập nhật 0.7
 
