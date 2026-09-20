@@ -84,6 +84,12 @@ namespace TweekPro {
    tabs.SelectedTab=page;
   }
 
+  /// <summary>Fills the Overview tab with illustrative numbers for --preview health; no probes run.</summary>
+  public void PreviewHealth(){
+   var sample=new HealthInputs{JunkBytes=730L*HealthCheck.MB,JunkFiles=4812,JunkLockedRules=1,LeftoverCandidates=3,EmptyFolders=17,EmptyRoot=@"C:\Users\ADMIN\Downloads",VaultBackups=9,VaultBytes=2200L*HealthCheck.MB,VaultRestored=4,VaultRestoredBytes=640L*HealthCheck.MB,AutorunEntries=12,DiskName="Ổ C:",DiskFreeBytes=38L*HealthCheck.GB,DiskTotalBytes=476L*HealthCheck.GB};
+   healthReport=HealthCheck.Evaluate(sample);healthGauge.Report=healthReport;RenderHealth();tabs.SelectedTab=healthTab;
+  }
+
   void CopyHealthReport(){
    if(healthReport==null)throw new IOException("Chưa có báo cáo. Bấm Kiểm tra ngay trước.");
    Clipboard.SetText(HealthCheck.Summary(healthReport));Log("Đã sao chép báo cáo sức khỏe vào clipboard.");
