@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 using Microsoft.Win32;
 
-namespace AppCare {
+namespace TweekPro {
  public class ScanResult {
   public List<Candidate> Items=new List<Candidate>(); public List<string> Notes=new List<string>(); public int Visited;
  }
@@ -97,7 +97,7 @@ namespace AppCare {
    }catch(IOException){}catch(UnauthorizedAccessException){}
    // HKCU Software may be shared across registry views; suppress duplicate commands.
    items=items.GroupBy(x=>x.Item.Kind+"|"+x.Item.Hive+"|"+x.Item.Path+"|"+x.Item.ValueName+"|"+x.Command,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).ToList();
-   foreach(var backup in Engine.Backups().Where(b=>b.Purpose=="Autorun"&&b.State!="Restored"))items.Add(new AutorunEntry{Name=backup.AppName,Command=backup.Original+(backup.ValueName==null?"":" :: "+backup.ValueName),Source="Kho AppCare",State=backup.State=="BackedUp"?"Đã tắt bằng AppCare":"Cần kiểm tra",Saved=backup});
+   foreach(var backup in Engine.Backups().Where(b=>b.Purpose=="Autorun"&&b.State!="Restored"))items.Add(new AutorunEntry{Name=backup.AppName,Command=backup.Original+(backup.ValueName==null?"":" :: "+backup.ValueName),Source="Kho Tweek Pro",State=backup.State=="BackedUp"?"Đã tắt bằng Tweek Pro":"Cần kiểm tra",Saved=backup});
    return items.OrderBy(x=>x.Name).ToList();
   }
   public static Backup Store(Candidate c,bool autorun){
@@ -125,7 +125,7 @@ namespace AppCare {
   }
   public static void Restore(Backup b){
    Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");
-   string payload=Path.Combine(Engine.Vault,b.Id,b.Kind=="File"?"content":"value.xml");Engine.NoLinks(payload,false);
+   string payload=Path.Combine(Engine.VaultOf(b),b.Id,b.Kind=="File"?"content":"value.xml");Engine.NoLinks(payload,false);
    if(b.Kind=="File"){
     ValidateFile(b.Original);if(File.Exists(b.Original)||Directory.Exists(b.Original))throw new IOException("Đích đã tồn tại; không ghi đè.");
     Directory.CreateDirectory(Path.GetDirectoryName(b.Original));Engine.NoLinks(b.Original,false);File.Move(payload,b.Original);
@@ -227,7 +227,7 @@ namespace AppCare {
        if(result.Visited%150==0)report("Đang duyệt thư mục trong "+root,dir);
        if((File.GetAttributes(dir)&(FileAttributes.ReparsePoint|FileAttributes.Offline))!=0)continue;
        string leaf=Path.GetFileName(dir);
-       if(new[]{"Microsoft","Windows","Common Files","Packages","AppCare","node_modules",".git"}.Contains(leaf,StringComparer.OrdinalIgnoreCase))continue;
+       if(new[]{"Microsoft","Windows","Common Files","Packages",Core.Paths.ProductFolder,Core.Paths.LegacyFolder,"node_modules",".git"}.Contains(leaf,StringComparer.OrdinalIgnoreCase))continue;
        if(String.Equals(leaf,"Temp",StringComparison.OrdinalIgnoreCase)){
         AddFingerprintChildren(dir,names,app.Publisher,result,"Thư mục tạm trùng tên ứng dụng hoặc thư mục cài; chỉ đưa vào khi khớp dấu vân tay, không quét toàn bộ Temp.");
         continue;

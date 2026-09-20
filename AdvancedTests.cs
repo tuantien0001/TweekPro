@@ -3,12 +3,12 @@ using System.Linq;
 using System.IO;
 using System.Threading;
 using Microsoft.Win32;
-namespace AppCare {
+namespace TweekPro {
  public static class AdvancedTests {
   static void Assert(bool value,string message){if(!value)throw new Exception(message);}
   static void Reject(Action action){bool rejected=false;try{action();}catch{rejected=true;}Assert(rejected,"Expected conflict rejection.");}
   public static void Run(){
-   string id="AppCareFixture"+Guid.NewGuid().ToString("N"),local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+   string id="TweekProFixture"+Guid.NewGuid().ToString("N"),local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
    string originalVault=Engine.Vault,fixture=Path.Combine(local,id),startup=Environment.GetFolderPath(Environment.SpecialFolder.Startup),link=Path.Combine(startup,id+".lnk");
    string view=Advanced.Views[0];string appId="HKCU|"+view+"|SOFTWARE\\"+id+"Missing";
    string valueText="\""+Path.Combine(fixture,"sample.exe")+"\" --test";

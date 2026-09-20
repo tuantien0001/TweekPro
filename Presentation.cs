@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-namespace AppCare {
+namespace TweekPro {
  public static class Presentation {
   public static string DateLabel(string raw){
    if(String.IsNullOrWhiteSpace(raw))return "Không rõ";

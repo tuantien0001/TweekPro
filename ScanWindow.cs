@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace AppCare {
+namespace TweekPro {
  /// <summary>
  /// Dedicated leftover-review window shown right after an uninstall finishes.
  /// It scans in the background with live progress, lists files, folders and registry
@@ -89,7 +89,7 @@ namespace AppCare {
    SetBusy(true);
    Shown+=async(s,e)=>{if(!previewMode)await RunScan();};
    FormClosing+=(s,e)=>{
-    if(deleting){e.Cancel=true;MessageBox.Show(this,"Đang sao lưu và xóa. Hãy chờ thao tác hoàn tất.","AppCare",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+    if(deleting){e.Cancel=true;MessageBox.Show(this,"Đang sao lưu và xóa. Hãy chờ thao tác hoàn tất.","Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
     if(scanning&&cancellation!=null){closeRequested=true;cancellation.Cancel();e.Cancel=true;return;}
     if(measuring&&cancellation!=null)cancellation.Cancel();
     Remaining=list.Items.Cast<ListViewItem>().Where(i=>!IsDone(i)).Select(i=>(Candidate)i.Tag).ToList();
@@ -190,7 +190,7 @@ namespace AppCare {
   /// <summary>Backs up and removes the checked items one by one, then reports the outcome in the window.</summary>
   async Task DeleteChecked(){
    var selected=list.Items.Cast<ListViewItem>().Where(i=>i.Checked&&!((Candidate)i.Tag).ReviewOnly&&!IsDone(i)).ToList();
-   if(selected.Count==0){MessageBox.Show(this,"Hãy đánh dấu những mục đã kiểm tra và muốn xóa.","AppCare",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+   if(selected.Count==0){MessageBox.Show(this,"Hãy đánh dấu những mục đã kiểm tra và muốn xóa.","Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
    long bytes=selected.Sum(i=>{Footprint fp;return footprints.TryGetValue((Candidate)i.Tag,out fp)&&fp.Bytes>0?fp.Bytes:0;});
    string preview=String.Join("\r\n",selected.Take(8).Select(i=>Presentation.CandidatePath((Candidate)i.Tag)));
    if(selected.Count>8)preview+="\r\n… và "+(selected.Count-8)+" mục khác";
@@ -226,7 +226,7 @@ namespace AppCare {
     if(c.Kind=="Folder"&&Directory.Exists(c.Path))Process.Start("explorer.exe","\""+c.Path+"\"");
     else if(c.Kind=="File"&&File.Exists(c.Path))Process.Start("explorer.exe","/select,\""+c.Path+"\"");
     else MessageBox.Show(this,Presentation.CandidatePath(c)+"\r\n\r\n"+c.Reason,"Chi tiết mục còn sót",MessageBoxButtons.OK,MessageBoxIcon.Information);
-   }catch(Exception e){MessageBox.Show(this,e.Message,"AppCare",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
+   }catch(Exception e){MessageBox.Show(this,e.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
   }
 
   /// <summary>Shows the colored result strip above the list.</summary>

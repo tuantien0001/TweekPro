@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using Microsoft.Win32;
 
-namespace AppCare {
+namespace TweekPro {
  public class AppEntry {
   public string Name, Publisher, Version, Location, Command, Key, Hive, View, InstallDate, DisplayIcon;
   public bool Msi; public long Size; public List<string> KnownExecutables=new List<string>();
@@ -23,10 +23,25 @@ namespace AppCare {
  public class RegChild { public string Name; public RegNode Node; }
  public class Backup {
   public string Id, Created, State, Original, Payload, Kind, Hive, View, AppName, Error, ValueName, Purpose;
+  /// <summary>Vault folder this manifest was loaded from; null means the current vault. Not serialized.</summary>
+  [XmlIgnore] public string VaultPath;
+  /// <summary>Size of the payload on disk as measured when listed; -1 when unknown. Not serialized.</summary>
+  [XmlIgnore] public long Bytes=-1;
+  /// <summary>Parses the ISO creation stamp; returns DateTime.MinValue when missing or malformed.</summary>
+  public DateTime CreatedAt { get { DateTime d;return DateTime.TryParseExact(Created??"","s",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.None,out d)?d:DateTime.MinValue; } }
  }
  public static class Engine {
-  public static string Vault=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"AppCare","Backups");
+  public static string Vault=Core.Paths.Backups;
   const string Uninstall=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+  /// <summary>Returns the vault folder that physically holds a backup (legacy AppCare vault or the current one).</summary>
+  public static string VaultOf(Backup b){return String.IsNullOrEmpty(b.VaultPath)?Vault:b.VaultPath;}
+  /// <summary>Every vault folder to list: the current one plus the legacy AppCare vault when it still exists separately.</summary>
+  public static string[] VaultFolders(){
+   var list=new List<string>{Vault};
+   string legacy=Core.Paths.LegacyBackups;
+   if(!String.Equals(Canon(legacy),Canon(Vault),StringComparison.OrdinalIgnoreCase)&&Directory.Exists(legacy))list.Add(legacy);
+   return list.ToArray();
+  }
   public static RegistryKey Base(string hive,string view){return RegistryKey.OpenBaseKey(hive=="HKLM"?RegistryHive.LocalMachine:RegistryHive.CurrentUser,view=="64"?RegistryView.Registry64:RegistryView.Registry32);}
   public static string Read(RegistryKey k,string n){return Convert.ToString(k.GetValue(n,""));}
   public static List<AppEntry> Inventory(){
@@ -48,7 +63,7 @@ namespace AppCare {
    using(var b=Base(p[0],p[1]))using(var k=b.OpenSubKey(p[2]))return k!=null;
   }
   public static string Canon(string p){return Path.GetFullPath(Environment.ExpandEnvironmentVariables(p)).TrimEnd(Path.DirectorySeparatorChar);}
-  public static bool Under(string path,string root){return path.StartsWith(root.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase);}
+  public static bool Under(string path,string root){string r=root.TrimEnd('\\','/');return path.StartsWith(r+"\\",StringComparison.OrdinalIgnoreCase)||path.StartsWith(r+"/",StringComparison.OrdinalIgnoreCase);}
   public static void NoLinks(string path,bool tree){
    string current=Canon(path);
    while(!String.IsNullOrEmpty(current)){
@@ -92,7 +107,7 @@ namespace AppCare {
    string p=Canon(path); var roots=Roots();
    if(!roots.Any(r=>Under(p,r))||roots.Any(r=>String.Equals(p,r,StringComparison.OrdinalIgnoreCase)))throw new IOException("Đường dẫn nằm ngoài vùng được phép dọn.");
    string local=Canon(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-   if(Under(p,Path.Combine(local,"AppCare"))||String.Equals(p,Path.Combine(local,"AppCare"),StringComparison.OrdinalIgnoreCase))throw new IOException("Đây là thư mục được bảo vệ.");
+   foreach(string own in new[]{Core.Paths.ProductFolder,Core.Paths.LegacyFolder})if(Under(p,Path.Combine(local,own))||String.Equals(p,Path.Combine(local,own),StringComparison.OrdinalIgnoreCase))throw new IOException("Đây là thư mục được bảo vệ.");
    foreach(var r in roots)foreach(var name in new[]{"Microsoft","Windows","Common Files","Packages"}){
     string blocked=Path.Combine(r,name);if(String.Equals(p,blocked,StringComparison.OrdinalIgnoreCase)||Under(p,blocked))throw new IOException("Không dọn vùng hệ thống hoặc thành phần dùng chung.");
    }
@@ -164,7 +179,7 @@ namespace AppCare {
    if(File.Exists(path))File.Replace(tmp,path,null);else File.Move(tmp,path);
   }
   public static T Load<T>(string path){using(var f=File.OpenRead(path))return (T)new XmlSerializer(typeof(T)).Deserialize(f);}
-  public static void SaveBackup(Backup b){Save(Path.Combine(Vault,b.Id,"manifest.xml"),b);}
+  public static void SaveBackup(Backup b){Save(Path.Combine(VaultOf(b),b.Id,"manifest.xml"),b);}
   public static Backup Quarantine(Candidate c){
    if(c.ReviewOnly)throw new IOException("Mục này chỉ để kiểm tra.");
    if(c.Kind=="File"||c.Kind=="RegistryValue")return Advanced.Store(c,false);
@@ -189,15 +204,48 @@ namespace AppCare {
     backup.State="BackedUp";SaveBackup(backup);return backup;
    }catch(Exception e){backup.Error=e.Message;backup.State="NeedsReview";SaveBackup(backup);throw;}
   }
+  /// <summary>Lists manifests from the current vault and, when present, the legacy AppCare vault so old backups stay restorable.</summary>
   public static List<Backup> Backups(){
-   var list=new List<Backup>();if(!Directory.Exists(Vault))return list;NoLinks(Vault,false);
-   foreach(string d in Directory.GetDirectories(Vault)){try{NoLinks(d,false);var b=Load<Backup>(Path.Combine(d,"manifest.xml"));if(b.Id==Path.GetFileName(d))list.Add(b);}catch(Exception){}}
-   return list.OrderByDescending(b=>b.Created).ToList();
+   var list=new List<Backup>();
+   foreach(string vault in VaultFolders()){
+    if(!Directory.Exists(vault))continue;
+    try{NoLinks(vault,false);}catch(IOException){continue;}
+    foreach(string d in Directory.GetDirectories(vault)){try{NoLinks(d,false);var b=Load<Backup>(Path.Combine(d,"manifest.xml"));if(b.Id==Path.GetFileName(d)){b.VaultPath=String.Equals(Canon(vault),Canon(Vault),StringComparison.OrdinalIgnoreCase)?null:vault;list.Add(b);}}catch(Exception){}}
+   }
+   return list.GroupBy(b=>b.Id).Select(g=>g.First()).OrderByDescending(b=>b.Created).ToList();
+  }
+  /// <summary>Selects backups older than the given number of days; unrestored ones are included only when explicitly requested.</summary>
+  public static List<Backup> SelectForPurge(IEnumerable<Backup> backups,int olderThanDays,DateTime now,bool includeUnrestored){
+   DateTime cutoff=now.AddDays(-Math.Max(0,olderThanDays));
+   return backups.Where(b=>{
+    var created=b.CreatedAt;if(created==DateTime.MinValue)return false;
+    if(created>cutoff)return false;
+    return b.State=="Restored"||includeUnrestored;
+   }).ToList();
+  }
+  /// <summary>Measures the bytes held by a backup folder; returns 0 when the folder is missing.</summary>
+  public static long BackupSize(Backup b){
+   string dir=Path.Combine(VaultOf(b),b.Id);if(!Directory.Exists(dir))return 0;long total=0;
+   try{foreach(string f in Directory.EnumerateFiles(dir,"*",SearchOption.AllDirectories)){try{total+=new FileInfo(f).Length;}catch(IOException){}catch(UnauthorizedAccessException){}}}catch(IOException){}catch(UnauthorizedAccessException){}
+   return total;
+  }
+  /// <summary>Permanently deletes one backup folder (manifest and payload). Irreversible; the caller must have confirmed. Returns bytes released.</summary>
+  public static long Purge(Backup b){
+   Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");
+   string vault=Canon(VaultOf(b));string dir=Canon(Path.Combine(vault,b.Id));
+   if(!Under(dir,vault))throw new IOException("Thư mục sao lưu nằm ngoài kho.");
+   if(!Directory.Exists(dir))throw new IOException("Bản sao lưu không còn trên đĩa.");
+   NoLinks(dir,true);
+   if(!File.Exists(Path.Combine(dir,"manifest.xml")))throw new IOException("Thư mục không có manifest; không xóa.");
+   long bytes=BackupSize(b);
+   Directory.Delete(dir,true);
+   return bytes;
   }
   public static void Restore(Backup b){
    if(b.Kind=="File"||b.Kind=="RegistryValue"){Advanced.Restore(b);return;}
+   if(b.Kind=="Junk"){Cleaner.JunkCleaner.Restore(b);return;}
    Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");
-   string payload=Path.Combine(Vault,b.Id,b.Kind=="Folder"?"content":"registry.xml");NoLinks(payload,true);
+   string payload=Path.Combine(VaultOf(b),b.Id,b.Kind=="Folder"?"content":"registry.xml");NoLinks(payload,true);
    if(b.Kind=="Folder"){
     ValidateFolder(b.Original);if(Directory.Exists(b.Original)||File.Exists(b.Original))throw new IOException("Đích đã tồn tại; không ghi đè dữ liệu.");
     if(!Directory.Exists(payload))throw new IOException("Không có dữ liệu trong kho.");

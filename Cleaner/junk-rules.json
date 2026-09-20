@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "user-temp",
+      "group": "Hệ thống",
+      "name": "Tệp tạm của tài khoản (%TEMP%)",
+      "description": "Tệp tạm do ứng dụng để lại trong thư mục Temp của tài khoản hiện tại. Bỏ qua tệp mới hơn 24 giờ và tệp đang được mở.",
+      "paths": ["%TEMP%", "%LOCALAPPDATA%\\Temp"],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": false,
+      "blockedProcesses": [],
+      "defaultChecked": true
+    },
+    {
+      "id": "windows-temp",
+      "group": "Hệ thống",
+      "name": "Tệp tạm của Windows (C:\\Windows\\Temp)",
+      "description": "Thư mục Temp dùng chung của hệ thống. Cần quyền quản trị để đọc và dọn đầy đủ.",
+      "paths": ["%WINDIR%\\Temp"],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": true,
+      "blockedProcesses": [],
+      "defaultChecked": true
+    },
+    {
+      "id": "crash-dumps",
+      "group": "Hệ thống",
+      "name": "Tệp dump khi ứng dụng gặp lỗi (CrashDumps)",
+      "description": "Bản ghi bộ nhớ Windows tạo khi ứng dụng bị treo; chỉ hữu ích khi đang gỡ lỗi.",
+      "paths": ["%LOCALAPPDATA%\\CrashDumps"],
+      "patterns": ["*.dmp", "*.mdmp", "*.hdmp"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": false,
+      "blockedProcesses": [],
+      "defaultChecked": true
+    },
+    {
+      "id": "wer-user",
+      "group": "Hệ thống",
+      "name": "Báo cáo lỗi Windows của tài khoản (WER)",
+      "description": "Hàng đợi và kho báo cáo lỗi Windows Error Reporting trong hồ sơ người dùng.",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportQueue",
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportArchive",
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\Temp"
+      ],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": false,
+      "blockedProcesses": [],
+      "defaultChecked": true
+    },
+    {
+      "id": "wer-machine",
+      "group": "Hệ thống",
+      "name": "Báo cáo lỗi Windows toàn máy (ProgramData\\WER)",
+      "description": "Hàng đợi báo cáo lỗi toàn máy. Cần quyền quản trị.",
+      "paths": [
+        "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\ReportQueue",
+        "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\ReportArchive",
+        "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\Temp"
+      ],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": true,
+      "blockedProcesses": [],
+      "defaultChecked": false
+    },
+    {
+      "id": "thumbnail-cache",
+      "group": "Hệ thống",
+      "name": "Bộ đệm ảnh thu nhỏ của Explorer",
+      "description": "thumbcache_*.db và iconcache_*.db. Windows tạo lại khi cần; tệp đang được Explorer giữ sẽ bị bỏ qua.",
+      "paths": ["%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer"],
+      "patterns": ["thumbcache_*.db", "iconcache_*.db"],
+      "recurse": false,
+      "minAgeHours": 24,
+      "requiresAdmin": false,
+      "blockedProcesses": [],
+      "defaultChecked": false
+    },
+    {
+      "id": "chrome-cache",
+      "group": "Trình duyệt",
+      "name": "Google Chrome — bộ đệm",
+      "description": "Cache, Code Cache và GPUCache của mọi hồ sơ Chrome. Không đụng đến lịch sử, cookie, mật khẩu. Chỉ dọn khi Chrome đã đóng.",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Cache",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Code Cache",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\GPUCache",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\ShaderCache",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\GrShaderCache"
+      ],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 0,
+      "requiresAdmin": false,
+      "blockedProcesses": ["chrome"],
+      "defaultChecked": true
+    },
+    {
+      "id": "edge-cache",
+      "group": "Trình duyệt",
+      "name": "Microsoft Edge — bộ đệm",
+      "description": "Cache, Code Cache và GPUCache của mọi hồ sơ Edge. Chỉ dọn khi Edge đã đóng (kể cả tiến trình nền).",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Cache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Code Cache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\GPUCache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\ShaderCache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\GrShaderCache"
+      ],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 0,
+      "requiresAdmin": false,
+      "blockedProcesses": ["msedge", "msedgewebview2"],
+      "defaultChecked": true
+    },
+    {
+      "id": "brave-cache",
+      "group": "Trình duyệt",
+      "name": "Brave — bộ đệm",
+      "description": "Cache, Code Cache và GPUCache của mọi hồ sơ Brave. Chỉ dọn khi Brave đã đóng.",
+      "paths": [
+        "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Cache",
+        "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Code Cache",
+        "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\GPUCache",
+        "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\ShaderCache",
+        "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\GrShaderCache"
+      ],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 0,
+      "requiresAdmin": false,
+      "blockedProcesses": ["brave"],
+      "defaultChecked": true
+    },
+    {
+      "id": "firefox-cache",
+      "group": "Trình duyệt",
+      "name": "Mozilla Firefox — bộ đệm",
+      "description": "Thư mục cache2 của mọi hồ sơ Firefox. Không đụng đến lịch sử, cookie, mật khẩu. Chỉ dọn khi Firefox đã đóng.",
+      "paths": [
+        "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\cache2",
+        "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\startupCache",
+        "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\shader-cache"
+      ],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 0,
+      "requiresAdmin": false,
+      "blockedProcesses": ["firefox"],
+      "defaultChecked": true
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Primary build path for Tweek Pro 0.7.
+      Windows:      dotnet build -c Release
+      Linux/macOS:  dotnet build -c Release -p:EnableWindowsTargeting=true   (compile check only; WinForms runs on Windows)
+    Output: bin\Release\net48\TweekPro-0.7.exe plus the TraceEvent dependencies next to it.
+    build.ps1 wraps this command for Windows machines and explains how to get the SDK when it is missing.
+  -->
+  <PropertyGroup>
+    <TweekVersion>0.7</TweekVersion>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>TweekPro-$(TweekVersion)</AssemblyName>
+    <RootNamespace>TweekPro</RootNamespace>
+    <Product>Tweek Pro</Product>
+    <AssemblyTitle>Tweek Pro – Trình quản lý Windows</AssemblyTitle>
+    <Description>Gỡ ứng dụng, dọn phần còn sót và tệp rác có sao lưu, theo dõi mạng theo tiến trình (chỉ xem).</Description>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>$(TweekVersion).0</Version>
+    <FileVersion>$(TweekVersion).0.0</FileVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Cleaner\junk-rules.json" LogicalName="TweekPro.Cleaner.junk-rules.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.30" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Runtime.Serialization" />
+  </ItemGroup>
+
+</Project>
