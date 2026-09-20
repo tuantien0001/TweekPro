@@ -10,22 +10,22 @@ namespace AppCare {
  public partial class MainForm {
   CheckBox deepMode=new CheckBox();CancellationTokenSource scanCancellation;
   ListView autorunList=new SmoothListView(),toolList=new SmoothListView();ImageList startupIcons=new ImageList();
-  Label autorunNote;Button cancelScan;
-  static string CandidateKind(Candidate c){return c.ReviewOnly?"Chỉ xem":c.Kind=="Folder"?"Thư mục":c.Kind=="File"?"Shortcut":c.Kind=="RegistryValue"?"Giá trị Registry":"Khóa Registry";}
-  static string CandidatePath(Candidate c){return (c.Hive==null?"":c.Hive+" ["+c.View+"]\\")+c.Path+(c.ValueName==null?"":" :: "+c.ValueName);}
+  Label autorunNote,autorunOverlay;Button cancelScan;
   void BuildAdvancedTabs(){
    var autorunTab=new TabPage("Autorun Manager");var toolsTab=new TabPage("Windows Tools");tabs.TabPages.Add(autorunTab);tabs.TabPages.Add(toolsTab);
    startupIcons.ColorDepth=ColorDepth.Depth32Bit;startupIcons.ImageSize=new Size(24,24);autorunList.SmallImageList=startupIcons;FormClosed+=(s,e)=>startupIcons.Dispose();
    SetupList(autorunList,new[]{"Tên khởi động","Trạng thái","Lệnh / đích","Vị trí"},new[]{230,180,440,360},false);
+   var autorunHost=Theme.ListHost(autorunList,out autorunOverlay);
    var bar=Bar();
    Add(bar,"Tải danh sách",async()=>await LoadAutoruns());
    Add(bar,"Tắt (sao lưu)",async()=>await DisableAutorun(),ButtonStyle.Primary);
    Add(bar,"Bật lại từ kho",async()=>await EnableAutorun());
-   Add(bar,"Sao chép vị trí",()=>{var a=CurrentAutorun();Clipboard.SetText(a.Item!=null?CandidatePath(a.Item):a.Saved.Original);return Task.FromResult(0);});
+   Add(bar,"Sao chép vị trí",()=>{var a=CurrentAutorun();Clipboard.SetText(a.Item!=null?Presentation.CandidatePath(a.Item):a.Saved.Original);return Task.FromResult(0);});
    Add(bar,"Startup của Windows",()=>{WindowsTools.Launch(WindowsTools.Catalog().First(t=>t.Name=="Startup Apps"));return Task.FromResult(0);});
    Add(bar,"Xuất CSV",()=>{ExportAutoruns();return Task.FromResult(0);});
    autorunNote=Theme.Note("Run, RunOnce và shortcut Startup của tài khoản hiện tại/toàn máy. Có đăng ký không có nghĩa Windows đang cho chạy. Bật lại áp dụng cho mục đã tắt bằng AppCare.",NoteKind.Info);
-   autorunTab.Controls.Add(autorunList);autorunTab.Controls.Add(autorunNote);autorunTab.Controls.Add(bar);
+   autorunTab.Controls.Add(autorunHost);autorunTab.Controls.Add(autorunNote);autorunTab.Controls.Add(bar);
+   Theme.SetOverlay(autorunOverlay,"Chưa tải mục khởi động.\r\nBấm Tải danh sách hoặc mở tab này để đọc Run/RunOnce và shortcut Startup.",NoteKind.Info);
    SetupList(toolList,new[]{"Công cụ","Tình trạng","Công dụng"},new[]{240,160,710},false);
    var toolbar=Bar();Add(toolbar,"Mở công cụ",()=>{OpenTool();return Task.FromResult(0);});
    Add(toolbar,"Tài liệu truy vết",()=>{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"SCAN-GUIDE.md")){UseShellExecute=true});return Task.FromResult(0);});
@@ -35,11 +35,18 @@ namespace AppCare {
    tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==autorunTab&&autorunList.Items.Count==0&&!busy)await Guard(async()=>await LoadAutoruns());};
    cancelScan=Theme.Button("Dừng quét sâu",ButtonStyle.Secondary);cancelScan.AutoSize=false;cancelScan.Dock=DockStyle.Right;cancelScan.Width=150;cancelScan.Margin=new Padding(0);cancelScan.Visible=false;
    cancelScan.Click+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};status.Controls.Add(cancelScan);
+   deepMode.Font=Theme.Body;
   }
-  void FillTools(){toolList.Items.Clear();foreach(var t in WindowsTools.Catalog())toolList.Items.Add(new ListViewItem(new[]{t.Name,t.Available?"Có sẵn":"Không có",t.Description}){Tag=t,ForeColor=t.Available?Theme.Text:Theme.Muted});}
+  void FillTools(){toolList.Items.Clear();int index=0;foreach(var t in WindowsTools.Catalog()){var row=new ListViewItem(new[]{t.Name,t.Available?"Có sẵn":"Không có",t.Description}){Tag=t,ForeColor=t.Available?Theme.Text:Theme.Muted,ToolTipText=t.Description+(t.Available?"":"\r\nCông cụ không có trên phiên bản Windows này.")};Theme.StripeRow(row,index++);toolList.Items.Add(row);}}
   void OpenTool(){if(toolList.SelectedItems.Count==0)throw new IOException("Chọn công cụ muốn mở.");var t=(WindowsTool)toolList.SelectedItems[0].Tag;if(t.Admin&&!Confirm(t.Description+"\r\nTiếp tục mở công cụ với quyền quản trị?"))return;WindowsTools.Launch(t);}
   AutorunEntry CurrentAutorun(){if(autorunList.SelectedItems.Count==0)throw new IOException("Chọn một mục khởi động.");return (AutorunEntry)autorunList.SelectedItems[0].Tag;}
-  void ShowAutoruns(List<AutorunEntry> entries){autorunList.BeginUpdate();autorunList.Items.Clear();startupIcons.Images.Clear();var imageHandle=startupIcons.Handle;int index=0;foreach(var a in entries){string target=Advanced.CommandExe(a.Command);if(target==""&&Advanced.LocalPath(a.Command))target=a.Command;using(var bitmap=Presentation.AppIcon(new AppEntry{DisplayIcon=target}))startupIcons.Images.Add(bitmap);var row=new ListViewItem(new[]{a.Name,a.State,a.Command,a.Source}){Tag=a,ImageIndex=index};Theme.StripeRow(row,index++);autorunList.Items.Add(row);}autorunList.EndUpdate();}
+  void ShowAutoruns(List<AutorunEntry> entries){
+   autorunList.BeginUpdate();autorunList.Items.Clear();startupIcons.Images.Clear();var imageHandle=startupIcons.Handle;int index=0;
+   foreach(var a in entries){string target=Advanced.CommandExe(a.Command);if(target==""&&Advanced.LocalPath(a.Command))target=a.Command;using(var bitmap=Presentation.AppIcon(new AppEntry{DisplayIcon=target}))startupIcons.Images.Add(bitmap);var row=new ListViewItem(new[]{a.Name,a.State,a.Command,a.Source}){Tag=a,ImageIndex=index,ToolTipText=a.Command+"\r\n"+a.Source};Theme.StripeRow(row,index++);autorunList.Items.Add(row);}
+   autorunList.EndUpdate();
+   if(entries.Count==0)Theme.SetOverlay(autorunOverlay,"Không tìm thấy mục Run/RunOnce hoặc shortcut Startup.\r\nMục toàn máy có thể cần Run as administrator với cùng tài khoản Windows.",NoteKind.Info);
+   else Theme.SetOverlay(autorunOverlay,null,NoteKind.Info);
+  }
   async Task LoadAutoruns(){Log("Đang đọc mục khởi động…");var entries=await Task.Run(()=>Advanced.Autoruns());ShowAutoruns(entries);Log("Đã đọc "+entries.Count+" mục khởi động và bản đã tắt. Chưa gồm service/driver/tác vụ lịch.");}
   async Task DisableAutorun(){var a=CurrentAutorun();if(a.Item==null)throw new IOException("Mục này đã nằm trong kho; dùng Bật lại từ kho.");if(!Confirm("Tắt mục khởi động này và lưu bản khôi phục?\r\n\r\n"+a.Name+"\r\n"+a.Command+"\r\n\r\nKhông dừng ứng dụng đang chạy. Thay đổi áp dụng cho lần đăng nhập sau."))return;await Task.Run(()=>Advanced.Store(a.Item,true));await LoadAutoruns();LoadBackups();Log("Đã tắt và sao lưu: "+a.Name);}
   async Task EnableAutorun(){var a=CurrentAutorun();if(a.Saved==null)throw new IOException("Mục này vẫn có đăng ký. Nếu bị Windows tắt, hãy dùng Startup của Windows.");if(!Confirm("Khôi phục mục khởi động "+a.Name+"?\r\nKhông ghi đè mục đã tồn tại. Windows vẫn có thể chặn theo cài đặt Startup riêng."))return;await Task.Run(()=>Engine.Restore(a.Saved));await LoadAutoruns();LoadBackups();Log("Đã khôi phục đăng ký khởi động: "+a.Name);}

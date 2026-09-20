@@ -20,13 +20,14 @@ namespace AppCare {
   readonly Action<string> log;
   readonly ListView list=new SmoothListView();
   readonly ProgressBar progress=new ProgressBar();
-  readonly Label stage=new Label(),counters=new Label(),summary=new Label(),banner;
+  readonly Label stage=new Label(),counters=new Label(),summary=new Label(),banner,overlay;
   readonly Button selectAll,selectNone,delete,stop,close;
   readonly Dictionary<Candidate,ListViewItem> rows=new Dictionary<Candidate,ListViewItem>();
   readonly Dictionary<Candidate,Footprint> footprints=new Dictionary<Candidate,Footprint>();
   readonly Stopwatch throttle=Stopwatch.StartNew();
   CancellationTokenSource cancellation;
-  bool scanning,measuring,deleting,locked,previewMode,closeRequested;
+  bool scanning,measuring,deleting,locked,previewMode,closeRequested,scanFailed;
+  string scanError="";
   int visited,noteCount;
 
   public List<Candidate> Remaining=new List<Candidate>();
@@ -54,11 +55,12 @@ namespace AppCare {
    banner=Theme.Note("",NoteKind.Info);banner.Visible=false;banner.Height=48;
    var note=Theme.Note("Các mục dưới đây chỉ là nghi ngờ còn sót và có thể chứa dữ liệu cá nhân. Hãy kiểm tra đường dẫn trước khi chọn. Xóa sẽ chuyển mục vào Kho khôi phục, không xóa vĩnh viễn.",NoteKind.Warning);
 
-   Theme.StyleList(list);list.CheckBoxes=true;
+   Theme.StyleList(list);list.CheckBoxes=true;list.ShowGroups=true;
    foreach(var column in new[]{new{Name="Loại",Width=120},new{Name="Đường dẫn",Width=520},new{Name="Dung lượng",Width=110},new{Name="Trạng thái",Width=150},new{Name="Cơ sở đề xuất",Width=420}})list.Columns.Add(column.Name,column.Width);
    list.ItemCheck+=(s,e)=>{var c=(Candidate)list.Items[e.Index].Tag;if(c.ReviewOnly||IsDone(list.Items[e.Index]))e.NewValue=CheckState.Unchecked;};
    list.ItemChecked+=(s,e)=>UpdateSummary();
    list.DoubleClick+=(s,e)=>Inspect();
+   var listHost=Theme.ListHost(list,out overlay);
 
    var footer=new Panel{Dock=DockStyle.Bottom,Height=68,BackColor=Theme.Surface,Padding=new Padding(28,16,20,16)};
    Theme.BorderTop(footer);
@@ -77,7 +79,7 @@ namespace AppCare {
    buttons.Controls.AddRange(new Control[]{stop,selectAll,selectNone,delete,close});
    footer.Controls.Add(summary);footer.Controls.Add(buttons);
 
-   Controls.Add(list);
+   Controls.Add(listHost);
    Controls.Add(note);
    Controls.Add(banner);
    Controls.Add(progressPanel);
@@ -97,7 +99,7 @@ namespace AppCare {
 
   /// <summary>Runs the scan for every application, then measures footprints and unlocks the review actions.</summary>
   async Task RunScan(){
-   scanning=true;cancellation=new CancellationTokenSource();var token=cancellation.Token;bool cancelled=false;SetBusy(true);
+   scanning=true;scanFailed=false;scanError="";cancellation=new CancellationTokenSource();var token=cancellation.Token;bool cancelled=false;SetBusy(true);Theme.SetOverlay(overlay,null,NoteKind.Info);
    try{
     locked=await Task.Run(()=>apps.Any(a=>{try{return Engine.Installed(a.Id);}catch(Exception){return false;}}));
     foreach(var app in apps){
@@ -110,21 +112,20 @@ namespace AppCare {
      AddCandidates(result.Items);
     }
    }catch(OperationCanceledException){cancelled=true;}
-   catch(Exception e){ShowBanner("Không hoàn tất quét: "+e.Message,NoteKind.Error);log("LỖI quét: "+e.Message);}
+   catch(Exception e){scanFailed=true;scanError=e.Message;log("LỖI quét: "+e.Message);}
    finally{scanning=false;}
-   if(!token.IsCancellationRequested&&!IsDisposed){
+   if(!scanFailed&&!token.IsCancellationRequested&&!IsDisposed&&list.Items.Count>0){
     measuring=true;SetBusy(false);stage.Text="Đang tính dung lượng các mục tìm thấy…";
     try{await MeasureAll(token);}catch(OperationCanceledException){}
     measuring=false;
    }
-   cancellation.Dispose();cancellation=null;
+   if(cancellation!=null){cancellation.Dispose();cancellation=null;}
    if(IsDisposed)return;
    progress.Style=ProgressBarStyle.Continuous;progress.Value=100;
    Found=list.Items.Count;
-   stage.Text=(cancelled?"Đã dừng quét — kết quả có thể chưa đầy đủ.":"Hoàn tất quét.")+"  Tìm thấy "+Found+" mục.";
+   stage.Text=OutcomeStage(cancelled);
    counters.Text=visited.ToString("N0")+" thư mục đã duyệt  •  "+noteCount+" ghi chú (xem Nhật ký)";
-   if(Found==0)ShowBanner(cancelled?"Chưa tìm thấy mục nào trước khi dừng. Có thể quét lại từ tab Phần còn sót.":"Không tìm thấy phần còn sót theo các quy tắc hiện tại. Điều này không bảo đảm hệ thống đã sạch hoàn toàn.",NoteKind.Success);
-   else if(locked)ShowBanner("Ứng dụng vẫn còn đăng ký cài đặt nên chỉ có thể xem. Hãy gỡ chính thức rồi quét lại để dọn.",NoteKind.Warning);
+   ShowScanOutcome(cancelled);
    SetBusy(false);
    if(closeRequested){Close();return;}
    log("Cửa sổ quét: "+Found+" mục, "+visited.ToString("N0")+" thư mục đã duyệt, "+noteCount+" ghi chú.");
@@ -147,8 +148,9 @@ namespace AppCare {
    list.BeginUpdate();
    foreach(var c in items.GroupBy(Advanced.Id,StringComparer.OrdinalIgnoreCase).Select(g=>g.First())){
     if(rows.Keys.Any(k=>String.Equals(Advanced.Id(k),Advanced.Id(c),StringComparison.OrdinalIgnoreCase)))continue;
-    var item=new ListViewItem(new[]{KindOf(c),PathOf(c),c.Kind=="Folder"||c.Kind=="File"?"…":"—",c.ReviewOnly?"Chỉ xem":"Chờ duyệt",c.Reason}){Tag=c,ToolTipText=PathOf(c)+"\r\n"+c.Reason};
+    var item=new ListViewItem(new[]{Presentation.KindLabel(c),Presentation.CandidatePath(c),c.Kind=="Folder"||c.Kind=="File"?"…":"—",c.ReviewOnly?"Chỉ xem":"Chờ duyệt",c.Reason}){Tag=c,ToolTipText=Presentation.CandidatePath(c)+"\r\n"+c.Reason};
     if(c.ReviewOnly)item.ForeColor=Theme.Muted;
+    Theme.AssignGroup(list,item,Presentation.KindGroup(c),Presentation.KindGroupHeader(Presentation.KindGroup(c)));
     Theme.StripeRow(item,list.Items.Count);
     list.Items.Add(item);rows[c]=item;
    }
@@ -169,7 +171,7 @@ namespace AppCare {
       footprints[candidate]=fp;ListViewItem item;
       if(rows.TryGetValue(candidate,out item)){
        item.SubItems[2].Text=fp.Bytes>=0?Presentation.BytesLabel(fp.Bytes)+(fp.Partial?"+":""):(fp.Detail==""?"—":fp.Detail);
-       if(fp.Detail!="")item.ToolTipText=PathOf(candidate)+"\r\n"+fp.Detail+"\r\n"+candidate.Reason;
+       if(fp.Detail!="")item.ToolTipText=Presentation.CandidatePath(candidate)+"\r\n"+fp.Detail+"\r\n"+candidate.Reason;
       }
       UpdateSummary();
      }));}catch(InvalidOperationException){return;}
@@ -190,7 +192,7 @@ namespace AppCare {
    var selected=list.Items.Cast<ListViewItem>().Where(i=>i.Checked&&!((Candidate)i.Tag).ReviewOnly&&!IsDone(i)).ToList();
    if(selected.Count==0){MessageBox.Show(this,"Hãy đánh dấu những mục đã kiểm tra và muốn xóa.","AppCare",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
    long bytes=selected.Sum(i=>{Footprint fp;return footprints.TryGetValue((Candidate)i.Tag,out fp)&&fp.Bytes>0?fp.Bytes:0;});
-   string preview=String.Join("\r\n",selected.Take(8).Select(i=>PathOf((Candidate)i.Tag)));
+   string preview=String.Join("\r\n",selected.Take(8).Select(i=>Presentation.CandidatePath((Candidate)i.Tag)));
    if(selected.Count>8)preview+="\r\n… và "+(selected.Count-8)+" mục khác";
    var answer=MessageBox.Show(this,"Sao lưu và xóa "+selected.Count+" mục đã chọn"+(bytes>0?" (khoảng "+Presentation.BytesLabel(bytes)+")":"")+"?\r\n\r\n"+preview+"\r\n\r\nFile và thư mục được chuyển vào Kho khôi phục trên cùng ổ đĩa. Registry được lưu giá trị và khóa con trước khi xóa.","Xác nhận xóa",MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2);
    if(answer!=DialogResult.Yes)return;
@@ -199,14 +201,14 @@ namespace AppCare {
    int ok=0,failed=0;
    foreach(var item in selected){
     var c=(Candidate)item.Tag;
-    stage.Text="Đang sao lưu và xóa "+(ok+failed+1)+"/"+selected.Count+"   "+Presentation.ShortPath(PathOf(c),70);
+    stage.Text="Đang sao lưu và xóa "+(ok+failed+1)+"/"+selected.Count+"   "+Presentation.ShortPath(Presentation.CandidatePath(c),70);
     try{
      await Task.Run(()=>Engine.Quarantine(c));
      ok++;item.Checked=false;item.SubItems[3].Text="Đã xóa (có sao lưu)";item.ForeColor=Theme.Muted;item.Font=new Font(Theme.Body,FontStyle.Strikeout);
-     log("Đã sao lưu và xóa: "+PathOf(c));
+     log("Đã sao lưu và xóa: "+Presentation.CandidatePath(c));
     }catch(Exception e){
-     failed++;item.Checked=false;item.SubItems[3].Text="Lỗi";item.ForeColor=Theme.Danger;item.ToolTipText=PathOf(c)+"\r\n"+e.Message;
-     log("Giữ lại "+PathOf(c)+": "+e.Message);
+     failed++;item.Checked=false;item.SubItems[3].Text="Lỗi";item.ForeColor=Theme.Danger;item.ToolTipText=Presentation.CandidatePath(c)+"\r\n"+e.Message;
+     log("Giữ lại "+Presentation.CandidatePath(c)+": "+e.Message);
     }
     progress.Value=ok+failed;
    }
@@ -223,12 +225,40 @@ namespace AppCare {
    try{
     if(c.Kind=="Folder"&&Directory.Exists(c.Path))Process.Start("explorer.exe","\""+c.Path+"\"");
     else if(c.Kind=="File"&&File.Exists(c.Path))Process.Start("explorer.exe","/select,\""+c.Path+"\"");
-    else MessageBox.Show(this,PathOf(c)+"\r\n\r\n"+c.Reason,"Chi tiết mục còn sót",MessageBoxButtons.OK,MessageBoxIcon.Information);
+    else MessageBox.Show(this,Presentation.CandidatePath(c)+"\r\n\r\n"+c.Reason,"Chi tiết mục còn sót",MessageBoxButtons.OK,MessageBoxIcon.Information);
    }catch(Exception e){MessageBox.Show(this,e.Message,"AppCare",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
   }
 
   /// <summary>Shows the colored result strip above the list.</summary>
-  void ShowBanner(string text,NoteKind kind){banner.Text=text;Theme.Tint(banner,kind);banner.Visible=true;}
+  void ShowBanner(string text,NoteKind kind){banner.Text=text;Theme.Tint(banner,kind);banner.Visible=true;banner.Height=text.Length>140?72:52;}
+  /// <summary>Chooses the empty, error or incomplete presentation after a scan finishes.</summary>
+  void ShowScanOutcome(bool cancelled){
+   bool denied=Notes.Any(Presentation.PermissionNote);
+   bool incomplete=cancelled||denied;
+   if(scanFailed&&Found==0){
+    Theme.SetOverlay(overlay,"Không hoàn tất quét.\r\n"+(String.IsNullOrEmpty(scanError)?"Lỗi không xác định.":scanError)+"\r\n\r\nĐóng cửa sổ rồi quét lại từ tab Phần còn sót.",NoteKind.Error);
+    ShowBanner("Không hoàn tất quét: "+scanError,NoteKind.Error);
+   }else if(Found==0){
+    Theme.SetOverlay(overlay,cancelled?"Chưa tìm thấy mục nào trước khi dừng.\r\nCó thể quét lại từ tab Phần còn sót.":"Không tìm thấy phần còn sót theo các quy tắc hiện tại.\r\nĐiều này không bảo đảm hệ thống đã sạch hoàn toàn.",cancelled?NoteKind.Warning:NoteKind.Info);
+    if(incomplete)ShowBanner(IncompleteText(cancelled,denied),NoteKind.Warning);
+    else banner.Visible=false;
+   }else{
+    Theme.SetOverlay(overlay,null,NoteKind.Info);
+    if(scanFailed)ShowBanner("Quét gặp lỗi: "+scanError+". Kết quả bên dưới có thể chưa đầy đủ.",NoteKind.Error);
+    else if(locked)ShowBanner("Ứng dụng vẫn còn đăng ký cài đặt nên chỉ có thể xem. Hãy gỡ chính thức rồi quét lại để dọn."+(incomplete?" Quét có thể chưa đầy đủ.":""),NoteKind.Warning);
+    else if(incomplete)ShowBanner(IncompleteText(cancelled,denied),NoteKind.Warning);
+    else banner.Visible=false;
+   }
+  }
+  string OutcomeStage(bool cancelled){
+   if(scanFailed)return "Không hoàn tất quét.";
+   return (cancelled?"Đã dừng quét — kết quả có thể chưa đầy đủ.":"Hoàn tất quét.")+"  Tìm thấy "+Found+" mục.";
+  }
+  static string IncompleteText(bool cancelled,bool denied){
+   if(cancelled&&denied)return "Quét chưa đầy đủ: đã dừng và một số thư mục hoặc khóa không đọc được vì thiếu quyền. Kết quả bên dưới vẫn có thể duyệt. Chạy lại với quyền quản trị (cùng tài khoản Windows) nếu cần.";
+   if(cancelled)return "Quét đã dừng. Kết quả có thể chưa đầy đủ. Có thể quét lại từ tab Phần còn sót.";
+   return "Quét chưa đầy đủ: một số thư mục hoặc khóa Registry không đọc được vì thiếu quyền. Kết quả bên dưới vẫn có thể duyệt. Chạy lại với quyền quản trị (cùng tài khoản Windows) nếu cần.";
+  }
 
   /// <summary>Enables or disables the action buttons while scanning or deleting is in progress.</summary>
   void SetBusy(bool busy){
@@ -250,21 +280,20 @@ namespace AppCare {
   }
 
   static bool IsDone(ListViewItem item){return item.SubItems[3].Text.StartsWith("Đã xóa");}
-  static string KindOf(Candidate c){return c.ReviewOnly?"Chỉ xem":c.Kind=="Folder"?"Thư mục":c.Kind=="File"?"Shortcut":c.Kind=="RegistryValue"?"Giá trị Registry":"Khóa Registry";}
-  static string PathOf(Candidate c){return (c.Hive==null?"":c.Hive+" ["+c.View+"]\\")+c.Path+(c.ValueName==null?"":" :: "+c.ValueName);}
 
   /// <summary>Fills the window with illustrative rows so the layout can be rendered without a real scan.</summary>
   public void PopulateForPreview(){
    previewMode=true;
    AddCandidates(new[]{
     new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Program Files\Example App",Reason="Thư mục InstallLocation do ứng dụng khai báo; cần duyệt nội dung."},
+    new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Users\Người dùng\AppData\Local\Programs\Example App",Reason="Cài theo từng tài khoản trong AppData\\Local\\Programs; trùng tên ứng dụng."},
     new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Users\Người dùng\AppData\Local\Example App",Reason="Quét sâu: tên thư mục trùng chính xác tên ứng dụng."},
     new Candidate{Kind="File",AppName="Ứng dụng mẫu",Path=@"C:\Users\Người dùng\Desktop\Example App.lnk",Reason="Shortcut trỏ tới executable của ứng dụng."},
     new Candidate{Kind="Registry",AppName="Ứng dụng mẫu",Path=@"SOFTWARE\Example App",Hive="HKCU",View="64",Reason="Khóa trùng tên ứng dụng; cần kiểm tra quyền sở hữu."},
     new Candidate{Kind="Review",AppName="Ứng dụng mẫu",Path="Service: ExampleUpdater",ReviewOnly=true,Reason="Dịch vụ tham chiếu đường dẫn ứng dụng; kiểm tra trong Services."}
    });
-   progress.Style=ProgressBarStyle.Continuous;progress.Value=100;stage.Text="Hoàn tất quét.  Tìm thấy 5 mục.";counters.Text="17.060 thư mục đã duyệt  •  17 ghi chú (xem Nhật ký)";
-   scanning=false;SetBusy(false);SetChecks(true);
+   progress.Style=ProgressBarStyle.Continuous;progress.Value=100;stage.Text="Hoàn tất quét.  Tìm thấy 6 mục.";counters.Text="17.060 thư mục đã duyệt  •  17 ghi chú (xem Nhật ký)";
+   scanning=false;SetBusy(false);SetChecks(true);Theme.SetOverlay(overlay,null,NoteKind.Info);
   }
  }
 }

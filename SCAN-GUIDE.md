@@ -1,8 +1,8 @@
-# AppCare 0.5 — Quét sâu và truy vết phần còn sót
+# AppCare 0.6 — Quét sâu và truy vết phần còn sót
 
 ## Sử dụng trong AppCare
 
-1. Mở AppCare-0.5.exe. Tùy chọn **Quét sâu sau khi gỡ** đang bật mặc định.
+1. Mở AppCare-0.6.exe. Tùy chọn **Quét sâu sau khi gỡ** đang bật mặc định.
 2. Trước khi gỡ, AppCare ghi nhận tên, thư mục cài và một số đường dẫn executable. Sau khi đăng ký cài đặt biến mất, AppCare mở cửa sổ **Quét phần còn sót** và quét sâu tự động; cửa sổ hiển thị giai đoạn quét, số thư mục đã duyệt, dung lượng từng mục và có các nút Chọn tất cả / Bỏ chọn / Xóa đã chọn.
 3. Với ứng dụng đã được ghi nhận ở các lần trước, vào **Phần còn sót → Quét siêu sâu**. Nút này quét các ứng dụng trong lịch sử. Với ứng dụng chưa ghi nhận, chọn nó ở tab Ứng dụng rồi bấm Quét mục đang xem trước.
 4. Xem cột cơ sở đề xuất, dùng **Chọn tất cả** hoặc đánh dấu riêng, rồi **Xóa đã chọn (có sao lưu)**. Mục **Chỉ xem** không thể được đánh dấu xóa.
@@ -10,7 +10,8 @@
 
 ## Các nguồn được kiểm tra trong phiên bản này
 
-- InstallLocation và các thư mục trùng tên chính xác trong Program Files, Program Files (x86), LocalAppData, Roaming AppData và ProgramData, kể cả các thư mục lồng bên dưới.
+- InstallLocation và các thư mục trùng tên chính xác trong Program Files, Program Files (x86), LocalAppData, **LocalAppData\Programs** (cài theo từng tài khoản, ví dụ Devin/Electron), Roaming AppData, LocalLow và ProgramData, kể cả các thư mục lồng bên dưới trong giới hạn độ sâu.
+- `%LOCALAPPDATA%\Temp` (và thư mục Temp của tài khoản) **chỉ** khi trùng đúng tên ứng dụng, nhà phát hành\ứng dụng, thư mục cuối của InstallLocation hoặc thư mục chứa executable đã ghi nhận. Không duyệt mù toàn bộ Temp.
 - Các khóa riêng trùng tên ứng dụng trong SOFTWARE và nhánh nhà phát hành của HKCU/HKLM, ở chế độ Registry 32/64-bit. Khóa lồng quá sâu được đưa vào nhóm Chỉ xem.
 - Từng giá trị Run/RunOnce có lệnh thực thi trỏ tới đường dẫn ứng dụng đã ghi nhận.
 - Từng giá trị AppCompatFlags ở Compatibility Assistant\Store và Layers nếu tên giá trị là đường dẫn executable phù hợp. Đây là quy tắc đối chiếu của AppCare, không phải API cam kết ổn định của Microsoft; không quét/xóa toàn bộ nhánh này.
@@ -29,7 +30,7 @@ Không đi theo junction/symlink và bỏ qua vùng hệ thống/dùng chung b�
 
 Tên thư mục trùng là **gợi ý**, không chứng minh quyền sở hữu. Đường dẫn executable là bằng chứng cụ thể hơn nhưng vẫn có thể liên quan thành phần dùng chung. AppCare không dùng tên nhà phát hành một mình làm lý do xóa cả thư mục nhà phát hành. Thư mục cài trùng/giao với ứng dụng còn cài bị loại khỏi việc đối chiếu đường dẫn rộng và bị chặn khi dọn.
 
-Các giá trị Registry và shortcut được so dấu vân tay với lúc quét; nếu đã thay đổi, phải quét lại. Giá trị được sao lưu trước khi xóa, giữ nguyên khóa cha. Các bản sao lưu này không bao gồm quyền Registry ACL. File được chuyển vào kho trên cùng ổ đĩa nên chưa giải phóng dung lượng. Không có xóa vĩnh viễn kho trong bản 0.5.
+Các giá trị Registry và shortcut được so dấu vân tay với lúc quét; nếu đã thay đổi, phải quét lại. Giá trị được sao lưu trước khi xóa, giữ nguyên khóa cha. Các bản sao lưu này không bao gồm quyền Registry ACL. File được chuyển vào kho trên cùng ổ đĩa nên chưa giải phóng dung lượng. Không có xóa vĩnh viễn kho trong bản 0.6.
 
 ## Truy vết bằng Process Monitor khi cần chứng cứ chi tiết hơn
 
@@ -42,7 +43,7 @@ Quy trình thực hành đề xuất:
 3. Phân biệt thao tác đọc/mở với tạo/ghi thành công. Chỉ việc một đường dẫn xuất hiện trong log không chứng minh ứng dụng tạo hoặc sở hữu nó.
 4. Sau khi gỡ, đối chiếu những đường dẫn thực sự được tạo/ghi và vẫn tồn tại; kiểm tra xem có ứng dụng khác sử dụng chúng không.
 
-AppCare 0.5 **chưa có driver theo dõi cài đặt, chưa thu log Procmon trực tiếp và chưa nhập log Procmon tự động**. Hướng dẫn này để đối chiếu thủ công; không biến mọi dòng log thành mục được phép xóa.
+AppCare 0.6 **chưa có driver theo dõi cài đặt, chưa thu log Procmon trực tiếp và chưa nhập log Procmon tự động**. Hướng dẫn này để đối chiếu thủ công; không biến mọi dòng log thành mục được phép xóa.
 
 ## Autorun Manager
 

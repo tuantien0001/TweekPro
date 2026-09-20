@@ -3,7 +3,7 @@
   <!--
     Secondary build path for `dotnet build` (Windows, or Linux/macOS with
     -p:EnableWindowsTargeting=true). build.ps1 remains the primary script that
-    produces the single-file AppCare-0.5.exe with the in-box Framework compiler.
+    produces the single-file AppCare-0.6.exe with the in-box Framework compiler.
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -16,7 +16,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>

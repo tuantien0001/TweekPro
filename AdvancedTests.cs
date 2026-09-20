@@ -29,7 +29,10 @@ namespace AppCare {
     Reject(()=>Advanced.ValidateValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion"));Reject(()=>Advanced.ValidateFile(Path.Combine(local,"unrelated.exe")));
     var app=new AppEntry{Name=id,Location=fixture,Hive="HKCU",View=view,Key="SOFTWARE\\"+id+"Missing"};
     Assert(Advanced.MatchesPath(app,Path.Combine(fixture,"sample.exe")),"Exact child path");Assert(!Advanced.MatchesPath(app,fixture+"Other\\sample.exe"),"Path boundary");
-    var result=Advanced.DeepScan(app,CancellationToken.None,new[]{fixture});Assert(result.Items.Any(x=>x.Kind=="RegistryValue"&&x.ValueName==id),"Deep scan Run executable reference");
+    Directory.CreateDirectory(Path.Combine(fixture,"Programs",id));
+    var nested=Advanced.DeepScan(app,CancellationToken.None,new[]{fixture});
+    Assert(nested.Items.Any(x=>x.Kind=="RegistryValue"&&x.ValueName==id),"Deep scan Run executable reference");
+    Assert(nested.Items.Any(x=>x.Kind=="Folder"&&x.Path.IndexOf(Path.Combine("Programs",id),StringComparison.OrdinalIgnoreCase)>=0),"Deep scan nested Local\\Programs-style leftover");
     var cancelled=new CancellationTokenSource();cancelled.Cancel();Reject(()=>Advanced.DeepScan(app,cancelled.Token,new[]{fixture}));cancelled.Dispose();
     Assert(WindowsTools.Catalog().Count>=15&&WindowsTools.Catalog().Any(t=>t.Name=="Services"&&t.Available),"Windows tool catalog");
    }finally{

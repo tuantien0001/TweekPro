@@ -14,11 +14,12 @@ namespace AppCare {
   ListView apps=new SmoothListView(),remnants=new SmoothListView(),backups=new SmoothListView();
   TextBox search=new TextBox(),details=new TextBox(),log=new TextBox();
   Label selectionSummary=new Label();Label status=Theme.StatusBar();TabControl tabs=new TabControl();
+  Label appsOverlay,remnantsOverlay,backupsOverlay;
   List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
   ImageList appIcons=new ImageList(); Label appCount=new Label();
-  bool busy;string sessions=Path.Combine(Path.GetDirectoryName(Engine.Vault),"sessions.xml");
-  public const string Version="0.5";
+  bool busy;string inventoryError;string sessions=Path.Combine(Path.GetDirectoryName(Engine.Vault),"sessions.xml");
+  public const string Version="0.6";
 
   /// <summary>Builds the main window; when preview is true the inventory is not loaded automatically.</summary>
   public MainForm(bool preview=false){
@@ -34,6 +35,7 @@ namespace AppCare {
    tabs.TabPages.AddRange(new[]{installed,clean,vault,logs});
 
    SetupList(apps,new[]{"Ứng dụng","Phiên bản","Nhà phát hành","Dung lượng *","Phạm vi","Ngày cài / cập nhật"},new[]{340,140,240,120,120,165},true);
+   var appsHost=Theme.ListHost(apps,out appsOverlay);
    var bar=Bar();
    Add(bar,"Làm mới",async()=>await Reload());
    Add(bar,"Gỡ mục đã chọn",async()=>await Uninstall(),ButtonStyle.Primary);
@@ -41,16 +43,17 @@ namespace AppCare {
    Add(bar,"Xuất CSV",()=>{ExportApps();return Task.FromResult(0);});
    deepMode.Text="Quét sâu sau khi gỡ";deepMode.Checked=true;deepMode.AutoSize=true;deepMode.Margin=new Padding(12,8,16,0);deepMode.ForeColor=Theme.Text;bar.Controls.Add(deepMode);
    var searchLabel=new Label{Text="Tìm kiếm",AutoSize=true,Margin=new Padding(8,9,4,0),ForeColor=Theme.Muted};
-   search.Width=240;search.Margin=new Padding(0,5,0,0);search.Font=Theme.Body;search.BorderStyle=BorderStyle.FixedSingle;search.TextChanged+=(s,e)=>Filter();
+   search.Width=240;search.Height=28;search.Margin=new Padding(0,4,0,0);search.Font=Theme.Body;search.BorderStyle=BorderStyle.FixedSingle;search.ForeColor=Theme.Text;search.TextChanged+=(s,e)=>Filter();
    bar.Controls.Add(searchLabel);bar.Controls.Add(search);
    details.Dock=DockStyle.Bottom;details.Height=92;details.Multiline=true;details.ReadOnly=true;details.ScrollBars=ScrollBars.Vertical;details.BackColor=Theme.Stripe;details.ForeColor=Theme.Muted;details.BorderStyle=BorderStyle.None;details.Font=Theme.Small;
    var detailsWrap=new Panel{Dock=DockStyle.Bottom,Height=104,Padding=new Padding(16,10,16,10),BackColor=Theme.Stripe};Theme.BorderTop(detailsWrap);details.Dock=DockStyle.Fill;detailsWrap.Controls.Add(details);
    details.Text="Chọn một ứng dụng để xem thông tin. Dùng ô tìm kiếm để lọc theo tên hoặc nhà phát hành.";
    apps.SelectedIndexChanged+=(s,e)=>{var a=Selected();details.Text=a==null?"Chọn một ứng dụng để xem thông tin.":a.Name+"  •  "+a.Version+"\r\n"+a.Publisher+"  |  "+Presentation.SizeLabel(a.Size)+"  |  "+Presentation.DateLabel(a.InstallDate)+"\r\nThư mục: "+(String.IsNullOrWhiteSpace(a.Location)?"Chưa được ứng dụng khai báo":a.Location)+"\r\nNgày do bộ cài cung cấp, có thể là ngày cập nhật. Giá trị gốc: "+(String.IsNullOrWhiteSpace(a.InstallDate)?"không có":a.InstallDate);};
    appCount.Dock=DockStyle.Top;appCount.Height=34;appCount.Padding=new Padding(16,0,16,0);appCount.TextAlign=ContentAlignment.MiddleLeft;appCount.BackColor=Theme.Surface;appCount.ForeColor=Theme.Muted;appCount.Font=Theme.Small;Theme.BorderBottom(appCount);
-   installed.Controls.Add(apps);installed.Controls.Add(detailsWrap);installed.Controls.Add(appCount);installed.Controls.Add(bar);
+   installed.Controls.Add(appsHost);installed.Controls.Add(detailsWrap);installed.Controls.Add(appCount);installed.Controls.Add(bar);
 
-   SetupList(remnants,new[]{"Loại","Ứng dụng","Đường dẫn","Cơ sở đề xuất"},new[]{110,200,480,430},true);
+   SetupList(remnants,new[]{"Loại","Ứng dụng","Đường dẫn","Cơ sở đề xuất"},new[]{110,200,480,430},true,true);
+   var remnantsHost=Theme.ListHost(remnants,out remnantsOverlay);
    var cleanbar=Bar();
    Add(cleanbar,"Quét lại lịch sử gỡ",async()=>await ScanHistory());
    Add(cleanbar,"Quét siêu sâu",async()=>await DeepHistory());
@@ -62,20 +65,26 @@ namespace AppCare {
    var note=Theme.Note("Mục nghi còn sót, chưa chắc thuộc riêng ứng dụng và có thể chứa dữ liệu cá nhân. Chỉ dọn sau khi đăng ký cài đặt đã biến mất; mọi thao tác xóa đều được sao lưu vào kho.",NoteKind.Warning);
    selectionSummary.Dock=DockStyle.Bottom;selectionSummary.Height=34;selectionSummary.Padding=new Padding(16,0,16,0);selectionSummary.TextAlign=ContentAlignment.MiddleLeft;selectionSummary.BackColor=Theme.Surface;selectionSummary.ForeColor=Theme.Muted;selectionSummary.Font=Theme.Small;Theme.BorderTop(selectionSummary);
    remnants.ItemCheck+=(s,e)=>{if(((Candidate)remnants.Items[e.Index].Tag).ReviewOnly)e.NewValue=CheckState.Unchecked;};remnants.ItemChecked+=(s,e)=>UpdateSelectionSummary();
-   clean.Controls.Add(remnants);clean.Controls.Add(selectionSummary);clean.Controls.Add(note);clean.Controls.Add(cleanbar);
+   clean.Controls.Add(remnantsHost);clean.Controls.Add(selectionSummary);clean.Controls.Add(note);clean.Controls.Add(cleanbar);
 
    SetupList(backups,new[]{"Ngày","Ứng dụng","Loại","Trạng thái","Đường dẫn gốc"},new[]{175,210,110,150,520},false);
+   var backupsHost=Theme.ListHost(backups,out backupsOverlay);
    var backupbar=Bar();
    Add(backupbar,"Làm mới kho",()=>{LoadBackups();return Task.FromResult(0);});
    Add(backupbar,"Khôi phục mục đang chọn",async()=>await Restore(),ButtonStyle.Primary);
    Add(backupbar,"Mở kho",()=>{Directory.CreateDirectory(Engine.Vault);Process.Start("explorer.exe","\""+Engine.Vault+"\"");return Task.FromResult(0);});
    var backupnote=Theme.Note("Khôi phục file hoặc giá trị Registry đã dọn; không cài lại ứng dụng và không ghi đè đích đã tồn tại. Kho lưu trên máy này, không phải bản sao lưu chống hỏng ổ đĩa.",NoteKind.Info);
-   vault.Controls.Add(backups);vault.Controls.Add(backupnote);vault.Controls.Add(backupbar);
+   vault.Controls.Add(backupsHost);vault.Controls.Add(backupnote);vault.Controls.Add(backupbar);
 
    log.Dock=DockStyle.Fill;log.Multiline=true;log.ReadOnly=true;log.ScrollBars=ScrollBars.Both;log.BorderStyle=BorderStyle.None;log.Font=Theme.Mono;log.BackColor=Theme.Surface;log.ForeColor=Theme.Text;
-   var logWrap=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Surface};logWrap.Controls.Add(log);logs.Controls.Add(logWrap);
+   var logNote=Theme.Note("Nhật ký phiên hiện tại. Bản sao cũng được ghi vào %LOCALAPPDATA%\\AppCare\\activity.log trên máy này.",NoteKind.Info);
+   var logWrap=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Surface};logWrap.Controls.Add(log);logs.Controls.Add(logWrap);logs.Controls.Add(logNote);
    BuildAdvancedTabs();
+   foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
+   Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nAppCare đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
+   Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
+   Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
    if(!preview) Shown+=async(s,e)=>await Guard(async()=>await Reload());
    FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,"Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất.");}};
    try{if(File.Exists(sessions))history=Engine.Load<List<AppEntry>>(sessions);}catch(Exception e){Log("Không đọc được lịch sử: "+e.Message);}
@@ -96,7 +105,7 @@ namespace AppCare {
    var b=Theme.Button(text,style);b.Margin=new Padding(0,0,8,8);
    b.Click+=async(s,e)=>await Guard(action);bar.Controls.Add(b);actions.Add(b);
   }
-  void SetupList(ListView list,string[] names,int[] widths,bool check){Theme.StyleList(list);list.CheckBoxes=check;for(int i=0;i<names.Length;i++)list.Columns.Add(names[i],widths[i]);}
+  void SetupList(ListView list,string[] names,int[] widths,bool check,bool groups=false){Theme.StyleList(list);list.CheckBoxes=check;list.ShowGroups=groups;for(int i=0;i<names.Length;i++)list.Columns.Add(names[i],widths[i]);}
   async Task Guard(Func<Task> action){if(busy)return;busy=true;foreach(var b in actions)b.Enabled=false;deepMode.Enabled=false;search.Enabled=false;apps.Enabled=false;remnants.Enabled=false;backups.Enabled=false;try{await action();}catch(Exception e){Log("LỖI: "+e.Message);MessageBox.Show(this,e.Message,"AppCare",MessageBoxButtons.OK,MessageBoxIcon.Warning);}finally{busy=false;foreach(var b in actions)b.Enabled=true;deepMode.Enabled=true;search.Enabled=true;apps.Enabled=true;remnants.Enabled=true;backups.Enabled=true;}}
   void Log(string value){log.AppendText(DateTime.Now.ToString("HH:mm:ss")+"  "+value+"\r\n");status.Text=value;try{string dir=Path.GetDirectoryName(Engine.Vault);Directory.CreateDirectory(dir);File.AppendAllText(Path.Combine(dir,"activity.log"),DateTime.Now.ToString("s")+" "+value+Environment.NewLine,Encoding.UTF8);}catch{}}
   bool Confirm(string text){return MessageBox.Show(this,text,"Xác nhận thao tác",MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)==DialogResult.Yes;}
@@ -104,11 +113,32 @@ namespace AppCare {
   List<AppEntry> CheckedApps(){var list=apps.CheckedItems.Cast<ListViewItem>().Select(i=>(AppEntry)i.Tag).ToList();if(list.Count==0&&Selected()!=null)list.Add(Selected());return list;}
   public void PopulateForPreview(){inventory=Engine.Inventory();LoadAppIcons();Filter();LoadBackups();}
   public void PreviewRemnants(){PresentCandidates(new[]{new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Program Files\Example App",Reason="Dữ liệu minh họa giao diện, không phải kết quả quét."},new Candidate{Kind="Registry",AppName="Ứng dụng mẫu",Path=@"SOFTWARE\Example App",Hive="HKCU",View="64",Reason="Dữ liệu minh họa giao diện."}});tabs.SelectedIndex=1;SetRemnantChecks(true);}
-  async Task Reload(){Log("Đang đọc danh sách ứng dụng…");inventory=await Task.Run(()=>Engine.Inventory());LoadAppIcons();Filter();LoadBackups();Log("Đã đọc "+inventory.Count+" ứng dụng desktop. Chưa bao gồm toàn bộ ứng dụng Microsoft Store.");}
+  async Task Reload(){
+   Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nAppCare đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
+   Log("Đang đọc danh sách ứng dụng…");
+   try{
+    inventory=await Task.Run(()=>Engine.Inventory());inventoryError=null;LoadAppIcons();Filter();LoadBackups();
+    Log("Đã đọc "+inventory.Count+" ứng dụng desktop. Chưa bao gồm toàn bộ ứng dụng Microsoft Store.");
+   }catch(Exception e){
+    inventoryError=e.Message;inventory=new List<AppEntry>();LoadAppIcons();Filter();
+    throw;
+   }
+  }
   void LoadAppIcons(){appIcons.Images.Clear();var imageHandle=appIcons.Handle;foreach(var a in inventory){using(var bitmap=Presentation.AppIcon(a))appIcons.Images.Add(a.Id,bitmap);}}
-  void Filter(){var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();foreach(var a in inventory.Where(a=>(a.Name+" "+a.Publisher).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0)){
-   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?"Toàn máy":"Tài khoản",Presentation.DateLabel(a.InstallDate)}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText="Ngày bộ cài khai báo: "+(String.IsNullOrWhiteSpace(a.InstallDate)?"Không có":a.InstallDate)};Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
-  }apps.EndUpdate();appCount.Text=apps.Items.Count+" ứng dụng hiển thị  /  "+inventory.Count+" ứng dụng trên máy";}
+  void Filter(){
+   if(inventoryError!=null){
+    apps.BeginUpdate();apps.Items.Clear();apps.EndUpdate();appCount.Text="Không đọc được danh sách ứng dụng";
+    Theme.SetOverlay(appsOverlay,"Không đọc được danh sách ứng dụng.\r\n"+inventoryError+"\r\n\r\nBấm Làm mới để thử lại. Nếu khóa HKLM bị chặn, chạy AppCare với quyền quản trị cùng tài khoản Windows.",NoteKind.Error);
+    return;
+   }
+   var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();foreach(var a in inventory.Where(a=>(a.Name+" "+a.Publisher).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0)){
+   string location=String.IsNullOrWhiteSpace(a.Location)?"Chưa được ứng dụng khai báo thư mục cài":a.Location;
+   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?"Toàn máy":"Tài khoản",Presentation.DateLabel(a.InstallDate)}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+"\r\nNgày bộ cài khai báo: "+(String.IsNullOrWhiteSpace(a.InstallDate)?"Không có":a.InstallDate)};Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
+  }apps.EndUpdate();appCount.Text=apps.Items.Count+" ứng dụng hiển thị  /  "+inventory.Count+" ứng dụng trên máy";
+   if(inventory.Count==0)Theme.SetOverlay(appsOverlay,"Không tìm thấy ứng dụng desktop nào.\r\nAppCare đọc các khóa Uninstall của HKLM/HKCU; chưa gồm toàn bộ ứng dụng Microsoft Store.",NoteKind.Info);
+   else if(apps.Items.Count==0)Theme.SetOverlay(appsOverlay,"Không có ứng dụng khớp với «"+q+"».\r\nThử từ khóa khác hoặc xóa ô tìm kiếm.",NoteKind.Info);
+   else Theme.SetOverlay(appsOverlay,null,NoteKind.Info);
+  }
   void Remember(IEnumerable<AppEntry> entries){foreach(var a in entries){history.RemoveAll(x=>x.Id==a.Id);history.Add(a);}Directory.CreateDirectory(Path.GetDirectoryName(sessions));Engine.Save(sessions,history);}
   async Task Uninstall(){
    var queue=CheckedApps();if(queue.Count==0)throw new IOException("Chọn ứng dụng muốn gỡ.");
@@ -155,12 +185,23 @@ namespace AppCare {
   internal int CheckedRemnantCount { get { return remnants.CheckedItems.Count; } }
   internal void SetRemnantChecks(bool check){remnants.BeginUpdate();foreach(ListViewItem item in remnants.Items)item.Checked=check&&!((Candidate)item.Tag).ReviewOnly;remnants.EndUpdate();UpdateSelectionSummary();}
   void UpdateSelectionSummary(){selectionSummary.Text="Tìm thấy: "+remnants.Items.Count+" mục  •  Đã chọn: "+remnants.CheckedItems.Count+"  •  Xóa sẽ lưu bản khôi phục trước.";}
-  void RenderCandidates(){remnants.BeginUpdate();remnants.Items.Clear();foreach(var c in candidates){var row=new ListViewItem(new[]{CandidateKind(c),c.AppName,CandidatePath(c),(c.ReviewOnly?"CHỈ XEM • ":"")+c.Reason}){Tag=c,ToolTipText=CandidatePath(c)};if(c.ReviewOnly)row.ForeColor=Theme.Muted;Theme.StripeRow(row,remnants.Items.Count);remnants.Items.Add(row);}remnants.EndUpdate();UpdateSelectionSummary();}
+  void RenderCandidates(){
+   remnants.BeginUpdate();remnants.Items.Clear();remnants.Groups.Clear();
+   foreach(var c in candidates.OrderBy(Presentation.KindGroup).ThenBy(Presentation.CandidatePath,StringComparer.OrdinalIgnoreCase)){
+    var row=new ListViewItem(new[]{Presentation.KindLabel(c),c.AppName,Presentation.CandidatePath(c),(c.ReviewOnly?"CHỈ XEM • ":"")+c.Reason}){Tag=c,ToolTipText=Presentation.CandidatePath(c)+"\r\n"+c.Reason};
+    if(c.ReviewOnly)row.ForeColor=Theme.Muted;
+    Theme.AssignGroup(remnants,row,Presentation.KindGroup(c),Presentation.KindGroupHeader(Presentation.KindGroup(c)));
+    Theme.StripeRow(row,remnants.Items.Count);remnants.Items.Add(row);
+   }
+   remnants.EndUpdate();UpdateSelectionSummary();
+   if(candidates.Count==0)Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
+   else Theme.SetOverlay(remnantsOverlay,null,NoteKind.Info);
+  }
   void InspectCandidate(){
    if(remnants.SelectedItems.Count==0)throw new IOException("Chọn một mục để xem.");var c=(Candidate)remnants.SelectedItems[0].Tag;
    if(c.Kind=="Folder"){Engine.ValidateFolder(c.Path,false);Process.Start("explorer.exe","\""+c.Path+"\"");}
    else if(c.Kind=="File"){Advanced.ValidateFile(c.Path);Process.Start("explorer.exe","/select,\""+c.Path+"\"");}
-   else MessageBox.Show(this,CandidatePath(c)+"\r\n\r\n"+c.Reason+(c.ReviewOnly?"\r\n\r\nChỉ xem: không tự xóa mục này.":"\r\n\r\nKiểm tra đúng khóa hoặc giá trị trước khi chọn dọn."),"Chi tiết mục còn sót");
+   else MessageBox.Show(this,Presentation.CandidatePath(c)+"\r\n\r\n"+c.Reason+(c.ReviewOnly?"\r\n\r\nChỉ xem: không tự xóa mục này.":"\r\n\r\nKiểm tra đúng khóa hoặc giá trị trước khi chọn dọn."),"Chi tiết mục còn sót");
   }
   async Task Cleanup(){
    var selected=remnants.CheckedItems.Cast<ListViewItem>().Select(i=>(Candidate)i.Tag).Where(c=>!c.ReviewOnly).ToList();if(selected.Count==0)throw new IOException("Đánh dấu những mục đã kiểm tra và muốn dọn.");
@@ -171,11 +212,18 @@ namespace AppCare {
    string summary="Đã dọn và sao lưu: "+removedFolders+" mục file/thư mục, "+removedKeys+" mục Registry. Chưa dọn: "+failed+" mục. Còn hiển thị: "+candidates.Count+" mục.";
    Log(summary);MessageBox.Show(this,summary+"\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng.","Kết quả dọn",MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
-  void LoadBackups(){backups.BeginUpdate();backups.Items.Clear();foreach(var b in Engine.Backups()){string state=b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":"Cần kiểm tra";var row=new ListViewItem(new[]{Presentation.StampLabel(b.Created),b.AppName,b.Kind,state,b.Original}){Tag=b,ToolTipText=b.Original+(String.IsNullOrEmpty(b.Error)?"":"\r\n"+b.Error)};if(b.State=="Restored")row.ForeColor=Theme.Muted;else if(b.State!="BackedUp")row.ForeColor=Theme.Danger;Theme.StripeRow(row,backups.Items.Count);backups.Items.Add(row);}backups.EndUpdate();}
+  void LoadBackups(){
+   var items=Engine.Backups();
+   backups.BeginUpdate();backups.Items.Clear();
+   foreach(var b in items){string state=b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":"Cần kiểm tra";var row=new ListViewItem(new[]{Presentation.StampLabel(b.Created),b.AppName,b.Kind,state,b.Original}){Tag=b,ToolTipText=b.Original+(String.IsNullOrEmpty(b.Error)?"":"\r\n"+b.Error)};if(b.State=="Restored")row.ForeColor=Theme.Muted;else if(b.State!="BackedUp")row.ForeColor=Theme.Danger;Theme.StripeRow(row,backups.Items.Count);backups.Items.Add(row);}
+   backups.EndUpdate();
+   if(items.Count==0)Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
+   else Theme.SetOverlay(backupsOverlay,null,NoteKind.Info);
+  }
   async Task Restore(){if(backups.SelectedItems.Count==0)throw new IOException("Chọn một bản sao lưu.");var b=(Backup)backups.SelectedItems[0].Tag;if(b.State=="Restored")throw new IOException("Mục này đã khôi phục.");if(!Confirm("Khôi phục về vị trí gốc?\r\n"+b.Original+"\r\n\r\nKhông ghi đè nếu đích đã tồn tại. Nếu lần dọn trước bị gián đoạn, kiểm tra cả vị trí gốc và kho."))return;await Task.Run(()=>Engine.Restore(b));LoadBackups();Log("Đã khôi phục: "+b.Original);}
   string SavePath(string name){using(var dialog=new SaveFileDialog{Filter="CSV UTF-8|*.csv",FileName=name})return dialog.ShowDialog(this)==DialogResult.OK?dialog.FileName:null;}
   void ExportApps(){string p=SavePath("AppCare-applications.csv");if(p==null)return;var lines=new List<string>{"Name,Version,Publisher,SizeKB,RegistryView,InstallLocation,UninstallCommand"};lines.AddRange(inventory.Select(a=>String.Join(",",new[]{a.Name,a.Version,a.Publisher,a.Size.ToString(),a.Hive+"/"+a.View,a.Location,a.Command}.Select(Engine.Csv))));File.WriteAllLines(p,lines, new UTF8Encoding(true));Log("Đã xuất danh sách: "+p);}
-  void ExportCandidates(){string p=SavePath("AppCare-review.csv");if(p==null)return;var lines=new List<string>{"App,Kind,Path,Hive,View,Reason"};lines.AddRange(candidates.Select(c=>String.Join(",",new[]{c.AppName,c.Kind,CandidatePath(c),c.Hive,c.View,(c.ReviewOnly?"CHỈ XEM: ":"")+c.Reason}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new UTF8Encoding(true));Log("Đã xuất báo cáo: "+p);}
+  void ExportCandidates(){string p=SavePath("AppCare-review.csv");if(p==null)return;var lines=new List<string>{"App,Kind,Path,Hive,View,Reason"};lines.AddRange(candidates.Select(c=>String.Join(",",new[]{c.AppName,c.Kind,Presentation.CandidatePath(c),c.Hive,c.View,(c.ReviewOnly?"CHỈ XEM: ":"")+c.Reason}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new UTF8Encoding(true));Log("Đã xuất báo cáo: "+p);}
  }
  public static class Program {
   [STAThread]public static void Main(string[] args){
@@ -203,6 +251,11 @@ namespace AppCare {
    Assert(Presentation.DateLabel("9/18/2026")=="18/09/2026","Installer US date");
    Assert(Presentation.DateLabel("2026-09-02")=="02/09/2026","ISO date");
    Assert(Presentation.DateLabel("")=="Không rõ"&&Presentation.DateLabel("20260230")=="Không rõ","Missing or invalid date");
+   Assert(Presentation.KindGroup(new Candidate{Kind="Folder"})=="1-folder","Folder group");
+   Assert(Presentation.KindGroup(new Candidate{Kind="File",Path=@"C:\Users\a\Desktop\app.lnk"})=="3-shortcut","Shortcut group");
+   Assert(Presentation.KindGroup(new Candidate{Kind="Registry"})=="4-registry","Registry group");
+   Assert(Presentation.KindGroup(new Candidate{Kind="Review",ReviewOnly=true})=="5-review","Review-only group");
+   Assert(Presentation.PermissionNote("Không đủ quyền đọc: C:\\Program Files"),"Permission note");
    string iconPath;int iconIndex;Assert(Presentation.ParseIcon("\"C:\\Apps\\Example.dll\",-12",out iconPath,out iconIndex)&&iconIndex==-12&&!iconPath.Contains("\""),"Icon resource index");
    Assert(!Presentation.ParseIcon(@"\\server\share\icon.ico",out iconPath,out iconIndex),"Avoid network icon paths");
 
@@ -214,11 +267,19 @@ namespace AppCare {
    string exe=System.Reflection.Assembly.GetExecutingAssembly().Location;
    var info=Engine.UninstallInfo(new AppEntry{Key="Test",Command="\""+exe+"\" /test \"with space\""});Assert(info.FileName==exe&&info.Arguments=="/test \"with space\"","Command parsing");
    MustFail(()=>Engine.UninstallInfo(new AppEntry{Key="Test",Command="cmd.exe /c anything"}));
-   Assert(Engine.Csv("=1+1").Contains("'=1+1"),"CSV formula protection"); string name="AppCareTest"+Guid.NewGuid().ToString("N");string local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);string folder=Path.Combine(local,name);string vault=Path.Combine(local,name+"Vault");string originalVault=Engine.Vault;string key="SOFTWARE\\"+name;string view=Environment.Is64BitOperatingSystem?"64":"32";
+   Assert(Engine.Csv("=1+1").Contains("'=1+1"),"CSV formula protection"); string name="AppCareTest"+Guid.NewGuid().ToString("N");string local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);string folder=Path.Combine(local,name);string programsFolder=Path.Combine(local,"Programs",name);string tempHit=Path.Combine(Path.GetTempPath(),name);string tempNoise=Path.Combine(Path.GetTempPath(),name+"noise");string vault=Path.Combine(local,name+"Vault");string originalVault=Engine.Vault;string key="SOFTWARE\\"+name;string view=Environment.Is64BitOperatingSystem?"64":"32";
    try{
     Engine.Vault=vault;Directory.CreateDirectory(folder);File.WriteAllText(Path.Combine(folder,"sample.txt"),"sample data — kiểm thử");
     var sampleApp=new AppEntry{Name="Friendly "+name,Location=folder,Publisher="PublisherFixture",Hive="HKCU",View=view,Key="SOFTWARE\\"+name+"Missing"};
     Assert(Engine.Scan(sampleApp).Any(x=>x.Path==folder),"Install-folder alias scan");
+    Directory.CreateDirectory(programsFolder);File.WriteAllText(Path.Combine(programsFolder,"leftover.txt"),"per-user leftover");
+    var perUser=new AppEntry{Name=name,Publisher="PublisherFixture",Hive="HKCU",View=view,Key="SOFTWARE\\"+name+"Missing"};
+    Assert(Engine.Scan(perUser).Any(x=>String.Equals(Engine.Canon(x.Path),Engine.Canon(programsFolder),StringComparison.OrdinalIgnoreCase)),"Per-user Local\\Programs leftover");
+    MustFail(()=>Engine.ValidateFolder(Path.Combine(local,"Programs")));
+    Directory.CreateDirectory(tempHit);
+    Assert(Engine.Scan(perUser).Any(x=>String.Equals(Engine.Canon(x.Path),Engine.Canon(tempHit),StringComparison.OrdinalIgnoreCase)),"Temp leftover only with exact name fingerprint");
+    Directory.CreateDirectory(tempNoise);
+    Assert(!Engine.Scan(perUser).Any(x=>String.Equals(Engine.Canon(x.Path),Engine.Canon(tempNoise),StringComparison.OrdinalIgnoreCase)),"Do not fuzzy-scan Temp");
     using(var form=new MainForm(true)){
      var sample=new Candidate{Kind="Folder",Path=folder,AppName=name};form.PresentCandidates(new[]{sample,sample,new Candidate{Kind="Registry",Path=key,AppName=name,Hive="HKCU",View=view},new Candidate{Kind="Review",Path="Service: fixture",ReviewOnly=true}});
      Assert(form.CheckedRemnantCount==0,"No implicit selection");form.SetRemnantChecks(true);Assert(form.CheckedRemnantCount==2,"Select all and deduplicate");form.SetRemnantChecks(false);Assert(form.CheckedRemnantCount==0,"Deselect all");
@@ -234,6 +295,9 @@ namespace AppCare {
     Engine.Vault=originalVault;
     // Test cleanup is restricted to the randomly named fixtures created above.
     if(Path.GetFileName(folder)==name&&Engine.Under(Engine.Canon(folder),Engine.Canon(local))&&Directory.Exists(folder))Directory.Delete(folder,true);
+    if(Path.GetFileName(programsFolder)==name&&Engine.Under(Engine.Canon(programsFolder),Engine.Canon(Path.Combine(local,"Programs")))&&Directory.Exists(programsFolder))Directory.Delete(programsFolder,true);
+    if(Path.GetFileName(tempHit)==name&&Directory.Exists(tempHit))Directory.Delete(tempHit,true);
+    if(Path.GetFileName(tempNoise)==name+"noise"&&Directory.Exists(tempNoise))Directory.Delete(tempNoise,true);
     if(Path.GetFileName(vault)==name+"Vault"&&Engine.Under(Engine.Canon(vault),Engine.Canon(local))&&Directory.Exists(vault))Directory.Delete(vault,true);
     using(var root=Engine.Base("HKCU",view)){if(key=="SOFTWARE\\"+name)root.DeleteSubKeyTree(key,false);}
    }

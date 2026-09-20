@@ -61,13 +61,38 @@ namespace AppCare {
     if((attributes&FileAttributes.Directory)!=0)NoLinks(entry,true);
    }
   }
-  public static string[] Roots(){return new[]{Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}.Where(s=>s!="").Select(Canon).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();}
+  /// <summary>Returns the current user's AppData\LocalLow folder, which sits beside Local rather than under it.</summary>
+  public static string LocalLow(){
+   string local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+   if(String.IsNullOrWhiteSpace(local))return "";
+   string parent=Path.GetDirectoryName(local);
+   return String.IsNullOrWhiteSpace(parent)?"":Canon(Path.Combine(parent,"LocalLow"));
+  }
+  /// <summary>Returns %LOCALAPPDATA%\Programs, the usual per-user install root for Electron and similar installers.</summary>
+  public static string LocalPrograms(){
+   string local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+   return String.IsNullOrWhiteSpace(local)?"":Canon(Path.Combine(local,"Programs"));
+  }
+  static string[] UniquePaths(IEnumerable<string> paths){return paths.Where(s=>!String.IsNullOrWhiteSpace(s)).Select(Canon).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();}
+  /// <summary>Folders whose descendants may be quarantined after an uninstall, including per-user Programs and LocalLow.</summary>
+  public static string[] Roots(){return UniquePaths(new[]{Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),LocalPrograms(),Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),LocalLow(),Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)});}
+  /// <summary>User-local roots first so leftover scans reach AppData installs before Program Files can exhaust the visit budget.</summary>
+  public static string[] ScanRoots(){return UniquePaths(new[]{LocalPrograms(),Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),LocalLow(),Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)});}
+  /// <summary>AppData locations checked by exact name / publisher\app probes, including per-user Programs.</summary>
+  public static string[] DataRoots(){return UniquePaths(new[]{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),LocalPrograms(),Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),LocalLow(),Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)});}
+  /// <summary>Temp folders that may be probed by fingerprint only, never walked in full.</summary>
+  public static string[] TempRoots(){
+   var list=new List<string>();
+   string local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+   if(!String.IsNullOrWhiteSpace(local))list.Add(Path.Combine(local,"Temp"));
+   try{list.Add(Path.GetTempPath());}catch(IOException){}
+   return UniquePaths(list);
+  }
   public static void ValidateFolder(string path,bool inspectTree=true){
    string p=Canon(path); var roots=Roots();
    if(!roots.Any(r=>Under(p,r))||roots.Any(r=>String.Equals(p,r,StringComparison.OrdinalIgnoreCase)))throw new IOException("Đường dẫn nằm ngoài vùng được phép dọn.");
    string local=Canon(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-   string[] banned={Path.Combine(local,"Programs"),Path.Combine(local,"AppCare")};
-   if(banned.Any(r=>String.Equals(p,r,StringComparison.OrdinalIgnoreCase))||Under(p,Path.Combine(local,"AppCare")))throw new IOException("Đây là thư mục được bảo vệ.");
+   if(Under(p,Path.Combine(local,"AppCare"))||String.Equals(p,Path.Combine(local,"AppCare"),StringComparison.OrdinalIgnoreCase))throw new IOException("Đây là thư mục được bảo vệ.");
    foreach(var r in roots)foreach(var name in new[]{"Microsoft","Windows","Common Files","Packages"}){
     string blocked=Path.Combine(r,name);if(String.Equals(p,blocked,StringComparison.OrdinalIgnoreCase)||Under(p,blocked))throw new IOException("Không dọn vùng hệ thống hoặc thành phần dùng chung.");
    }
@@ -85,13 +110,20 @@ namespace AppCare {
     if(SafeName(leaf)&&!String.Equals(leaf,app.Publisher,StringComparison.OrdinalIgnoreCase))names.Add(leaf);
    }catch(IOException){}catch(ArgumentException){}catch(UnauthorizedAccessException){}
 
-   if(!String.IsNullOrWhiteSpace(app.Location)){
-    try{string p=Canon(app.Location);ValidateFolder(p,false);if(Directory.Exists(p))found.Add(new Candidate{Kind="Folder",Path=p,Reason="Thư mục InstallLocation do ứng dụng khai báo; cần duyệt nội dung."});}catch(IOException){}catch(ArgumentException){}catch(UnauthorizedAccessException){}
+   Action<string,string> addFolder=(path,reason)=>{
+    try{ValidateFolder(path,false);if(Directory.Exists(path))found.Add(new Candidate{Kind="Folder",Path=Canon(path),Reason=reason});}catch(IOException){}catch(ArgumentException){}catch(UnauthorizedAccessException){}
+   };
+   if(!String.IsNullOrWhiteSpace(app.Location))addFolder(app.Location,"Thư mục InstallLocation do ứng dụng khai báo; cần duyệt nội dung.");
+   foreach(string root in DataRoots())foreach(string n in names){
+    addFolder(Path.Combine(root,n),"Trùng tên ứng dụng hoặc tên thư mục cài đã ghi nhận trong AppData/ProgramData; có thể chứa dữ liệu cá nhân.");
+    if(SafeName(app.Publisher))addFolder(Path.Combine(root,app.Publisher,n),"Đường dẫn nhà phát hành\\ứng dụng trong AppData/ProgramData; cần duyệt nội dung.");
    }
-   foreach(string root in new[]{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)})foreach(string n in names){
-    foreach(string p in new[]{Path.Combine(root,n),SafeName(app.Publisher)?Path.Combine(root,app.Publisher,n):""}){
-     if(p=="")continue;try{ValidateFolder(p,false);if(Directory.Exists(p))found.Add(new Candidate{Kind="Folder",Path=p,Reason="Trùng tên ứng dụng hoặc tên thư mục cài đã ghi nhận; có thể chứa dữ liệu cá nhân."});}catch(IOException){}catch(UnauthorizedAccessException){}
-    }
+   foreach(string temp in TempRoots())foreach(string n in names){
+    addFolder(Path.Combine(temp,n),"Thư mục tạm trùng tên ứng dụng hoặc thư mục cài; chỉ đưa vào khi khớp dấu vân tay, không quét toàn bộ Temp.");
+    if(SafeName(app.Publisher))addFolder(Path.Combine(temp,app.Publisher,n),"Thư mục tạm theo nhà phát hành\\ứng dụng; chỉ đưa vào khi khớp dấu vân tay.");
+   }
+   if(app.KnownExecutables!=null)foreach(string exe in app.KnownExecutables){
+    try{string dir=Path.GetDirectoryName(exe);if(!String.IsNullOrWhiteSpace(dir))addFolder(dir,"Thư mục chứa executable đã ghi nhận trước khi gỡ; cần duyệt nội dung.");}catch(ArgumentException){}
    }
    foreach(string h in new[]{"HKCU","HKLM"})foreach(string v in (Environment.Is64BitOperatingSystem?new[]{"64","32"}:new[]{"32"}))foreach(string n in names){
     foreach(string key in new[]{"SOFTWARE\\"+n,SafeName(app.Publisher)?"SOFTWARE\\"+app.Publisher+"\\"+n:""}){

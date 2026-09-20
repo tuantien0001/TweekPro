@@ -141,7 +141,22 @@ namespace AppCare {
   static HashSet<string> Names(AppEntry app){
    var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);if(Engine.SafeName(app.Name))names.Add(app.Name);
    if(!String.IsNullOrEmpty(app.Location))try{Engine.ValidateFolder(app.Location,false);string leaf=Path.GetFileName(Engine.Canon(app.Location));if(Engine.SafeName(leaf)&&!String.Equals(leaf,app.Publisher,StringComparison.OrdinalIgnoreCase))names.Add(leaf);}catch(Exception){}
+   if(app.KnownExecutables!=null)foreach(string exe in app.KnownExecutables)try{
+    string dir=Path.GetDirectoryName(exe);if(String.IsNullOrWhiteSpace(dir))continue;Engine.ValidateFolder(dir,false);
+    string leaf=Path.GetFileName(Engine.Canon(dir));if(Engine.SafeName(leaf)&&!String.Equals(leaf,app.Publisher,StringComparison.OrdinalIgnoreCase))names.Add(leaf);
+   }catch(Exception){}
    return names;
+  }
+  /// <summary>Adds exact name and publisher\app children of one folder without walking the rest of the tree.</summary>
+  static void AddFingerprintChildren(string parent,HashSet<string> names,string publisher,ScanResult result,string reason){
+   if(String.IsNullOrWhiteSpace(parent)||!Directory.Exists(parent))return;
+   foreach(string n in names){
+    TryFolder(Path.Combine(parent,n),result,reason);
+    if(Engine.SafeName(publisher))TryFolder(Path.Combine(parent,publisher,n),result,reason);
+   }
+  }
+  static void TryFolder(string path,ScanResult result,string reason){
+   try{Engine.ValidateFolder(path,false);if(Directory.Exists(path))result.Items.Add(new Candidate{Kind="Folder",Path=Engine.Canon(path),Reason=reason});}catch(IOException){}catch(ArgumentException){}catch(UnauthorizedAccessException){}
   }
 
   static void Release(object o){if(o!=null&&Marshal.IsComObject(o))Marshal.FinalReleaseComObject(o);}
@@ -196,8 +211,11 @@ namespace AppCare {
    var identity=new AppEntry{Name=app.Name,Location=app.Location,KnownExecutables=(app.KnownExecutables??new List<string>()).ToList()};
    if(!String.IsNullOrWhiteSpace(identity.Location))foreach(var other in others)try{if(!String.IsNullOrWhiteSpace(other.Location)&&Engine.Overlap(Engine.Canon(identity.Location),Engine.Canon(other.Location))){identity.Location="";result.Notes.Add("Không dùng thư mục cài chung làm bằng chứng: "+app.Location);break;}}catch(ArgumentException){}
    identity.KnownExecutables=identity.KnownExecutables.Where(exe=>!others.Any(other=>{string icon;int i;return Presentation.ParseIcon(other.DisplayIcon,out icon,out i)&&String.Equals(icon,exe,StringComparison.OrdinalIgnoreCase);})).ToList();var names=Names(app);var watch=Stopwatch.StartNew();
-   // Bounded breadth-first traversal through application data roots; never whole-disk fuzzy deletion.
-   foreach(string root in folderRoots??Engine.Roots()){
+   if(app.KnownExecutables!=null)foreach(string exe in app.KnownExecutables)try{string dir=Path.GetDirectoryName(exe);if(!String.IsNullOrWhiteSpace(dir))TryFolder(dir,result,"Thư mục chứa executable đã ghi nhận trước khi gỡ; cần duyệt nội dung.");}catch(ArgumentException){}
+   foreach(string temp in Engine.TempRoots())AddFingerprintChildren(temp,names,app.Publisher,result,"Thư mục tạm trùng tên ứng dụng hoặc thư mục cài; chỉ đưa vào khi khớp dấu vân tay, không quét toàn bộ Temp.");
+   var scanRoots=(folderRoots??Engine.ScanRoots()).Where(Directory.Exists).Select(Engine.Canon).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+   var rootSet=new HashSet<string>(scanRoots,StringComparer.OrdinalIgnoreCase);
+   foreach(string root in scanRoots){
     var queue=new Queue<Tuple<string,int>>();queue.Enqueue(Tuple.Create(root,0));
     report("Đang duyệt thư mục trong "+root,root);
     while(queue.Count>0){
@@ -210,10 +228,16 @@ namespace AppCare {
        if((File.GetAttributes(dir)&(FileAttributes.ReparsePoint|FileAttributes.Offline))!=0)continue;
        string leaf=Path.GetFileName(dir);
        if(new[]{"Microsoft","Windows","Common Files","Packages","AppCare","node_modules",".git"}.Contains(leaf,StringComparer.OrdinalIgnoreCase))continue;
-       if(names.Contains(leaf)){
-        try{Engine.ValidateFolder(dir,false);result.Items.Add(new Candidate{Kind="Folder",Path=dir,Reason="Quét sâu: tên thư mục trùng chính xác tên ứng dụng hoặc thư mục cài; cần duyệt dữ liệu."});}catch(IOException){}
+       if(String.Equals(leaf,"Temp",StringComparison.OrdinalIgnoreCase)){
+        AddFingerprintChildren(dir,names,app.Publisher,result,"Thư mục tạm trùng tên ứng dụng hoặc thư mục cài; chỉ đưa vào khi khớp dấu vân tay, không quét toàn bộ Temp.");
         continue;
        }
+       if(names.Contains(leaf)){
+        TryFolder(dir,result,"Quét sâu: tên thư mục trùng chính xác tên ứng dụng hoặc thư mục cài; cần duyệt dữ liệu.");
+        continue;
+       }
+       string canonDir;try{canonDir=Engine.Canon(dir);}catch(ArgumentException){continue;}
+       if(rootSet.Contains(canonDir))continue;
        if(current.Item2<5)queue.Enqueue(Tuple.Create(dir,current.Item2+1));
       }
      }catch(UnauthorizedAccessException){result.Notes.Add("Không đủ quyền đọc: "+current.Item1);}catch(IOException){result.Notes.Add("Bỏ qua đường dẫn không đọc được: "+current.Item1);}

@@ -36,6 +36,37 @@ namespace AppCare {
    int keep=Math.Max(8,max/3);
    return path.Substring(0,keep)+"…"+path.Substring(path.Length-(max-keep-1));
   }
+  /// <summary>Formats a leftover candidate path, including hive, view and value name when present.</summary>
+  public static string CandidatePath(Candidate c){return (c.Hive==null?"":c.Hive+" ["+c.View+"]\\")+c.Path+(c.ValueName==null?"":" :: "+c.ValueName);}
+  /// <summary>Returns the Vietnamese kind label shown in leftover lists.</summary>
+  public static string KindLabel(Candidate c){
+   if(c.ReviewOnly||c.Kind=="Review")return "Chỉ xem";
+   if(c.Kind=="Folder")return "Thư mục";
+   if(c.Kind=="File")return IsShortcut(c)?"Shortcut":"Tệp";
+   if(c.Kind=="RegistryValue")return "Giá trị Registry";
+   return "Khóa Registry";
+  }
+  /// <summary>Returns a sortable group key so leftover rows cluster as folder, file, shortcut, registry, then review-only.</summary>
+  public static string KindGroup(Candidate c){
+   if(c.ReviewOnly||c.Kind=="Review")return "5-review";
+   if(c.Kind=="Folder")return "1-folder";
+   if(c.Kind=="File")return IsShortcut(c)?"3-shortcut":"2-file";
+   return "4-registry";
+  }
+  /// <summary>Returns the Vietnamese header for a leftover kind group key.</summary>
+  public static string KindGroupHeader(string key){
+   if(key=="1-folder")return "Thư mục";
+   if(key=="2-file")return "Tệp";
+   if(key=="3-shortcut")return "Shortcut";
+   if(key=="4-registry")return "Registry";
+   return "Chỉ xem";
+  }
+  /// <summary>True when a leftover note records a permission or unreadable-path failure.</summary>
+  public static bool PermissionNote(string note){
+   if(String.IsNullOrEmpty(note))return false;
+   return note.IndexOf("Không đủ quyền",StringComparison.OrdinalIgnoreCase)>=0||note.IndexOf("Không đọc được",StringComparison.OrdinalIgnoreCase)>=0;
+  }
+  static bool IsShortcut(Candidate c){return c.Path!=null&&c.Path.EndsWith(".lnk",StringComparison.OrdinalIgnoreCase);}
   [DllImport("shell32.dll",CharSet=CharSet.Unicode)]static extern uint ExtractIconEx(string file,int index,out IntPtr large,out IntPtr small,uint count);
   [DllImport("user32.dll")]static extern bool DestroyIcon(IntPtr icon);
   public static bool ParseIcon(string raw,out string path,out int index){
@@ -146,5 +177,33 @@ namespace AppCare {
   }
   /// <summary>Applies an alternating background to list rows to improve scanning of long lists.</summary>
   public static void StripeRow(ListViewItem item,int index){item.BackColor=index%2==0?Surface:Stripe;}
+  /// <summary>Creates a fill host that can show either a list or a centered empty/loading/error overlay.</summary>
+  public static Panel ListHost(Control list,out Label overlay){
+   var host=new Panel{Dock=DockStyle.Fill,BackColor=Surface};
+   overlay=new Label{Dock=DockStyle.Fill,Visible=false,TextAlign=ContentAlignment.MiddleCenter,Font=Body,Padding=new Padding(48,24,48,24)};
+   list.Dock=DockStyle.Fill;
+   host.Controls.Add(list);
+   host.Controls.Add(overlay);
+   return host;
+  }
+  /// <summary>Shows a tinted overlay above a list, or hides it when text is null or empty.</summary>
+  public static void SetOverlay(Label overlay,string text,NoteKind kind){
+   if(overlay==null)return;
+   if(String.IsNullOrEmpty(text)){overlay.Visible=false;return;}
+   overlay.Text=text;Tint(overlay,kind);overlay.Visible=true;overlay.BringToFront();
+  }
+  /// <summary>Places a row into a named group, creating the group in kind-key order if needed.</summary>
+  public static void AssignGroup(ListView list,ListViewItem item,string key,string header){
+   list.ShowGroups=true;
+   ListViewGroup group=null;
+   foreach(ListViewGroup existing in list.Groups)if(existing.Name==key){group=existing;break;}
+   if(group==null){
+    group=new ListViewGroup(key,header);
+    int index=0;
+    while(index<list.Groups.Count&&String.Compare(list.Groups[index].Name,key,StringComparison.Ordinal)<0)index++;
+    list.Groups.Insert(index,group);
+   }
+   item.Group=group;
+  }
  }
 }
