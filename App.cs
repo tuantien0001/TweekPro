@@ -94,8 +94,9 @@ namespace TweekPro {
    var logWrap=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Surface};logWrap.Controls.Add(log);logs.Controls.Add(logWrap);logs.Controls.Add(logNote);logs.Controls.Add(logbar);
    BuildAdvancedTabs();
    BuildJunkTab();
+   BuildDuplicateTab();
    BuildNetworkTab();
-   var ordered=new TabPage[]{installed,clean,junkTab,vault,autorunTab,netTab,toolsTab,logs};
+   var ordered=new TabPage[]{installed,clean,junkTab,dupeTab,vault,autorunTab,netTab,toolsTab,logs};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
@@ -255,7 +256,7 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary+"\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng.","Kết quả dọn",MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
   static string StateLabel(Backup b){return b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":"Cần kiểm tra";}
-  static string KindLabel(Backup b){return b.Kind=="Junk"?"Rác":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
+  static string KindLabel(Backup b){return b.Kind=="Junk"?"Rác":b.Kind=="Duplicate"?"Bản trùng":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){
@@ -325,7 +326,7 @@ namespace TweekPro {
      if(args.Length>1&&args[1]=="junk")Tests07.Run();
      if(!coreOnly){Tests.Run();AdvancedTests.Run();Tests07.Run();}
      bool junkMode=args.Length>1&&args[1]=="junk";
-     File.WriteAllText(results,(junkMode?"PASS (core + junk cleaner/vault/purge, no registry/UI): ":coreOnly?"PASS (core only): ":"PASS: ")+"junk rule parsing/expansion/glob/safety, purge selection by age, data-dir migration, settings round-trip, log rotation, stored-name mapping"+(junkMode?", junk preview/clean/restore via vault, direct delete, in-use skip, locked rule, vault purge, legacy vault listing":"")+(coreOnly?"":", path boundaries, protected folders, command parsing, file backup/restore, registry value round-trip, destination collision, live inventory (read-only), exact install-folder alias scan, bulk selection, deduplication, install-date formatting, icon resource parsing, autorun value/shortcut backup and restore, stale-value conflict protection, deep scan, tool catalog, junk vault round-trip, vault purge, legacy vault listing, connection table snapshot")+".\r\n"+DateTime.Now.ToString("s"));
+     File.WriteAllText(results,(junkMode?"PASS (core + junk cleaner/vault/purge, no registry/UI): ":coreOnly?"PASS (core only): ":"PASS: ")+"junk rule parsing/expansion/glob/safety, purge selection by age, data-dir migration, settings round-trip, log rotation, stored-name mapping"+(junkMode?", junk preview/clean/restore via vault, direct delete, in-use skip, locked rule, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore":"")+(coreOnly?"":", path boundaries, protected folders, command parsing, file backup/restore, registry value round-trip, destination collision, live inventory (read-only), exact install-folder alias scan, bulk selection, deduplication, install-date formatting, icon resource parsing, autorun value/shortcut backup and restore, stale-value conflict protection, deep scan, tool catalog, junk vault round-trip, vault purge, legacy vault listing, duplicate finder scan/quarantine/restore, connection table snapshot")+".\r\n"+DateTime.Now.ToString("s"));
      Environment.ExitCode=0;
     }catch(Exception e){File.WriteAllText(results,e.ToString());Console.Error.WriteLine(e);Environment.ExitCode=1;}
     return;
