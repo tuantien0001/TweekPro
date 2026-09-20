@@ -270,7 +270,7 @@ namespace TweekPro {
     if(key==null)continue;foreach(string sub in key.GetSubKeyNames()){cancel.ThrowIfCancellationRequested();using(var k=key.OpenSubKey(sub))if(k!=null&&MatchesPath(identity,Engine.Read(k,"").Trim('"')))result.Items.Add(new Candidate{Kind="Review",Path=h+"\\"+AppPaths+"\\"+sub,ReviewOnly=true,Reason="App Paths liên hệ với executable; chỉ xem, chưa tự xóa đăng ký hệ thống."});}
    }}catch(UnauthorizedAccessException){result.Notes.Add("Không đọc được App Paths.");}
    using(var root=Engine.Base("HKLM",Views[0]))using(var services=root.OpenSubKey(@"SYSTEM\CurrentControlSet\Services"))if(services!=null)foreach(string name in services.GetSubKeyNames())try{
-    cancel.ThrowIfCancellationRequested();using(var key=services.OpenSubKey(name))if(key!=null&&MatchesPath(identity,CommandExe(Engine.Read(key,"ImagePath"))))result.Items.Add(new Candidate{Kind="Review",Path="Service: "+name,ReviewOnly=true,Reason="Dịch vụ tham chiếu đường dẫn ứng dụng; kiểm tra trong Windows Tools → Services."});
+    cancel.ThrowIfCancellationRequested();using(var key=services.OpenSubKey(name))if(key!=null&&MatchesPath(identity,CommandExe(Engine.Read(key,"ImagePath"))))result.Items.Add(new Candidate{Kind="Review",Path="Service: "+name,ReviewOnly=true,Reason="Dịch vụ tham chiếu đường dẫn ứng dụng; kiểm tra trong Công cụ → Services."});
    }catch(UnauthorizedAccessException){result.Notes.Add("Không đọc được dịch vụ "+name);}
    report("Đang kiểm tra nhánh Registry nhà phát hành và tác vụ theo lịch…",null);
    ScanVendorRegistry(app,names,result,cancel);ScanTasks(identity,result,cancel);
