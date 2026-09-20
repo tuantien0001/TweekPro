@@ -1,2 +1,2 @@
 PASS (core + junk cleaner/vault/purge, no registry/UI): junk rule parsing/expansion/glob/safety, purge selection by age, data-dir migration, settings round-trip, log rotation, stored-name mapping, junk preview/clean/restore via vault, direct delete, in-use skip, locked rule, vault purge, legacy vault listing.
-2026-09-20T17:03:03
+2026-09-20T17:08:56

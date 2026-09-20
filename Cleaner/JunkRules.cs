@@ -199,7 +199,7 @@ namespace TweekPro.Cleaner {
     if(!Engine.Under(full,root))return false;
     if(minAgeHours>0){
      DateTime threshold=now.AddHours(-minAgeHours);
-     if(file.LastWriteTime>threshold||file.CreationTime>threshold||file.LastAccessTime>threshold)return false;
+     if(file.LastWriteTime>threshold||file.CreationTime>threshold)return false;
     }
     return true;
    }catch(IOException){return false;}catch(UnauthorizedAccessException){return false;}

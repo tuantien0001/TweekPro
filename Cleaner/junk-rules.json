@@ -122,7 +122,7 @@
       "recurse": true,
       "minAgeHours": 0,
       "requiresAdmin": false,
-      "blockedProcesses": ["msedge", "msedgewebview2"],
+      "blockedProcesses": ["msedge"],
       "defaultChecked": true
     },
     {

@@ -110,7 +110,7 @@ namespace TweekPro {
   }
   /// <summary>Configures the tab strip with flat, owner-drawn headers and an accent underline for the active tab.</summary>
   void BuildTabs(){
-   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(164,44);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
+   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(136,44);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
    tabs.DrawItem+=(s,e)=>{
     bool active=e.Index==tabs.SelectedIndex;var bounds=e.Bounds;
     using(var bg=new SolidBrush(active?Theme.Surface:Theme.Canvas))e.Graphics.FillRectangle(bg,bounds);

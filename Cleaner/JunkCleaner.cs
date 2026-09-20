@@ -54,7 +54,8 @@ namespace TweekPro.Cleaner {
     var blockers=RunningBlockers(rule);
     if(blockers.Count>0){result.Locked=true;result.LockReason="Trình duyệt/ứng dụng đang chạy: "+String.Join(", ",blockers)+". Đóng hẳn rồi xem trước lại.";}
     if(rule.RequiresAdmin&&!elevated){result.Locked=true;result.LockReason=(result.LockReason==""?"":result.LockReason+" ")+"Cần quyền quản trị.";}
-    int minAge=minAgeOverrideHours>=0?Math.Max(rule.MinAgeHours,minAgeOverrideHours):rule.MinAgeHours;
+    // The settings value is a floor for rules that already filter by age; rules with 0 (browser caches) stay at 0.
+    int minAge=rule.MinAgeHours>0&&minAgeOverrideHours>=0?Math.Max(rule.MinAgeHours,minAgeOverrideHours):rule.MinAgeHours;
     var patterns=rule.Patterns.Select(JunkRules.GlobToRegex).ToList();
     var watch=Stopwatch.StartNew();
     foreach(string template in rule.Paths){
@@ -121,7 +122,7 @@ namespace TweekPro.Cleaner {
     if(blockers.Count>0)throw new IOException(result.Rule.Name+": "+String.Join(", ",blockers)+" vừa được khởi động; bỏ qua nhóm này.");
     foreach(string root in result.Roots)JunkSafety.ValidateRoot(root,allowed,browsers,forbidden);
     if(direct)CleanDirect(result,report,cancel,progress);else CleanToVault(result,report,cancel,progress);
-    foreach(string root in result.Roots)RemoveEmptyDirectories(root);
+    if(result.Rule.Recurse)foreach(string root in result.Roots)RemoveEmptyDirectories(root);
    }
    return report;
   }

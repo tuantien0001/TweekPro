@@ -32,7 +32,7 @@ namespace TweekPro.Network {
    if(pid==4)return new ProcessIdentity{Pid=4,Name="System",Publisher="Windows"};
    long start=StartTimeOf(pid);
    ProcessIdentity cached;
-   if(cache.TryGetValue(pid,out cached)&&cached.StartTime==start&&start!=0)return cached;
+   if(cache.TryGetValue(pid,out cached)&&cached.StartTime==start)return cached;
    var identity=new ProcessIdentity{Pid=pid,StartTime=start};
    IntPtr handle=OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,false,pid);
    if(handle!=IntPtr.Zero){
