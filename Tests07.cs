@@ -33,6 +33,9 @@ namespace TweekPro {
     age();
     var rule=new JunkRule{Id="fixture",Name="Fixture",Group="Test",Paths=new List<string>{junkRoot},Patterns=new List<string>{"*"},Recurse=true,MinAgeHours=windows?24:0};
 
+    // Network application view: direction classification, per-process rollup and labels (platform-neutral).
+    Network.NetworkStatsTests.Run();
+
     // Safety boundary: rules cannot reach user documents, the data folder or a whole AppData root.
     MustFail(()=>JunkSafety.ValidateRoot(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)),"Documents refused");
     MustFail(()=>JunkSafety.ValidateRoot(local),"LocalAppData root refused");
