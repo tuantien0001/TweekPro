@@ -1,12 +1,16 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 01:35 (Asia/Bangkok).
-Status: IN PROGRESS (Cursor). Owner: Khởi động should be as complete as Revo Autorun Manager, with checkboxes to turn items off.
+Updated: 2026-09-22 01:48 (Asia/Bangkok).
+Status: DONE (Cursor). Owner asked to cut release 0.7.4.
 Last editor: Cursor.
 
-## Current task (01:35)
+## Current task (01:48)
 
-Autorun expansion, not released (version stays 0.7.3 until the owner asks to cut 0.7.4).
+J. DONE Release v0.7.4 (owner 01:41). `release.ps1 -Version 0.7.4` → commit `0e15ded`, annotated tag `v0.7.4`. Self-test PASS 01:42. Actions run 35640168638 success; branch run skipped because the message starts with "Release v". Release published 01:43 UTC+7 with Setup + portable zip: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.4 . Setup installed (`/VERYSILENT /CLOSEAPPLICATIONS`, exit 0); `C:\Program Files\Tweek Pro\TweekPro-0.7.4.exe` file version 0.7.4.0 and relaunched.
+
+## Previous task (01:35)
+
+Autorun expansion, released as 0.7.4.
 - `Startup/StartupSources.cs`: packaged startup tasks (HKCU AppModel SystemAppData State) and automatic Win32 services (no kernel/FS drivers). Core services stay listed and `DisableAutostart` refuses them. Disable does not stop a running service. Vault `Kind=StartupTask` / `Kind=Service` Purpose=Autorun.
 - Checkbox on the Khởi động list. ItemCheck ignores a change that already matches the row, so creating the list handle no longer tries to "enable" every checked item (that produced `LỖI: Mục này không có công tắc…` in the status bar).
 - Groups in order: Run / Startup, Ứng dụng Windows, Dịch vụ tự chạy, Kho Tweek Pro.
