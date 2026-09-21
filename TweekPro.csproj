@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Cleaner\junk-rules.json" LogicalName="TweekPro.Cleaner.junk-rules.json" />
+    <EmbeddedResource Include="Services\service-knowledge.json" LogicalName="TweekPro.Services.service-knowledge.json" />
   </ItemGroup>
 
   <ItemGroup>

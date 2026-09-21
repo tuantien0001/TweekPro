@@ -124,6 +124,8 @@ namespace TweekPro {
      case "globe":Globe(g,r,pen);break;
      case "gear":Gear(g,r,pen,brush);break;
      case "doc":Document(g,r,pen);break;
+     case "layers":Layers(g,r,pen,brush);break;
+     case "spark":Spark(g,r,brush);break;
      default:g.FillEllipse(brush,r.X+r.Width/2-3,r.Y+r.Height/2-3,6,6);break;
     }
    }
@@ -145,6 +147,8 @@ namespace TweekPro {
    if(has("Kho","Vault"))return "shield";
    if(has("Autorun","Startup")||t.IndexOf("Khởi động",StringComparison.OrdinalIgnoreCase)>=0)return "bolt";
    if(has("Mạng","Network"))return "globe";
+   if(has("Dịch vụ hệ thống","Services"))return "layers";
+   if(has("Trợ lý AI","AI Assistant"))return "spark";
    if(has("Tools","Công cụ"))return "gear";
    if(has("Nhật ký","Log"))return "doc";
    return "dot";
@@ -240,6 +244,17 @@ namespace TweekPro {
    float cx=r.X+r.Width/2f,cy=r.Y+r.Height/2f,outer=r.Width/2f,inner=r.Width/2f-inset;
    for(int i=0;i<8;i++){double a=i*Math.PI/4;g.DrawLine(pen,cx+(float)Math.Cos(a)*inner,cy+(float)Math.Sin(a)*inner,cx+(float)Math.Cos(a)*outer,cy+(float)Math.Sin(a)*outer);}
    g.FillEllipse(brush,cx-2,cy-2,4,4);
+  }
+  static void Layers(Graphics g,Rectangle r,Pen pen,Brush brush){
+   int h=Math.Max(3,r.Height/4),gap=Math.Max(1,(r.Height-h*3)/2);
+   for(int i=0;i<3;i++){var row=new Rectangle(r.X+1,r.Y+i*(h+gap),r.Width-2,h);g.DrawRectangle(pen,row);g.FillEllipse(brush,row.Right-h+1,row.Y+h/2f-1.5f,3,3);}
+  }
+  static void Spark(Graphics g,Rectangle r,Brush brush){
+   float cx=r.X+r.Width/2f,cy=r.Y+r.Height/2f,R=r.Width/2f,k=r.Width/7f;
+   var pts=new[]{new PointF(cx,cy-R),new PointF(cx+k,cy-k),new PointF(cx+R,cy),new PointF(cx+k,cy+k),new PointF(cx,cy+R),new PointF(cx-k,cy+k),new PointF(cx-R,cy),new PointF(cx-k,cy-k)};
+   g.FillPolygon(brush,pts);
+   float s=R/2.6f,sx=r.Right-s,sy=r.Y+s;
+   g.FillPolygon(brush,new[]{new PointF(sx,sy-s),new PointF(sx+s/3,sy-s/3),new PointF(sx+s,sy),new PointF(sx+s/3,sy+s/3),new PointF(sx,sy+s),new PointF(sx-s/3,sy+s/3),new PointF(sx-s,sy),new PointF(sx-s/3,sy-s/3)});
   }
   static void Document(Graphics g,Rectangle r,Pen pen){
    int fold=r.Width/3;
