@@ -44,7 +44,7 @@ namespace TweekPro {
   public static void ValidateFile(string path){
    string p=Engine.Canon(path);if(!Path.GetExtension(p).Equals(".lnk",StringComparison.OrdinalIgnoreCase)||!ShortcutRoots().Any(r=>Engine.Under(p,r)))throw new IOException("Chỉ xử lý shortcut .lnk trong Start Menu, Desktop và Startup.");Engine.NoLinks(p,false);
   }
-  public static void ValidateValue(string key){if(!new[]{Run,RunOnce,Compat,Layers}.Contains(key,StringComparer.OrdinalIgnoreCase))throw new IOException("Vị trí giá trị Registry không được hỗ trợ.");}
+  public static void ValidateValue(string key){if(!new[]{Run,RunOnce,Compat,Layers}.Concat(Remnants.TraceHunter.ValueKeys).Contains(key,StringComparer.OrdinalIgnoreCase))throw new IOException("Vị trí giá trị Registry không được hỗ trợ.");}
   public static string Fingerprint(RegValue value){using(var ms=new MemoryStream()){new XmlSerializer(typeof(RegValue)).Serialize(ms,value);using(var hash=SHA256.Create())return Convert.ToBase64String(hash.ComputeHash(ms.ToArray()));}}
   public static RegValue ReadValue(RegistryKey key,string name){
    if(!key.GetValueNames().Contains(name,StringComparer.OrdinalIgnoreCase))throw new IOException("Giá trị không còn tồn tại.");
@@ -211,6 +211,7 @@ namespace TweekPro {
    var identity=new AppEntry{Name=app.Name,Location=app.Location,KnownExecutables=(app.KnownExecutables??new List<string>()).ToList()};
    if(!String.IsNullOrWhiteSpace(identity.Location))foreach(var other in others)try{if(!String.IsNullOrWhiteSpace(other.Location)&&Engine.Overlap(Engine.Canon(identity.Location),Engine.Canon(other.Location))){identity.Location="";result.Notes.Add("Không dùng thư mục cài chung làm bằng chứng: "+app.Location);break;}}catch(ArgumentException){}
    identity.KnownExecutables=identity.KnownExecutables.Where(exe=>!others.Any(other=>{string icon;int i;return Presentation.ParseIcon(other.DisplayIcon,out icon,out i)&&String.Equals(icon,exe,StringComparison.OrdinalIgnoreCase);})).ToList();var names=Names(app);var watch=Stopwatch.StartNew();
+   var variants=Remnants.TraceHunter.NameVariants(app);var weakVariants=new HashSet<string>(variants.Where(v=>!Remnants.TraceHunter.Strong(v)),StringComparer.OrdinalIgnoreCase);foreach(string v in variants)if(Remnants.TraceHunter.Strong(v))names.Add(v);
    if(app.KnownExecutables!=null)foreach(string exe in app.KnownExecutables)try{string dir=Path.GetDirectoryName(exe);if(!String.IsNullOrWhiteSpace(dir))TryFolder(dir,result,"Thư mục chứa executable đã ghi nhận trước khi gỡ; cần duyệt nội dung.");}catch(ArgumentException){}
    foreach(string temp in Engine.TempRoots())AddFingerprintChildren(temp,names,app.Publisher,result,"Thư mục tạm trùng tên ứng dụng hoặc thư mục cài; chỉ đưa vào khi khớp dấu vân tay, không quét toàn bộ Temp.");
    var scanRoots=(folderRoots??Engine.ScanRoots()).Where(Directory.Exists).Select(Engine.Canon).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -236,6 +237,7 @@ namespace TweekPro {
         TryFolder(dir,result,"Quét sâu: tên thư mục trùng chính xác tên ứng dụng hoặc thư mục cài; cần duyệt dữ liệu.");
         continue;
        }
+       if(weakVariants.Contains(leaf)&&current.Item2>0){result.Items.Add(new Candidate{Kind="Review",Path=dir,ReviewOnly=true,Reason="Tên thư mục trùng tên rút gọn «"+leaf+"» của ứng dụng (có thể thuộc phần mềm khác); chỉ xem."});continue;}
        string canonDir;try{canonDir=Engine.Canon(dir);}catch(ArgumentException){continue;}
        if(rootSet.Contains(canonDir))continue;
        if(current.Item2<5)queue.Enqueue(Tuple.Create(dir,current.Item2+1));
@@ -274,6 +276,7 @@ namespace TweekPro {
    }catch(UnauthorizedAccessException){result.Notes.Add("Không đọc được dịch vụ "+name);}
    report("Đang kiểm tra nhánh Registry nhà phát hành và tác vụ theo lịch…",null);
    ScanVendorRegistry(app,names,result,cancel);ScanTasks(identity,result,cancel);
+   Remnants.TraceHunter.Extend(app,identity,names,result,cancel,report);
    foreach(var c in result.Items){c.AppId=app.Id;c.AppName=app.Name;}
    result.Items=result.Items.GroupBy(Id,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).ToList();
    result.Notes=result.Notes.Distinct().ToList();
