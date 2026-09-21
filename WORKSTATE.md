@@ -1,10 +1,17 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-21 21:50 (Asia/Bangkok).
-Status: IN PROGRESS (Cursor). Owner resumed the roadmap: "automate README changelog on release; continue upgrading; add Explorer tab (file details, show extensions, show hidden files)".
+Updated: 2026-09-21 22:50 (Asia/Bangkok).
+Status: IN PROGRESS (Cursor). Owner request 22:27: (1) Mạng tab: block network per app; (2) "identify every trace an app leaves" when uninstalling; (3) Explorer tab must show ALL hidden files with extension + description.
 Last editor: Cursor.
 
-## Current task (22:25)
+## Current task (22:50)
+
+A. DONE Explorer folder browser: `FileInspector.ListFolder` (hidden/system always listed, extension, shell type via SHGetFileInfo, sizes, attributes, 20 000-entry cap, drives list for ""), `ParentOf`, `ShellIcon(FolderEntry)`; `ExplorerUI` bottom = vertical split (browser left: Tên/Đuôi/Mô tả/Dung lượng/Sửa/Thuộc tính, hidden = italic muted, system = amber, disguised = red; details right, auto-inspect on select without hashes, "Xem chi tiết + băm" hashes). Buttons Lên một cấp / This PC / Thư mục người dùng / Chọn tệp / Mở trong Explorer / Thuộc tính Windows, filter "Chỉ hiện mục ẩn / hệ thống". Opens the user profile the first time the tab is selected. Test `ExplorerTests.Listing`.
+B. DONE Network block: `Network/FirewallBlock.cs` (netsh advfirewall paired in+out Block rules, ASCII rule name `TweekPro Block - <exe> [hash8]`, rules read from `FirewallPolicy\FirewallRules` registry, `BlockReason` refuses core processes/System32/Windows root/own exe/non-.exe/UNC, vault `Kind=Firewall`, `Unblock`/`Restore` delete by exact name only), `FirewallLang`, `FirewallBlockTests` (parse, naming, refusals, fake-netsh round-trip via `Runner`/`RuleSource`). UI: "Chặn mạng" column (red rows), context menu Chặn/Bỏ chặn, toolbar "Đang chặn mạng…" dialog (unblock selected/all), note text updated (old LangEn key removed). Wired `Engine.Restore`, `KindLabel`, `Core.L`, `Tests07`.
+C. TODO TraceHunter (Remnants deep-scan extension): name variants, MUICache/FirewallRules/SharedDLLs/StartupApproved/AppCompat Persisted values (deletable via extended `ValidateValue`), Classes Applications/CLSID/ProgID command refs, RegisteredApplications, PATH, EventLog sources, Recent .lnk, CrashDumps, WER, Prefetch (review-only). Then README + build + self-test + commit + install.
+Verification so far: build 0 W / 0 E; `--self-test` PASS 22:47 with A + B.
+
+## Previous task (22:25)
 
 1. DONE `40d0764` `release.ps1` finalizes the README changelog (pending `### 0.7.n (chưa phát hành)` → `### x.y.z (dd/MM/yyyy)`, `-Notes` first bullet, new section when none pending; section = tag message); `release.yml` extracts that section into the Release body (`body_path`) + auto notes. Script now saved with UTF-8 BOM (contains Vietnamese regexes). Bug found/fixed: `$` in .NET multiline mode does not match before `\r` → anchors dropped.
 2. DONE (this commit) `Explorer/` tab between Khởi động and Mạng: `ExplorerTweaks` (17-entry catalog, `Interpret`, `Read`, `Apply`→vault `Kind=Explorer` payload `absent|dword:n|…`, `Restore`, `RefreshExplorer` via SHChangeNotify + WM_SETTINGCHANGE, `RestartExplorer` via `runas /trustlevel:0x20000`), `ExplorerSafety` (exact HKCU key allow-list + catalog identity check; fixture key `Software\TweekProTest\Explorer`), `ExplorerShell` (Properties dialog, reveal), `FileInspector` (PE machine, Zone.Identifier ADS, signer via `ProcessResolver.PublisherOf`, owner, version, SHA-256/MD5 ≤ 2 GB, `Warn` rules, `Rows`/`Report`), `ExplorerUI` (SplitContainer; drag-drop; preview sample), `ExplorerLang`, `ExplorerTests` (catalog, interpretation, payload round-trip, refusals, HKCU fixture apply/restore/purge, disguise, PE header, zone, temp-file inspection incl. ADS + hidden). Wired: `Core.L`, `Engine.Restore`, `App.cs` (build, order, KindLabel, `--preview explorer`), `Branding` glyph `explorer`, `LangTests` tab list, `Tests07`. csproj `FileVersion` fixed (`$(TweekVersion).0`, was 5-part → CS7035).

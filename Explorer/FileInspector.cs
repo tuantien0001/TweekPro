@@ -27,8 +27,65 @@ namespace TweekPro.Explorer {
   public bool ReparsePoint { get { return (Attributes&FileAttributes.ReparsePoint)!=0; } }
  }
 
+ /// <summary>One row of the folder browser; hidden and system entries are listed regardless of Explorer settings.</summary>
+ public class FolderEntry {
+  public string Path="",Name="",Extension="",TypeName="";public long Bytes=-1;public DateTime Modified;public FileAttributes Attributes;public bool IsDirectory,IsDrive;
+  public bool Hidden { get { return (Attributes&FileAttributes.Hidden)!=0; } }
+  public bool System { get { return (Attributes&FileAttributes.System)!=0; } }
+  public bool ReparsePoint { get { return (Attributes&FileAttributes.ReparsePoint)!=0; } }
+ }
+ /// <summary>Result of listing one folder: entries plus counts the UI shows in its status line.</summary>
+ public class FolderListing { public string Path="";public List<FolderEntry> Entries=new List<FolderEntry>();public int Hidden,System,Folders,Files;public bool Truncated,IsDrives;public List<string> Notes=new List<string>(); }
+
  /// <summary>Read-only file inspection: identity, timestamps, attributes, hashes, signature, version resource, PE machine type, Mark of the Web and disguise warnings.</summary>
  public static class FileInspector {
+  public const int MaxEntries=20000;
+
+  /// <summary>Lists every entry of a folder (hidden and system included) with extension and shell type; an empty path lists the drives.</summary>
+  public static FolderListing ListFolder(string path,CancellationToken token){
+   var listing=new FolderListing();
+   if(String.IsNullOrWhiteSpace(path)){
+    listing.IsDrives=true;
+    foreach(var drive in DriveInfo.GetDrives()){
+     try{
+      string root=drive.RootDirectory.FullName;var e=new FolderEntry{Path=root,Name=drive.IsReady&&drive.VolumeLabel!=""?drive.VolumeLabel+" ("+root.TrimEnd('\\')+")":root.TrimEnd('\\'),IsDirectory=true,IsDrive=true,TypeName=DriveLabel(drive.DriveType)};
+      if(drive.IsReady){e.Bytes=drive.TotalSize-drive.TotalFreeSpace;e.Extension=Presentation.BytesLabel(drive.TotalFreeSpace)+" "+L.T("trống");}
+      listing.Entries.Add(e);listing.Folders++;
+     }catch(IOException){}catch(UnauthorizedAccessException){}
+    }
+    return listing;
+   }
+   path=path.Trim().Trim('"');
+   if(!Directory.Exists(path))throw new DirectoryNotFoundException(L.T("Thư mục không tồn tại: ")+path);
+   var dir=new DirectoryInfo(path);listing.Path=dir.FullName;
+   IEnumerable<FileSystemInfo> items;
+   try{items=dir.EnumerateFileSystemInfos("*",SearchOption.TopDirectoryOnly);}
+   catch(UnauthorizedAccessException e){listing.Notes.Add(L.T("Không đủ quyền đọc: ")+e.Message);return listing;}
+   var dirs=new List<FolderEntry>();var files=new List<FolderEntry>();
+   try{
+    foreach(var item in items){
+     token.ThrowIfCancellationRequested();
+     if(listing.Entries.Count+dirs.Count+files.Count>=MaxEntries){listing.Truncated=true;break;}
+     var e=new FolderEntry{Path=item.FullName,Name=item.Name,Attributes=item.Attributes,IsDirectory=(item.Attributes&FileAttributes.Directory)!=0};
+     try{e.Modified=item.LastWriteTime;}catch(ArgumentOutOfRangeException){}
+     if(e.IsDirectory){e.TypeName=e.ReparsePoint?L.T("Liên kết thư mục"):L.T("Thư mục");listing.Folders++;dirs.Add(e);}
+     else{var fi=item as FileInfo;e.Extension=(fi!=null?fi.Extension:System.IO.Path.GetExtension(item.Name))??"";try{if(fi!=null)e.Bytes=fi.Length;}catch(IOException){}catch(UnauthorizedAccessException){}e.TypeName=TypeNameOf(item.FullName,e.Extension);listing.Files++;files.Add(e);}
+     if(e.Hidden)listing.Hidden++;if(e.System)listing.System++;
+    }
+   }catch(UnauthorizedAccessException e){listing.Notes.Add(L.T("Không đủ quyền đọc: ")+e.Message);}
+   catch(IOException e){listing.Notes.Add(L.T("Không đọc được: ")+e.Message);}
+   dirs.Sort((a,b)=>String.Compare(a.Name,b.Name,StringComparison.CurrentCultureIgnoreCase));files.Sort((a,b)=>String.Compare(a.Name,b.Name,StringComparison.CurrentCultureIgnoreCase));
+   listing.Entries.AddRange(dirs);listing.Entries.AddRange(files);
+   return listing;
+  }
+
+  static string DriveLabel(DriveType t){switch(t){case DriveType.Fixed:return L.T("Ổ đĩa cục bộ");case DriveType.Removable:return L.T("Ổ đĩa di động");case DriveType.Network:return L.T("Ổ đĩa mạng");case DriveType.CDRom:return L.T("Ổ đĩa quang");case DriveType.Ram:return L.T("Ổ đĩa RAM");default:return L.T("Ổ đĩa");}}
+
+  /// <summary>Parent folder of a path, or "" (drive list) when already at a drive root.</summary>
+  public static string ParentOf(string path){
+   if(String.IsNullOrWhiteSpace(path))return "";
+   try{string p=System.IO.Path.GetFullPath(path.Trim().Trim('"'));if(String.Equals(System.IO.Path.GetPathRoot(p),p,StringComparison.OrdinalIgnoreCase))return "";var parent=Directory.GetParent(p.TrimEnd('\\'));return parent==null?"":parent.FullName;}catch(ArgumentException){return "";}catch(NotSupportedException){return "";}catch(IOException){return "";}
+  }
   public const long MaxHashBytes=2L*1024*1024*1024;
   public static readonly HashSet<string> Executable=new HashSet<string>(StringComparer.OrdinalIgnoreCase){".exe",".com",".scr",".pif",".bat",".cmd",".ps1",".psm1",".vbs",".vbe",".js",".jse",".wsf",".wsh",".hta",".msi",".msp",".msix",".msixbundle",".appx",".appxbundle",".reg",".lnk",".url",".dll",".cpl",".sys",".jar",".application"};
   public static readonly HashSet<string> PortableExecutable=new HashSet<string>(StringComparer.OrdinalIgnoreCase){".exe",".dll",".scr",".cpl",".sys",".ocx",".drv",".efi"};
@@ -147,7 +204,22 @@ namespace TweekPro.Explorer {
 
   [DllImport("shell32.dll",CharSet=CharSet.Unicode)]static extern IntPtr SHGetFileInfo(string path,uint attributes,ref ShFileInfo info,uint size,uint flags);
   [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)]struct ShFileInfo{public IntPtr hIcon;public int iIcon;public uint dwAttributes;[MarshalAs(UnmanagedType.ByValTStr,SizeConst=260)]public string szDisplayName;[MarshalAs(UnmanagedType.ByValTStr,SizeConst=80)]public string szTypeName;}
-  const uint ShgfiTypeName=0x400,ShgfiUseFileAttributes=0x10,FileAttributeNormal=0x80;
+  const uint ShgfiTypeName=0x400,ShgfiUseFileAttributes=0x10,FileAttributeNormal=0x80,ShgfiIcon=0x100,ShgfiSmallIcon=0x1,ShgfiLargeIcon=0x0,FileAttributeDirectory=0x10;
+  [DllImport("user32.dll")]static extern bool DestroyIcon(IntPtr handle);
+
+  /// <summary>Shell icon for a folder, drive or file; folders and known extensions resolve by attributes only, so browsing never opens the files themselves.</summary>
+  public static System.Drawing.Bitmap ShellIcon(FolderEntry e,int size){
+   if(e==null||!StubbornFiles.IsWindows)return null;
+   var info=new ShFileInfo();uint flags=ShgfiIcon|(size<=16?ShgfiSmallIcon:ShgfiLargeIcon);
+   try{
+    bool byAttributes=e.IsDirectory&&!e.IsDrive||(!e.IsDirectory&&e.Extension!=""&&!PortableExecutable.Contains(e.Extension)&&!e.Extension.Equals(".ico",StringComparison.OrdinalIgnoreCase)&&!e.Extension.Equals(".lnk",StringComparison.OrdinalIgnoreCase));
+    if(byAttributes)SHGetFileInfo(e.IsDirectory?"folder":e.Extension,e.IsDirectory?FileAttributeDirectory:FileAttributeNormal,ref info,(uint)Marshal.SizeOf(typeof(ShFileInfo)),flags|ShgfiUseFileAttributes);
+    else SHGetFileInfo(e.Path,0,ref info,(uint)Marshal.SizeOf(typeof(ShFileInfo)),flags);
+    if(info.hIcon==IntPtr.Zero)return null;
+    using(var icon=(System.Drawing.Icon)System.Drawing.Icon.FromHandle(info.hIcon).Clone())return icon.ToBitmap();
+   }catch(Exception){return null;}
+   finally{if(info.hIcon!=IntPtr.Zero)DestroyIcon(info.hIcon);}
+  }
 
   /// <summary>Shell type description ("PDF Document", "Ứng dụng"); falls back to the extension when the shell cannot answer.</summary>
   public static string TypeNameOf(string path,string extension){

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -61,6 +61,7 @@ namespace TweekPro {
     Analyzer.AnalyzerTests.Run();
     Network.NetworkStatsTests.Run();
     Network.ProcessControlTests.Run();
+    Network.FirewallBlockTests.Run();
     Services.ServiceCatalogTests.Run();
     AI.AiTests.Run();
     Network.PacketAnimatorTests.Run();

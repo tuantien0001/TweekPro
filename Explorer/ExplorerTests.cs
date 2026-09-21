@@ -15,8 +15,33 @@ namespace TweekPro.Explorer {
   public static void Run(){
    Catalog();Interpretation();Payloads();Safety();
    if(ExplorerTweaks.IsWindows)RegistryRoundTrip();
-   Disguise();PeHeader();Zone();InspectFixture();
+   Disguise();PeHeader();Zone();InspectFixture();Listing();
    Assert(L.Has("Explorer")&&Branding.GlyphKey("Explorer")=="explorer"&&Branding.GlyphKey("File Explorer")=="explorer","tab title translated with glyph");
+  }
+
+  /// <summary>Folder browser lists hidden and system entries with extension and type, folders first, and navigates up to the drive list.</summary>
+  static void Listing(){
+   string root=Path.Combine(Path.GetTempPath(),"TweekProBrowse"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+   try{
+    Directory.CreateDirectory(Path.Combine(root,"zeta"));string hiddenDir=Path.Combine(root,".cache");Directory.CreateDirectory(hiddenDir);File.SetAttributes(hiddenDir,FileAttributes.Directory|FileAttributes.Hidden);
+    File.WriteAllText(Path.Combine(root,"b.txt"),"b");string hidden=Path.Combine(root,"a.pdf.exe");File.WriteAllBytes(hidden,new byte[]{1,2,3});File.SetAttributes(hidden,FileAttributes.Hidden);
+    string sys=Path.Combine(root,"desktop.ini");File.WriteAllText(sys,"[.ShellClassInfo]");File.SetAttributes(sys,FileAttributes.Hidden|FileAttributes.System);
+    File.WriteAllText(Path.Combine(root,"README"),"plain");
+    var listing=FileInspector.ListFolder(root,CancellationToken.None);
+    Assert(listing.Entries.Count==6&&listing.Folders==2&&listing.Files==4,"lists every entry including hidden and system: "+listing.Entries.Count);
+    Assert(listing.Hidden==3&&listing.System==1,"hidden/system counts: "+listing.Hidden+"/"+listing.System);
+    Assert(listing.Entries[0].IsDirectory&&listing.Entries[1].IsDirectory&&!listing.Entries[2].IsDirectory,"folders sort first");
+    var exe=listing.Entries.First(e=>e.Name=="a.pdf.exe");Assert(exe.Extension==".exe"&&exe.Hidden&&!exe.System&&exe.Bytes==3&&exe.TypeName!="","hidden exe keeps real extension, size and type: "+exe.TypeName);
+    var ini=listing.Entries.First(e=>e.Name=="desktop.ini");Assert(ini.Hidden&&ini.System&&ini.Extension==".ini","system file flagged");
+    var plain=listing.Entries.First(e=>e.Name=="README");Assert(plain.Extension==""&&plain.TypeName!="","extensionless file still has a type label: "+plain.TypeName);
+    Assert(listing.Entries.First(e=>e.Name==".cache").Hidden&&listing.Entries.First(e=>e.Name=="zeta").TypeName==L.T("Thư mục"),"folder rows");
+    Assert(String.Equals(FileInspector.ParentOf(hidden),root,StringComparison.OrdinalIgnoreCase),"parent of file is its folder");
+    Assert(String.Equals(FileInspector.ParentOf(root+"\\"),Path.GetDirectoryName(root),StringComparison.OrdinalIgnoreCase),"parent ignores trailing separator");
+    string driveRoot=Path.GetPathRoot(root);Assert(FileInspector.ParentOf(driveRoot)==""&&FileInspector.ParentOf("")=="","drive root goes to drive list");
+    var drives=FileInspector.ListFolder("",CancellationToken.None);Assert(drives.IsDrives&&drives.Entries.Count>0&&drives.Entries.All(e=>e.IsDrive&&e.IsDirectory),"drive list");
+    MustFail(()=>FileInspector.ListFolder(Path.Combine(root,"missing"),CancellationToken.None),"missing folder throws");
+    var cancelled=new CancellationTokenSource();cancelled.Cancel();MustFail(()=>FileInspector.ListFolder(root,cancelled.Token),"cancellation honoured");
+   }finally{try{foreach(string f in Directory.GetFiles(root))File.SetAttributes(f,FileAttributes.Normal);Directory.Delete(root,true);}catch(IOException){}catch(UnauthorizedAccessException){}}
   }
 
   static void Catalog(){

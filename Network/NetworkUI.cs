@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -16,12 +16,12 @@ namespace TweekPro {
   Button netPause,netBandwidth,netShowAll;Timer netTimer=new Timer();EtwNetworkSession etw;ImageList netIcons=new ImageList(),netAppIcons=new ImageList();PacketFlowStrip netFlow;SplitContainer netSplit;
   bool netPaused,netRefreshing,netAutoBandwidthTried;List<ConnectionInfo> netRows=new List<ConnectionInfo>();Dictionary<int,TrafficSample> netTraffic=new Dictionary<int,TrafficSample>();
   HashSet<int> netSelectedPids=new HashSet<int>();double netMaxRate=1;ContextMenuStrip netMenu=new ContextMenuStrip();
-  const int NetColApp=0,NetColDirection=1,NetColUp=2,NetColDown=3;
+  const int NetColApp=0,NetColDirection=1,NetColBlocked=2,NetColUp=3,NetColDown=4;List<FirewallRule> netRules=new List<FirewallRule>();
 
   /// <summary>Builds the read-only Network tab: applications with live send/receive activity on top, their connections below, ETW bandwidth when elevated.</summary>
   void BuildNetworkTab(){
    netTab=new TabPage(Core.L.T("Mạng"));tabs.TabPages.Add(netTab);
-   SetupList(netApps,new[]{"Ứng dụng","Hoạt động","Gửi/s","Nhận/s","Đã gửi","Đã nhận","Kết nối","Đã kết nối","Lắng nghe","Máy từ xa","PID","Nhà phát hành"},new[]{230,175,130,130,90,90,75,95,85,90,65,180},false,false);
+   SetupList(netApps,new[]{"Ứng dụng","Hoạt động","Chặn mạng","Gửi/s","Nhận/s","Đã gửi","Đã nhận","Kết nối","Đã kết nối","Lắng nghe","Máy từ xa","PID","Nhà phát hành"},new[]{230,175,95,130,130,90,90,75,95,85,90,65,180},false,false);
    netApps.MultiSelect=true;netApps.OwnerDraw=true;
    netApps.DrawColumnHeader+=(s,e)=>e.DrawDefault=true;
    netApps.DrawItem+=(s,e)=>{};
@@ -57,8 +57,9 @@ namespace TweekPro {
    netBandwidth.Click+=async(s,e)=>await Guard(()=>{ToggleBandwidth();return Task.FromResult(0);});
    bar.Controls.Add(intervalLabel);bar.Controls.Add(netInterval);bar.Controls.Add(searchLabel);bar.Controls.Add(netSearch);bar.Controls.Add(netResolve);bar.Controls.Add(netHideLoopback);bar.Controls.Add(netBandwidth);
    Add(bar,"Xuất CSV",()=>{ExportNetwork();return Task.FromResult(0);});
+   Add(bar,"Đang chặn mạng…",()=>{ShowBlockedPrograms();return Task.FromResult(0);},ButtonStyle.Danger);
 
-   netNote=Theme.Note("Chỉ xem, không chặn: bảng trên là từng ứng dụng đang gửi (↑ xanh dương) hoặc nhận (↓ xanh lá) dữ liệu theo thời gian thực, thanh màu là tốc độ; bấm một ứng dụng để xem các kết nối của nó ở bảng dưới. Tốc độ và byte đo bằng ETW của Windows (tự bật khi có quyền quản trị).",NoteKind.Info);
+   netNote=Theme.Note("Bảng trên là từng ứng dụng đang gửi (↑ xanh dương) hoặc nhận (↓ xanh lá) dữ liệu theo thời gian thực, thanh màu là tốc độ; bấm một ứng dụng để xem các kết nối của nó ở bảng dưới. Chuột phải để kết thúc tiến trình, dừng dịch vụ hoặc Chặn mạng (quy tắc Windows Firewall vào + ra, gỡ được trong Kho khôi phục). Tốc độ và byte đo bằng ETW của Windows (tự bật khi có quyền quản trị).",NoteKind.Info);
    netSummary=new Label{Dock=DockStyle.Bottom,Height=34,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true};Theme.BorderTop(netSummary);
    netFlow=new PacketFlowStrip{Dock=DockStyle.Top,Height=70,BackColor=Theme.Surface};Theme.BorderBottom(netFlow);
 
@@ -178,7 +179,7 @@ namespace TweekPro {
   void RenderNetworkApps(){
    string q=netSearch.Text.Trim();bool hideLoop=netHideLoopback.Checked;bool resolve=netResolve.Checked;
    var visible=netRows.Where(c=>NetworkRowVisible(c,q,hideLoop,resolve)).ToList();
-   var summaries=NetworkStats.Aggregate(visible,netTraffic,NetworkStats.MinRate);
+   var summaries=NetworkStats.Aggregate(visible,netTraffic,NetworkStats.MinRate);netRules=FirewallBlock.Rules();
    netMaxRate=Math.Max(1,summaries.Count==0?1:summaries.Max(s=>Math.Max(s.SentPerSecond,s.ReceivedPerSecond)));
    int top=netApps.Items.Count>0&&netApps.TopItem!=null?netApps.TopItem.Index:0;
    netApps.BeginUpdate();netApps.Items.Clear();
@@ -186,9 +187,11 @@ namespace TweekPro {
    foreach(var s in summaries){
     var id=ProcessResolver.Resolve(s.Pid);
     string key=NetworkStats.DirectionKey(s);
-    var row=new ListViewItem(new[]{id.Display,NetworkStats.DirectionLabel(key),NetworkStats.Rate(s.SentPerSecond),NetworkStats.Rate(s.ReceivedPerSecond),s.Sent==0?"":Presentation.BytesLabel(s.Sent),s.Received==0?"":Presentation.BytesLabel(s.Received),s.Connections.ToString(),s.Established==0?"":s.Established.ToString(),s.Listening==0?"":s.Listening.ToString(),s.RemoteEndpoints==0?"":s.RemoteEndpoints.ToString(),s.Pid.ToString(),id.Publisher}){Tag=s,ImageKey=NetworkAppIconKey(id),ToolTipText=(id.Path==""?id.Display:id.Path)+"\r\n"+NetworkStats.DirectionLabel(key)+"  •  "+s.Connections+" "+Core.L.T("kết nối")};
+    bool blocked=id.Path!=""&&FirewallBlock.IsBlocked(id.Path,netRules);
+    var row=new ListViewItem(new[]{id.Display,NetworkStats.DirectionLabel(key),blocked?Core.L.T("Đã chặn"):"",NetworkStats.Rate(s.SentPerSecond),NetworkStats.Rate(s.ReceivedPerSecond),s.Sent==0?"":Presentation.BytesLabel(s.Sent),s.Received==0?"":Presentation.BytesLabel(s.Received),s.Connections.ToString(),s.Established==0?"":s.Established.ToString(),s.Listening==0?"":s.Listening.ToString(),s.RemoteEndpoints==0?"":s.RemoteEndpoints.ToString(),s.Pid.ToString(),id.Publisher}){Tag=s,ImageKey=NetworkAppIconKey(id),ToolTipText=(id.Path==""?id.Display:id.Path)+"\r\n"+NetworkStats.DirectionLabel(key)+"  •  "+s.Connections+" "+Core.L.T("kết nối")};
     if(s.Direction!=TrafficDirection.Idle)row.Font=Theme.Strong;
     else if(s.Established==0)row.ForeColor=Theme.Muted;
+    if(blocked){row.ForeColor=Theme.Danger;row.ToolTipText+="\r\n"+Core.L.T("Đã chặn mạng bằng Windows Firewall — bỏ chặn qua menu chuột phải hoặc Kho khôi phục.");}
     Theme.StripeRow(row,index++);netApps.Items.Add(row);
     if(netSelectedPids.Contains(s.Pid))row.Selected=true;
    }
@@ -263,6 +266,7 @@ namespace TweekPro {
     await RefreshNetwork(false);
    });
    netMenu.Items.Add(kill);
+   AddBlockMenuItems(id);
    var services=ProcessControl.ServicesOf(pid);
    if(services.Count>0){
     netMenu.Items.Add(new ToolStripSeparator());
@@ -294,6 +298,48 @@ namespace TweekPro {
    details.Click+=(s,e)=>{if(netMenu.SourceControl==netList)ShowConnectionDetails();else ShowApplicationDetails();};
    netMenu.Items.Add(open);netMenu.Items.Add(copy);netMenu.Items.Add(details);
    return true;
+  }
+
+  /// <summary>Adds "Chặn mạng" / "Bỏ chặn mạng" for the process executable; refused programs show the reason and stay disabled.</summary>
+  void AddBlockMenuItems(ProcessIdentity id){
+   bool blocked=id.Path!=""&&FirewallBlock.IsBlocked(id.Path,netRules);
+   if(blocked){
+    var unblock=new ToolStripMenuItem(Core.L.F("Bỏ chặn mạng: {0}",id.Display)){Image=NetworkGlyphs.Icon("both",16)};
+    unblock.Click+=async(s,e)=>await Guard(async()=>{await Task.Run(()=>FirewallBlock.Unblock(id.Path));Log(Core.L.F("Mạng: đã bỏ chặn {0}.",id.Path));LoadBackups();await RefreshNetwork(false);});
+    netMenu.Items.Add(unblock);return;
+   }
+   string reason=FirewallBlock.BlockReason(id.Path);
+   var block=new ToolStripMenuItem(Core.L.F("Chặn mạng: {0}",id.Display)){Enabled=reason==null,ToolTipText=reason,Image=NetworkGlyphs.Icon("kill",16)};
+   if(reason!=null)block.Text+="  — "+reason;
+   block.Click+=async(s,e)=>await Guard(async()=>{
+    if(!Confirm(Core.L.F("Chặn toàn bộ mạng của {0}?\r\n{1}\r\n\r\nTweek Pro tạo hai quy tắc Windows Firewall (vào + ra) chỉ cho tệp này; các tiến trình đang chạy mất kết nối ngay. Bỏ chặn bằng menu này hoặc trong Kho khôi phục (loại Chặn mạng).",id.Display,id.Path)))return;
+    await Task.Run(()=>FirewallBlock.Block(id.Path,id.Display));
+    Log(Core.L.F("Mạng: đã chặn {0} ({1}).",id.Display,id.Path));LoadBackups();await RefreshNetwork(false);
+   });
+   netMenu.Items.Add(block);
+  }
+
+  /// <summary>Lists every executable currently blocked by Tweek Pro rules with one-click unblock.</summary>
+  void ShowBlockedPrograms(){
+   var programs=FirewallBlock.BlockedPrograms();
+   using(var dialog=new Form{Text=Core.L.T("Chương trình đang bị chặn mạng"),Size=new Size(760,420),StartPosition=FormStartPosition.CenterParent,MinimizeBox=false,MaximizeBox=false,ShowIcon=false,BackColor=Theme.Canvas,Font=Theme.Body}){
+    var list=new SmoothListView();SetupList(list,new[]{"Tệp","Đường dẫn"},new[]{200,500},false,false);list.MultiSelect=true;
+    Label overlay;var host=Theme.ListHost(list,out overlay);
+    Action fill=()=>{list.BeginUpdate();list.Items.Clear();int i=0;foreach(string p in programs){var row=new ListViewItem(new[]{Path.GetFileName(p),p}){Tag=p,ToolTipText=p};Theme.StripeRow(row,i++);list.Items.Add(row);}list.EndUpdate();Theme.SetOverlay(overlay,programs.Count==0?"Không có chương trình nào đang bị Tweek Pro chặn mạng.\r\nChuột phải một ứng dụng trong bảng Mạng → Chặn mạng.":null,NoteKind.Info);};
+    fill();
+    var bar=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=52,Padding=new Padding(12,8,12,0),BackColor=Theme.Surface};Theme.BorderTop(bar);
+    var unblock=Theme.Button("Bỏ chặn mục đã chọn",ButtonStyle.Primary);unblock.Margin=new Padding(0,0,8,0);
+    var all=Theme.Button("Bỏ chặn tất cả",ButtonStyle.Danger);all.Margin=new Padding(0,0,8,0);
+    var close=Theme.Button("Đóng",ButtonStyle.Secondary);close.Click+=(s,e)=>dialog.Close();
+    Action<List<string>> remove=targets=>{foreach(string p in targets){try{FirewallBlock.Unblock(p);programs.Remove(p);Log(Core.L.F("Mạng: đã bỏ chặn {0}.",p));}catch(Exception error){Log(Core.L.T("LỖI: ")+error.Message);MessageBox.Show(dialog,error.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Warning);}}fill();LoadBackups();};
+    unblock.Click+=(s,e)=>remove(list.SelectedItems.Cast<ListViewItem>().Select(r=>(string)r.Tag).ToList());
+    all.Click+=(s,e)=>{if(programs.Count>0&&Confirm(Core.L.F("Bỏ chặn mạng cho tất cả {0} chương trình?",programs.Count)))remove(programs.ToList());};
+    bar.Controls.Add(unblock);bar.Controls.Add(all);bar.Controls.Add(close);
+    var note=Theme.Note("Danh sách đọc từ chính sách Windows Firewall (chỉ quy tắc do Tweek Pro tạo). Bỏ chặn xóa quy tắc và đánh dấu mục tương ứng trong Kho khôi phục là Đã khôi phục.",NoteKind.Info);
+    dialog.Controls.Add(host);dialog.Controls.Add(bar);dialog.Controls.Add(note);
+    dialog.ShowDialog(this);
+   }
+   RenderNetwork();
   }
 
   /// <summary>Shows the per-process rollup for the selected application.</summary>

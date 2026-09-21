@@ -66,7 +66,15 @@ namespace TweekPro.Explorer {
    {"Tên","Name"},{"Thuộc tính","Attributes"},{"Giá trị","Value"},{"Kiến trúc","Architecture"},{"Tạo","Created"},{"Truy cập lần cuối","Last accessed"},{"Chủ sở hữu","Owner"},{"Nguồn tải","Download source"},{"từ","from"},{"Không có dấu tải từ Internet","No Internet download mark"},{"không áp dụng","not applicable"},
    {"Sản phẩm","Product"},{"Công ty","Company"},{"Bỏ qua: tệp lớn hơn 2 GB.","Skipped: file larger than 2 GB."},
    {"Ẩn","Hidden"},{"Chỉ đọc","Read-only"},{"Liên kết","Link"},{"Nén NTFS","NTFS compressed"},{"Mã hóa EFS","EFS encrypted"},{"Lưu trữ","Archive"},{"Tạm","Temporary"},{"Ngoại tuyến","Offline"},{"Bình thường","Normal"},
-   {"Chi tiết tệp","File details"}
+   {"Chi tiết tệp","File details"},
+   {"Duyệt tệp (hiện mọi tệp ẩn / hệ thống, đuôi và mô tả) — bấm một tệp để xem chi tiết","Browse files (every hidden / system file, extension and description) — click a file for details"},
+   {"Đuôi","Ext"},{"Mô tả (loại)","Description (type)"},{"Lên một cấp","Up one level"},{"This PC","This PC"},{"Thư mục người dùng","User profile"},{"Xem chi tiết + băm","Details + hashes"},{"Mở trong Explorer","Open in Explorer"},{"Chỉ hiện mục ẩn / hệ thống","Only hidden / system items"},
+   {"Liên kết thư mục","Folder link"},{"Ổ đĩa cục bộ","Local disk"},{"Ổ đĩa di động","Removable drive"},{"Ổ đĩa mạng","Network drive"},{"Ổ đĩa quang","Optical drive"},{"Ổ đĩa RAM","RAM disk"},{"Ổ đĩa","Drive"},{"trống","free"},{"đã dùng","used"},
+   {"Thư mục không tồn tại: ","Folder does not exist: "},{"Không đủ quyền đọc: ","Access denied: "},{"Không đọc được: ","Cannot read: "},{"Đang mở thư mục…","Opening folder…"},{"Explorer: ","Explorer: "},
+   {"Thư mục trống.","Empty folder."},{"Thư mục này không có mục ẩn hay hệ thống.","This folder has no hidden or system items."},{"{0} ổ đĩa. Bấm đúp để mở.","{0} drives. Double-click to open."},
+   {"{0} thư mục, {1} tệp  •  {2} ẩn, {3} hệ thống{4}  •  Enter/bấm đúp để mở, Backspace để lên một cấp","{0} folders, {1} files  •  {2} hidden, {3} system{4}  •  Enter/double-click opens, Backspace goes up"},{" (chỉ hiện {0} mục đầu)"," (showing the first {0} entries)"},
+   {"bấm Xem chi tiết + băm để tính SHA-256 / MD5","click Details + hashes to compute SHA-256 / MD5"},
+   {"Chọn một tệp bên trái (hoặc kéo thả / dán đường dẫn) để xem loại thật, thuộc tính ẩn/hệ thống, chữ ký số, mã băm và cảnh báo giả dạng (hoadon.pdf.exe).","Pick a file on the left (or drag-drop / paste a path) to see its real type, hidden/system attributes, digital signature, hashes and disguise warnings (invoice.pdf.exe)."}
   };
  }
 }
