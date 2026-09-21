@@ -14,6 +14,11 @@ namespace TweekPro {
  /// </summary>
  public static class Branding {
   [DllImport("user32.dll")] static extern bool DestroyIcon(IntPtr handle);
+  [DllImport("user32.dll",CharSet=CharSet.Auto)] static extern IntPtr SendMessage(IntPtr hWnd,int msg,IntPtr wParam,IntPtr lParam);
+  [DllImport("shell32.dll",CharSet=CharSet.Unicode)] static extern int SetCurrentProcessExplicitAppUserModelID(string appID);
+  const int WM_SETICON=0x80,ICON_SMALL=0,ICON_BIG=1;
+  /// <summary>Distinct from older builds so Windows 11 taskbar drops a stale shell-icon cache entry for the same exe path.</summary>
+  public const string AppUserModelId="TweekPro.App.0.7.tpc";
 
   static readonly Color LogoTop=Color.FromArgb(56,132,255);
   static readonly Color LogoBottom=Color.FromArgb(29,78,216);
@@ -78,6 +83,31 @@ namespace TweekPro {
     try{using(var temporary=Icon.FromHandle(handle))return (Icon)temporary.Clone();}
     finally{DestroyIcon(handle);}
    }
+  }
+
+  /// <summary>Registers a stable AppUserModelID before any window is created so the taskbar groups this process under the TPC branding identity.</summary>
+  public static void RegisterAppUserModelId(){
+   try{SetCurrentProcessExplicitAppUserModelID(AppUserModelId);}catch(Exception){}
+  }
+
+  /// <summary>
+  /// Applies the approved icon to a form and forces both ICON_SMALL and ICON_BIG via WM_SETICON.
+  /// Windows 11 ignores a 32px Form.Icon for the taskbar when UI scaling is high; ICON_SMALL must carry a large (256) frame.
+  /// Caller owns the returned icons and must dispose them when the form closes.
+  /// </summary>
+  public static void ApplyWindowIcons(Form form,out Icon small,out Icon large){
+   // ICON_SMALL uses 256 on purpose (Win11 taskbar quirk); title bar still scales down cleanly.
+   Icon smallIcon=AppIcon(256),largeIcon=AppIcon(Math.Max(32,SystemInformation.IconSize.Width));
+   small=smallIcon;large=largeIcon;
+   form.Icon=largeIcon;form.ShowIcon=true;
+   Action apply=()=>{
+    if(!form.IsHandleCreated)return;
+    SendMessage(form.Handle,WM_SETICON,(IntPtr)ICON_SMALL,smallIcon.Handle);
+    SendMessage(form.Handle,WM_SETICON,(IntPtr)ICON_BIG,largeIcon.Handle);
+   };
+   if(form.IsHandleCreated)apply();
+   else form.HandleCreated+=(s,e)=>apply();
+   form.Shown+=(s,e)=>apply();
   }
 
   static Bitmap FrameBitmap(int size){

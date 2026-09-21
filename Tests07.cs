@@ -36,6 +36,7 @@ namespace TweekPro {
    }
    Assert(sizes.SequenceEqual(new[]{16,20,24,32,40,48,64,96,128,192,256}),"approved icon frames cover Windows DPI sizes");
    foreach(int size in new[]{16,32,48,256})using(var icon=Branding.AppIcon(size))Assert(icon.Width==size&&icon.Height==size,"runtime icon size");
+   Assert(!string.IsNullOrEmpty(Branding.AppUserModelId)&&Branding.AppUserModelId.IndexOf("tpc",StringComparison.OrdinalIgnoreCase)>=0,"taskbar AppUserModelID marks TPC branding");
   }
 
   public static void Run(){

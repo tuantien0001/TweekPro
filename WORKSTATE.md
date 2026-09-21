@@ -1,32 +1,20 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-21 18:00 (Asia/Bangkok).
-Status: Taskbar icon fix done; waiting for owner to relaunch and confirm.
-Last editor: Cursor. The owner chooses which assistant works next; this file is not an automatic lock.
+Updated: 2026-09-21 18:05 (Asia/Bangkok).
+Status: IN PROGRESS — forcing Win11 taskbar to use 256px TPC icon (shell was caching old T.).
+Last editor: Cursor.
 
-## Active task (Cursor)
+## Active task
 
-Owner report: taskbar still showed the old blue "T." icon.
-Root cause: Desktop/Start Menu shortcuts launch `C:\Program Files\Tweek Pro\TweekPro-0.7.exe`, which was still the 10:42 pre-TPC build. Repo assets were already correct.
-Done:
-- Replaced Program Files exe with current Release build (hashes match `bin\Release\net48\TweekPro-0.7.exe`).
-- `Branding.AppIcon` now extracts the matching PNG frame from the embedded multi-size ICO (GDI+ cannot decode PNG-compressed ICO on .NET Framework).
-- Release build 0/0; `--self-test` PASS.
-- Pushed `b45cfb5` (localization + icon-handoff removal) and `c05c157` (Branding fix) to `origin/cursor/integration-all-features-e772`.
+Owner: taskbar still shows old "T." while title bar / header show TPC.
+PE resource already has TPC; Win11 ignores 32px Form.Icon for the taskbar and keeps a stale shell cache for the exe path.
+Code change: `Branding.ApplyWindowIcons` sends WM_SETICON with a 256px ICON_SMALL + ICON_BIG; `RegisterAppUserModelId` (`TweekPro.App.0.7.tpc`) before `Application.Run`. Then rebuild, refresh Program Files, clear icon cache.
 
-Owner action: close any old Tweek Pro window, launch again from Desktop/Start Menu shortcut, confirm taskbar shows T + PC (monitor) icon. If Windows still shows the old glyph, unpin and re-pin, or sign out/in to refresh the shell icon cache.
+Preserved uncommitted localization edits from the other pass — do not discard (`Cleaner/EmptyFolderUI.cs` and any other open UI files).
 
-## Preserved uncommitted work (do not discard)
+## Next
 
-Another localization pass still has local edits (not staged by this agent): `AdvancedUI.cs`, `Core/LangEn.cs`, `ScanWindow.cs`.
-
-## Workspace and Git
-
-- Branch: `cursor/integration-all-features-e772` @ `c05c157` == origin.
-- Integration PR: https://github.com/tuantien0001/TweekPro/pull/7.
-- PNG icon sources (local only): `C:\Users\ADMIN\TweekPro-recovery-backup-20260921-171137\icon-handoff-tpc-ai-v1`.
-
-## Next concrete action
-
-1. Owner confirms taskbar icon after relaunch.
-2. Continue remaining localization (`ScanWindow` / Startup / Network) from the uncommitted files above, or the owner's next request.
+1. build.ps1 -SelfTest
+2. Update Program Files exe; clear Explorer icon cache
+3. Owner relaunches and confirms taskbar
+4. Commit + push

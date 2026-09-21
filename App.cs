@@ -18,7 +18,7 @@ namespace TweekPro {
   List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
   ImageList appIcons=new ImageList(); Label appCount=new Label();
-  bool busy;string inventoryError;string sessions=Core.Paths.Sessions;Icon brandIcon;
+  bool busy;string inventoryError;string sessions=Core.Paths.Sessions;Icon brandIcon,brandIconSmall;
   Core.Settings settings=Core.Settings.Load(Core.Paths.SettingsFile);
   public const string Version="0.7";
   public const string AppTitle="Tweek Pro";
@@ -29,8 +29,8 @@ namespace TweekPro {
    SuspendLayout();
    Text=AppTitle+" "+Version+" – "+Core.L.T(Tagline);Size=new Size(1240,820);MinimumSize=new Size(1120,700);StartPosition=FormStartPosition.CenterScreen;
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleDimensions=new SizeF(96F,96F);AutoScaleMode=AutoScaleMode.Dpi;
-   try{brandIcon=Branding.AppIcon(32);Icon=brandIcon;ShowIcon=true;}catch(Exception){}
-   FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();};
+   try{Branding.ApplyWindowIcons(this,out brandIconSmall,out brandIcon);}catch(Exception){}
+   FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();if(brandIconSmall!=null)brandIconSmall.Dispose();};
    var header=Theme.HeaderBand(AppTitle+" – "+Core.L.T(Tagline),"Kiểm tra sức khỏe một nút  •  Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác, tệp trùng, thư mục rỗng  •  Theo dõi mạng realtime  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
    BuildHeaderActions(header);
    status.Text=Core.L.T("Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.");
@@ -372,6 +372,7 @@ namespace TweekPro {
     return;
    }
    Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
+   Branding.RegisterAppUserModelId();
    Bootstrap();
    if(args.Length>0&&args[0]=="--scan-smoke"){try{var app=Engine.Inventory().First(a=>a.Name=="Brave");Advanced.Capture(app);var result=Advanced.DeepScan(app,System.Threading.CancellationToken.None);File.WriteAllLines(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"scan-smoke.txt"),new[]{"Read-only deep scan: "+app.Name,"Visited folders: "+result.Visited,"Candidates: "+result.Items.Count,"Notes: "+result.Notes.Count}.Concat(result.Notes));}catch(Exception error){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"scan-smoke.txt"),error.ToString());Environment.ExitCode=1;}return;}
    if(args.Length>0&&args[0]=="--preview"){try{
