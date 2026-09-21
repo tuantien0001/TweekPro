@@ -77,6 +77,17 @@ namespace TweekPro {
    path=text.Trim().Trim('"');
    return Path.IsPathRooted(path)&&!path.StartsWith(@"\\")&&path.Length>2&&path[1]==':';
   }
+  /// <summary>Scales a logo into a square of the given size, keeping aspect ratio and centering on a transparent canvas.</summary>
+  public static Bitmap FitIcon(Image source,int size){
+   var bmp=new Bitmap(size,size);
+   using(var g=Graphics.FromImage(bmp)){
+    g.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;g.Clear(Color.Transparent);
+    double scale=Math.Min((double)size/source.Width,(double)size/source.Height);
+    int w=Math.Max(1,(int)Math.Round(source.Width*scale)),h=Math.Max(1,(int)Math.Round(source.Height*scale));
+    g.DrawImage(source,new Rectangle((size-w)/2,(size-h)/2,w,h));
+   }
+   return bmp;
+  }
   public static Bitmap AppIcon(AppEntry app){
    try{string path;int index;
    if(ParseIcon(app.DisplayIcon,out path,out index)&&new DriveInfo(Path.GetPathRoot(path)).DriveType==DriveType.Fixed&&File.Exists(path)&&((int)File.GetAttributes(path)&(0x1000|0x40000|0x400000|0x400))==0){

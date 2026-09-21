@@ -85,6 +85,7 @@ namespace TweekPro {
     switch(GlyphKey(tabTitle)){
      case "pulse":Pulse(g,r,pen);break;
      case "apps":Apps(g,r,pen,brush);break;
+     case "windows":Windows(g,r,brush);break;
      case "magnifier":Magnifier(g,r,pen);break;
      case "trash":Trash(g,r,pen);break;
      case "folder":Folder(g,r,pen);break;
@@ -106,6 +107,7 @@ namespace TweekPro {
    string t=title??"";
    Func<string,string,bool> has=(vi,en)=>t.IndexOf(vi,StringComparison.OrdinalIgnoreCase)>=0||t.IndexOf(en,StringComparison.OrdinalIgnoreCase)>=0;
    if(has("Tổng quan","Overview"))return "pulse";
+   if(has("Ứng dụng Windows","Windows Apps"))return "windows";
    if(has("Ứng dụng","Applications"))return "apps";
    if(has("còn sót","Leftovers"))return "magnifier";
    if(has("trùng","Duplicates"))return "duplicate";
@@ -135,6 +137,24 @@ namespace TweekPro {
    var points=new[]{new Point(r.X,mid),new Point(r.X+w*3/10,mid),new Point(r.X+w*4/10,r.Y+2),new Point(r.X+w*55/100,r.Bottom-2),new Point(r.X+w*65/100,mid),new Point(r.Right,mid)};
    g.DrawLines(pen,points);
   }
+  /// <summary>Four-pane window mark used for Windows inbox/Store applications.</summary>
+  static void Windows(Graphics g,Rectangle r,Brush brush){
+   int gap=Math.Max(1,r.Width/9);int w=(r.Width-gap)/2,h=(r.Height-gap)/2;
+   int x=r.X+(r.Width-(2*w+gap))/2,y=r.Y+(r.Height-(2*h+gap))/2;
+   g.FillRectangle(brush,x,y,w,h);g.FillRectangle(brush,x+w+gap,y,w,h);g.FillRectangle(brush,x,y+h+gap,w,h);g.FillRectangle(brush,x+w+gap,y+h+gap,w,h);
+  }
+
+  /// <summary>Opaque-background fallback icon for a package without a readable logo; caller owns the bitmap.</summary>
+  public static Bitmap WindowsAppGlyph(int size,Color color){
+   var bmp=new Bitmap(size,size);
+   using(var g=Graphics.FromImage(bmp)){
+    g.SmoothingMode=SmoothingMode.AntiAlias;g.Clear(Color.Transparent);
+    using(var back=new SolidBrush(Color.FromArgb(241,245,249)))using(var path=Rounded(new Rectangle(0,0,size-1,size-1),size/5))g.FillPath(back,path);
+    int inset=size/4;using(var brush=new SolidBrush(color))Windows(g,new Rectangle(inset,inset,size-2*inset,size-2*inset),brush);
+   }
+   return bmp;
+  }
+
   static void Folder(Graphics g,Rectangle r,Pen pen){
    int top=r.Y+3,tab=r.Y+r.Height/4;
    var body=new Rectangle(r.X,tab,r.Width,r.Bottom-tab);
