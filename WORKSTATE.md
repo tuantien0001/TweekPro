@@ -13,9 +13,10 @@ Last editor: Cursor.
 - Taskbar icon: `30d7a30` (WM_SETICON 256px + AppUserModelID `TweekPro.App.0.7.tpc`); Program Files exe refreshed. Owner confirmed.
 - AI tab moved to the last position (`App.cs` `ordered[]`), README tab table + changelog updated. Build 0/0, `--self-test` PASS.
 
-## Parallel localization WIP (other pass, uncommitted — do not discard)
+## Parallel localization pass (other Cursor session) — committed, session stopped
 
-`Analyzer/DiskAnalyzerUI.cs`, `Cleaner/EmptyFolderUI.cs`, `Core/LangEn.cs`, `Dupes/DuplicateUI.cs`. They compile with the current tree.
+`f68eaed` (pushed): Empty folders / Disk analyzer / Duplicates runtime texts wrapped in `L.T/L.F`, English pairs added, no duplicate keys; build 0/0, `--self-test` PASS. Earlier: `36f52c9` (ScanWindow, Startup/Tools, Network), plus App.cs Log/MessageBox/Confirm and `Presentation.KindLabel`.
+Still unwrapped (for roadmap item 1): Health, Junk, Services, Store, AI tabs; engine-produced `ScanProgress.Stage` / `ScanResult.Reason` strings; `LangTests` source scan not yet written. The localization session has stopped writing to this checkout.
 
 ## Next concrete action (roadmap, HANDOFF.md §5)
 
