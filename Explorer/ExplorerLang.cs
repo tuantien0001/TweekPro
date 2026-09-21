@@ -6,7 +6,7 @@ namespace TweekPro.Explorer {
  public static class ExplorerLang {
   public static readonly Dictionary<string,string> Table=new Dictionary<string,string>(StringComparer.Ordinal){
    {"Explorer","File Explorer"},
-   {"Tùy chỉnh","Setting"},{"Tùy chỉnh File Explorer","File Explorer settings"},{"Xem chi tiết tệp — kéo thả tệp vào đây hoặc dán đường dẫn","File details — drop a file here or paste a path"},
+   {"Tùy chỉnh","Setting"},{"Tùy chỉnh File Explorer","File Explorer settings"},{"Duyệt tệp và chi tiết tệp","Browse files and file details"},{"Duyệt tệp hiện mọi mục ẩn / hệ thống với đuôi và mô tả; Tùy chỉnh bật/tắt các tùy chọn của File Explorer.","Browse shows every hidden / system item with extension and description; Settings toggles File Explorer options."},{"Xem chi tiết tệp — kéo thả tệp vào đây hoặc dán đường dẫn","File details — drop a file here or paste a path"},
    {"Hiển thị tệp","File display"},{"Điều hướng","Navigation"},{"Thanh tác vụ","Taskbar"},
    {"Hiện phần mở rộng tệp (.exe, .pdf…)","Show file extensions (.exe, .pdf…)"},{"Luôn hiện đuôi tệp để nhận ra tệp giả dạng như \"hoadon.pdf.exe\". Nên bật.","Always show extensions so disguised files like \"invoice.pdf.exe\" stand out. Recommended."},
    {"Hiện tệp và thư mục ẩn","Show hidden files and folders"},{"Hiện các mục có thuộc tính Ẩn (AppData, cấu hình ứng dụng…) với biểu tượng mờ.","Shows items with the Hidden attribute (AppData, application settings…) with a faded icon."},
@@ -67,8 +67,7 @@ namespace TweekPro.Explorer {
    {"Sản phẩm","Product"},{"Công ty","Company"},{"Bỏ qua: tệp lớn hơn 2 GB.","Skipped: file larger than 2 GB."},
    {"Ẩn","Hidden"},{"Chỉ đọc","Read-only"},{"Liên kết","Link"},{"Nén NTFS","NTFS compressed"},{"Mã hóa EFS","EFS encrypted"},{"Lưu trữ","Archive"},{"Tạm","Temporary"},{"Ngoại tuyến","Offline"},{"Bình thường","Normal"},
    {"Chi tiết tệp","File details"},
-   {"Duyệt tệp (hiện mọi tệp ẩn / hệ thống, đuôi và mô tả) — bấm một tệp để xem chi tiết","Browse files (every hidden / system file, extension and description) — click a file for details"},
-   {"Đuôi","Ext"},{"Mô tả (loại)","Description (type)"},{"Lên một cấp","Up one level"},{"This PC","This PC"},{"Thư mục người dùng","User profile"},{"Xem chi tiết + băm","Details + hashes"},{"Mở trong Explorer","Open in Explorer"},{"Chỉ hiện mục ẩn / hệ thống","Only hidden / system items"},
+   {"Đuôi","Ext"},{"Mô tả (loại)","Description (type)"},{"▲ Lên","▲ Up"},{"This PC","This PC"},{"Người dùng","User profile"},{"Xem chi tiết + băm","Details + hashes"},{"Mở trong Explorer","Open in Explorer"},{"Chỉ hiện mục ẩn / hệ thống","Only hidden / system items"},
    {"Liên kết thư mục","Folder link"},{"Ổ đĩa cục bộ","Local disk"},{"Ổ đĩa di động","Removable drive"},{"Ổ đĩa mạng","Network drive"},{"Ổ đĩa quang","Optical drive"},{"Ổ đĩa RAM","RAM disk"},{"Ổ đĩa","Drive"},{"trống","free"},{"đã dùng","used"},
    {"Thư mục không tồn tại: ","Folder does not exist: "},{"Không đủ quyền đọc: ","Access denied: "},{"Không đọc được: ","Cannot read: "},{"Đang mở thư mục…","Opening folder…"},{"Explorer: ","Explorer: "},
    {"Thư mục trống.","Empty folder."},{"Thư mục này không có mục ẩn hay hệ thống.","This folder has no hidden or system items."},{"{0} ổ đĩa. Bấm đúp để mở.","{0} drives. Double-click to open."},

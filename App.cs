@@ -185,6 +185,8 @@ namespace TweekPro {
   AppEntry Selected(){return apps.SelectedItems.Count==0?null:(AppEntry)apps.SelectedItems[0].Tag;}
   List<AppEntry> CheckedApps(){var list=apps.CheckedItems.Cast<ListViewItem>().Select(i=>(AppEntry)i.Tag).ToList();if(list.Count==0&&Selected()!=null)list.Add(Selected());return list;}
   public void PopulateForPreview(){inventory=Engine.Inventory();if(inventory.Count==0)inventory=SampleInventory();LoadAppIcons();Filter();LoadBackups();}
+  /// <summary>Selects a tab that has no sample data of its own so --preview all still captures its empty-state guidance.</summary>
+  public void PreviewTab(string key){TabPage t=key=="empty"?emptyTab:key=="dupes"?dupeTab:key=="analyzer"?analyzerTab:tabs.TabPages.Cast<TabPage>().FirstOrDefault(p=>p.Text.StartsWith(Core.L.T(key=="vault"?"Kho khôi phục":"Nhật ký"),StringComparison.Ordinal));if(t!=null)tabs.SelectedTab=t;}
   /// <summary>Representative applications for layout previews on systems without a Windows registry.</summary>
   static List<AppEntry> SampleInventory(){
    return new List<AppEntry>{
@@ -392,15 +394,21 @@ namespace TweekPro {
     string mode=args.Length>1?args[1]:"";
     if(mode=="scan"){using(var window=new LeftoverScanForm(new[]{new AppEntry{Name="Ứng dụng mẫu",Hive="HKCU",View="64",Key="SOFTWARE\\Missing"}},true,null)){window.PopulateForPreview();Snapshot(window,"TweekPro-scan-preview.png");}return;}
     bool show=args.Contains("--show");
-    using(var form=new MainForm(true)){form.PopulateForPreview();if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode=="stale")form.PreviewStale();else if(mode=="explorer")form.PreviewExplorer();else if(mode!="")form.PreviewRemnants();if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}
+    if(mode=="all"){string dir=args.Length>2&&!args[2].StartsWith("--")?args[2]:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"previews");Directory.CreateDirectory(dir);Core.L.Lang=args.Contains("--en")?Core.L.EnglishCode:Core.L.Vietnamese;foreach(string m in PreviewModes)using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,m);Snapshot(form,Path.Combine(dir,m+".png"),new Size(1280,820));}return;}
+    using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,mode);if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}
    }catch(Exception error){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"preview-error.txt"),error.ToString());Environment.ExitCode=1;}return;}
    Application.ThreadException+=(s,e)=>{Core.Log.Error("Lỗi chưa xử lý",e.Exception);MessageBox.Show(e.Exception.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Error);};
    Application.Run(new MainForm());
    Core.Log.Info("Tweek Pro đóng.");
   }
   /// <summary>Renders a form off-screen into a PNG next to the executable so the layout can be reviewed without interaction.</summary>
-  static void Snapshot(Form form,string fileName){
-   form.ShowInTaskbar=false;form.Opacity=0;form.Show();Application.DoEvents();
+  /// <summary>Every tab in display order; --preview all renders one PNG per entry for the README gallery.</summary>
+  public static readonly string[] PreviewModes={"health","apps","store","remnants","junk","empty","dupes","stale","analyzer","vault","autorun","explorer","tweaks","network","services","tools","logs","ai"};
+  static void ApplyPreview(MainForm form,string mode){
+   if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode=="stale")form.PreviewStale();else if(mode=="explorer"||mode=="tweaks")form.PreviewExplorer(mode=="tweaks");else if(mode=="empty"||mode=="dupes"||mode=="analyzer"||mode=="vault"||mode=="logs")form.PreviewTab(mode);else if(mode!="")form.PreviewRemnants();
+  }
+  static void Snapshot(Form form,string fileName,Size? size=null){
+   form.ShowInTaskbar=false;form.Opacity=0;form.Show();Application.DoEvents();if(size.HasValue){form.Size=size.Value;Application.DoEvents();}
    using(var bitmap=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));bitmap.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,fileName));}
   }
  }

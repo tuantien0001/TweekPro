@@ -1,10 +1,16 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-21 22:50 (Asia/Bangkok).
-Status: IN PROGRESS (Cursor). Owner request 22:27: (1) Mạng tab: block network per app; (2) "identify every trace an app leaves" when uninstalling; (3) Explorer tab must show ALL hidden files with extension + description.
+Updated: 2026-09-21 23:35 (Asia/Bangkok).
+Status: DONE (Cursor). Owner request 23:08: README must include screenshots of every functional tab.
 Last editor: Cursor.
 
-## Current task (22:50)
+## Current task (23:35)
+
+D. DONE README screenshots: `--preview all [dir] [--en]` (`App.PreviewModes`, `ApplyPreview`, `MainForm.PreviewTab` for empty/dupes/analyzer/vault/logs, `Snapshot(form,file,Size?)` resizes after Show because `Load` restores the saved window size; language forced to VI unless `--en`) writes 18 PNGs to `docs/screenshots/` (health, apps, store, remnants, junk, empty, dupes, stale, analyzer, vault, autorun, explorer, tweaks, network, services, tools, logs, ai). README: hero image under the badges + `### Ảnh các tab` gallery (2-column HTML table) + `--preview all` row + changelog bullet; AGENTS.md notes to regenerate the PNGs whenever a tab layout changes.
+   Explorer tab redesigned while capturing (the stacked split left ~1 visible row per list at 1240×820): a switcher row (`ShowExplorerView`, buttons "Duyệt tệp và chi tiết tệp" / "Tùy chỉnh File Explorer") shows one full-height pane; nav buttons ▲ Lên / This PC / Người dùng / Chọn tệp… + hidden-filter checkbox sit on the path row; file action buttons + `fileStage` moved into the details pane; browser split keeps a ratio (SplitterMoved ignored until first placement). Bug fixed: `DisguisedAs` returns "" (never null) so every file row was red — now `!String.IsNullOrEmpty`. `PreviewExplorer(bool tweaks)`; new preview mode `tweaks`.
+Verification: build 0 W / 0 E; full `--self-test` PASS 23:31; `docs/screenshots/*.png` reviewed (explorer/tweaks/health/vault/network). Commit + push: see git log (this commit).
+
+## Previous task (22:50)
 
 A. DONE Explorer folder browser: `FileInspector.ListFolder` (hidden/system always listed, extension, shell type via SHGetFileInfo, sizes, attributes, 20 000-entry cap, drives list for ""), `ParentOf`, `ShellIcon(FolderEntry)`; `ExplorerUI` bottom = vertical split (browser left: Tên/Đuôi/Mô tả/Dung lượng/Sửa/Thuộc tính, hidden = italic muted, system = amber, disguised = red; details right, auto-inspect on select without hashes, "Xem chi tiết + băm" hashes). Buttons Lên một cấp / This PC / Thư mục người dùng / Chọn tệp / Mở trong Explorer / Thuộc tính Windows, filter "Chỉ hiện mục ẩn / hệ thống". Opens the user profile the first time the tab is selected. Test `ExplorerTests.Listing`.
 B. DONE Network block: `Network/FirewallBlock.cs` (netsh advfirewall paired in+out Block rules, ASCII rule name `TweekPro Block - <exe> [hash8]`, rules read from `FirewallPolicy\FirewallRules` registry, `BlockReason` refuses core processes/System32/Windows root/own exe/non-.exe/UNC, vault `Kind=Firewall`, `Unblock`/`Restore` delete by exact name only), `FirewallLang`, `FirewallBlockTests` (parse, naming, refusals, fake-netsh round-trip via `Runner`/`RuleSource`). UI: "Chặn mạng" column (red rows), context menu Chặn/Bỏ chặn, toolbar "Đang chặn mạng…" dialog (unblock selected/all), note text updated (old LangEn key removed). Wired `Engine.Restore`, `KindLabel`, `Core.L`, `Tests07`.

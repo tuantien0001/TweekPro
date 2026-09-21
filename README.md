@@ -18,6 +18,11 @@
   <img src="https://img.shields.io/badge/C%23-7.3%20%C2%B7%20WinForms-239120" alt="C# 7.3 WinForms">
 </p>
 
+<p align="center">
+  <a href="docs/screenshots/health.png"><img src="docs/screenshots/health.png" width="860" alt="Tab Tổng quan của Tweek Pro"></a><br>
+  <sub>Tab Tổng quan — <a href="#ảnh-các-tab">xem ảnh tất cả các tab</a></sub>
+</p>
+
 ---
 
 ## Giới thiệu
@@ -61,12 +66,55 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 | **Phân tích ổ đĩa** | Thư mục con nặng nhất, dung lượng theo phần mở rộng, tệp lớn nhất; mở vị trí, CSV | Hoàn toàn chỉ đọc; giới hạn 1.000.000 tệp / 120 giây |
 | **Kho khôi phục** | Khôi phục mục đã chọn; xóa vĩnh viễn mục đánh dấu; **Dọn kho theo tuổi…** có xem trước | Xóa vĩnh viễn không hoàn tác; mặc định chỉ xóa bản đã khôi phục |
 | **Khởi động** | Run/RunOnce/Startup với trạng thái Windows (StartupApproved), **tác động**, chữ ký, kích cỡ, mục hỏng; tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
-| **Explorer** | **Tùy chỉnh File Explorer** (17 công tắc HKCU: hiện đuôi tệp, tệp ẩn, tệp hệ thống được bảo vệ, hộp chọn, thanh trạng thái, chế độ gọn, đường dẫn đầy đủ, mở vào This PC, tệp gần đây / thường dùng, quảng cáo OneDrive, giây trên đồng hồ, căn trái thanh tác vụ, Task View, Widgets) với nút Mặc định Windows / Khuyến nghị an toàn / Khởi động lại Explorer; **Duyệt tệp** hiện mọi tệp ẩn và hệ thống bất kể thiết lập Explorer với cột Đuôi, Mô tả (loại), Dung lượng, Sửa lần cuối, Thuộc tính (ẩn nghiêng, hệ thống vàng, giả dạng đỏ), lọc «Chỉ hiện mục ẩn / hệ thống»; **Xem chi tiết tệp** (bấm một tệp, chọn, kéo thả hoặc dán đường dẫn): loại thật, thuộc tính ẩn/hệ thống, thời gian, chủ sở hữu, chữ ký số, thông tin phiên bản, kiến trúc PE, Mark of the Web, SHA-256/MD5, cảnh báo đuôi kép (`hoadon.pdf.exe`), ký tự đảo chiều Unicode, PE giả tài liệu; mở hộp Thuộc tính Windows | `ExplorerSafety` chỉ cho ghi đúng các giá trị trong danh mục dưới `HKCU\…\Explorer`; giá trị cũ vào Kho (`Kind=Explorer`) và khôi phục bằng một nút; xem chi tiết tệp hoàn toàn chỉ đọc |
+| **Explorer** | Hai khung chuyển bằng nút ở đầu tab. **Tùy chỉnh File Explorer** (17 công tắc HKCU: hiện đuôi tệp, tệp ẩn, tệp hệ thống được bảo vệ, hộp chọn, thanh trạng thái, chế độ gọn, đường dẫn đầy đủ, mở vào This PC, tệp gần đây / thường dùng, quảng cáo OneDrive, giây trên đồng hồ, căn trái thanh tác vụ, Task View, Widgets) với nút Mặc định Windows / Khuyến nghị an toàn / Khởi động lại Explorer; **Duyệt tệp** hiện mọi tệp ẩn và hệ thống bất kể thiết lập Explorer với cột Đuôi, Mô tả (loại), Dung lượng, Sửa lần cuối, Thuộc tính (ẩn nghiêng, hệ thống vàng, giả dạng đỏ), lọc «Chỉ hiện mục ẩn / hệ thống»; **Xem chi tiết tệp** (bấm một tệp, chọn, kéo thả hoặc dán đường dẫn): loại thật, thuộc tính ẩn/hệ thống, thời gian, chủ sở hữu, chữ ký số, thông tin phiên bản, kiến trúc PE, Mark of the Web, SHA-256/MD5, cảnh báo đuôi kép (`hoadon.pdf.exe`), ký tự đảo chiều Unicode, PE giả tài liệu; mở hộp Thuộc tính Windows | `ExplorerSafety` chỉ cho ghi đúng các giá trị trong danh mục dưới `HKCU\…\Explorer`; giá trị cũ vào Kho (`Kind=Explorer`) và khôi phục bằng một nút; xem chi tiết tệp hoàn toàn chỉ đọc |
 | **Mạng** | Kết nối TCP/UDP theo ứng dụng, icon và hướng gửi/nhận, thanh tốc độ, dải packet realtime; băng thông ETW tự bật khi quản trị; chuột phải kết thúc tiến trình / dừng dịch vụ / **Chặn mạng** (cặp quy tắc Windows Firewall vào + ra cho đúng tệp .exe, cột Chặn mạng đỏ, Bỏ chặn, nút «Đang chặn mạng…» liệt kê và bỏ chặn hàng loạt) | Không driver, không lọc gói; `ProcessControl` khóa tiến trình và dịch vụ cốt lõi; `FirewallBlock` từ chối tiến trình cốt lõi, `System32`, chính Tweek Pro, tệp không phải .exe; mỗi lần chặn vào Kho (`Kind=Firewall`), khôi phục gỡ đúng quy tắc theo tên; phiên ETW luôn dừng khi đóng |
 | **Dịch vụ hệ thống** | Mọi dịch vụ với **giải thích bằng lời thường** (~180 dịch vụ + mẫu tên), huy hiệu an toàn, PID/RAM, nhà phát hành; lọc; Dừng / Khởi động / **Dừng và vô hiệu hóa (lưu Kho)** | Dịch vụ cốt lõi bị khóa; svchost không cho kết thúc; kiểu khởi động cũ lưu `Kind=Service` |
 | **Công cụ** | Lối mở công cụ Windows với icon hệ thống thật từ .exe/.cpl/.msc và cột dòng lệnh; Kiểm tra cập nhật | SFC/chkdsk hỏi xác nhận |
 | **Nhật ký** | Nhật ký phiên, mở thư mục nhật ký/dữ liệu, lưu cài đặt | Xoay vòng theo ngày |
 | **Trợ lý AI** | Claude / OpenAI / LM Studio / Ollama; chat có gọi công cụ (14 công cụ: 9 chỉ đọc, 5 thay đổi); khóa API mã hóa DPAPI | Mặc định **Hỏi xác nhận**; Chỉ đọc / Tự động do người dùng chọn; hàng rào engine luôn giữ nguyên |
+
+### Ảnh các tab
+
+Ảnh kết xuất từ chính ứng dụng bằng `--preview all` (dữ liệu mẫu, 1280×820); bấm vào ảnh để xem cỡ lớn.
+
+<table>
+<tr>
+<td width="50%"><b>Tổng quan</b> — điểm sức khỏe, 7 khu vực, banner bản mới<br><a href="docs/screenshots/health.png"><img src="docs/screenshots/health.png" alt="Tổng quan"></a></td>
+<td width="50%"><b>Ứng dụng</b> — kho ứng dụng, cột Cảnh báo PUP, hàng đợi gỡ<br><a href="docs/screenshots/apps.png"><img src="docs/screenshots/apps.png" alt="Ứng dụng"></a></td>
+</tr>
+<tr>
+<td><b>Ứng dụng Windows</b> — Appx theo phân loại an toàn<br><a href="docs/screenshots/store.png"><img src="docs/screenshots/store.png" alt="Ứng dụng Windows"></a></td>
+<td><b>Phần còn sót</b> — kết quả quét chờ duyệt<br><a href="docs/screenshots/remnants.png"><img src="docs/screenshots/remnants.png" alt="Phần còn sót"></a></td>
+</tr>
+<tr>
+<td><b>Dọn rác</b> — quy tắc theo nhóm, xem trước rồi dọn<br><a href="docs/screenshots/junk.png"><img src="docs/screenshots/junk.png" alt="Dọn rác"></a></td>
+<td><b>Thư mục rỗng</b><br><a href="docs/screenshots/empty.png"><img src="docs/screenshots/empty.png" alt="Thư mục rỗng"></a></td>
+</tr>
+<tr>
+<td><b>Tệp trùng lặp</b><br><a href="docs/screenshots/dupes.png"><img src="docs/screenshots/dupes.png" alt="Tệp trùng lặp"></a></td>
+<td><b>Tệp tải về cũ</b> — bộ cài, ảnh, tệp dở trong Downloads<br><a href="docs/screenshots/stale.png"><img src="docs/screenshots/stale.png" alt="Tệp tải về cũ"></a></td>
+</tr>
+<tr>
+<td><b>Phân tích ổ đĩa</b><br><a href="docs/screenshots/analyzer.png"><img src="docs/screenshots/analyzer.png" alt="Phân tích ổ đĩa"></a></td>
+<td><b>Kho khôi phục</b> — mọi thao tác xóa đều quay lại được<br><a href="docs/screenshots/vault.png"><img src="docs/screenshots/vault.png" alt="Kho khôi phục"></a></td>
+</tr>
+<tr>
+<td><b>Khởi động</b> — tác động, chữ ký, trạng thái Windows<br><a href="docs/screenshots/autorun.png"><img src="docs/screenshots/autorun.png" alt="Khởi động"></a></td>
+<td><b>Explorer — Duyệt tệp và chi tiết tệp</b> — mọi tệp ẩn / hệ thống, đuôi, mô tả, cảnh báo giả dạng<br><a href="docs/screenshots/explorer.png"><img src="docs/screenshots/explorer.png" alt="Explorer – duyệt tệp"></a></td>
+</tr>
+<tr>
+<td><b>Explorer — Tùy chỉnh File Explorer</b> — 17 công tắc HKCU, khôi phục được<br><a href="docs/screenshots/tweaks.png"><img src="docs/screenshots/tweaks.png" alt="Explorer – tùy chỉnh"></a></td>
+<td><b>Mạng</b> — ứng dụng đang gửi/nhận, chặn mạng<br><a href="docs/screenshots/network.png"><img src="docs/screenshots/network.png" alt="Mạng"></a></td>
+</tr>
+<tr>
+<td><b>Dịch vụ hệ thống</b> — danh mục dịch vụ có giải thích<br><a href="docs/screenshots/services.png"><img src="docs/screenshots/services.png" alt="Dịch vụ hệ thống"></a></td>
+<td><b>Công cụ</b> — công cụ Windows với icon thật<br><a href="docs/screenshots/tools.png"><img src="docs/screenshots/tools.png" alt="Công cụ"></a></td>
+</tr>
+<tr>
+<td><b>Nhật ký</b><br><a href="docs/screenshots/logs.png"><img src="docs/screenshots/logs.png" alt="Nhật ký"></a></td>
+<td><b>Trợ lý AI</b> — chat có gọi công cụ, chế độ Hỏi xác nhận<br><a href="docs/screenshots/ai.png"><img src="docs/screenshots/ai.png" alt="Trợ lý AI"></a></td>
+</tr>
+</table>
 
 ## Kho khôi phục
 
@@ -124,7 +172,8 @@ Bảy phép đo chỉ đọc chạy trên luồng nền → `Health/HealthCheck.
 | `--self-test` | Toàn bộ kiểm thử trên Windows (tạo và dọn fixture `TweekProTest*` trong AppData/HKCU) |
 | `--self-test junk` | Mọi bộ kiểm thử không phụ thuộc Registry/UI — chạy được headless và trên Mono |
 | `--self-test core` | Chỉ `CoreTests` |
-| `--preview <remnants\|apps\|stale\|autorun\|tools\|junk\|network\|health\|store\|services\|ai> [--show]` | Kết xuất `TweekPro-preview.png` (hoặc mở cửa sổ) với dữ liệu mẫu |
+| `--preview <remnants\|apps\|stale\|explorer\|tweaks\|autorun\|tools\|junk\|network\|health\|store\|services\|ai> [--show]` | Kết xuất `TweekPro-preview.png` (hoặc mở cửa sổ) với dữ liệu mẫu |
+| `--preview all [thư_mục] [--en]` | Kết xuất ảnh mọi tab (1280×820, tiếng Việt; `--en` để lấy bản tiếng Anh) vào thư mục — dùng để làm mới `docs/screenshots/` |
 | `--export-icon <tệp.ico>` | Xuất icon đa kích cỡ đã duyệt (11 khung) |
 
 ## Dành cho nhà phát triển
@@ -175,6 +224,7 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 - **Explorer → Duyệt tệp**: trình duyệt thư mục riêng của Tweek Pro hiện **mọi** tệp/thư mục ẩn và hệ thống bất kể thiết lập Explorer, có cột Đuôi, Mô tả (loại theo shell), Dung lượng, Sửa lần cuối, Thuộc tính; mục ẩn in nghiêng, hệ thống màu vàng, tệp giả dạng (`hoadon.pdf.exe`) màu đỏ; bấm một tệp là xem chi tiết ngay (mã băm tính khi bấm «Xem chi tiết + băm»); Lên một cấp / This PC / Thư mục người dùng / lọc «Chỉ hiện mục ẩn / hệ thống» / Mở trong Explorer / Thuộc tính Windows.
 - **Mạng → Chặn mạng theo ứng dụng** (`Network/FirewallBlock.cs`): chuột phải một ứng dụng → **Chặn mạng** tạo cặp quy tắc Windows Firewall (vào + ra) chỉ cho tệp .exe đó, tên quy tắc `TweekPro Block - <exe> [hash]`; cột **Chặn mạng** đỏ, menu **Bỏ chặn**, nút **Đang chặn mạng…** liệt kê và bỏ chặn hàng loạt; mỗi lần chặn là một mục Kho khôi phục (`Kind=Firewall`) — khôi phục = gỡ đúng quy tắc theo tên. Từ chối tiến trình cốt lõi, tệp trong `Windows\System32`, chính Tweek Pro, đường dẫn mạng và tệp không phải .exe.
 - **Quét sâu phần còn sót — dò dấu vết mở rộng** (`Remnants/TraceHunter.cs`): tên biến thể (bỏ phiên bản/năm/kiến trúc/ngoặc, bỏ tiền tố nhà phát hành, tên gộp, tên tệp .exe đã ghi nhận; tên ngắn/chung chỉ đưa vào mục Chỉ xem); giá trị dọn được qua Kho: MUICache, Trợ lý tương thích (Persisted), bộ đếm FeatureUsage, quy tắc Firewall trỏ tới exe đã gỡ, SharedDLLs, StartupApproved; mục Chỉ xem: đăng ký «Mở bằng», ProgID/CLSID trỏ tới tệp đã gỡ, RegisteredApplications, biến PATH, nguồn Event Log, đăng ký Windows Installer/Tracing, CrashDumps, báo cáo WER, Prefetch, shortcut Gần đây, thư mục Start Menu, Documents / Saved Games / thư mục «.tên». Toàn bộ giai đoạn có giới hạn thời gian (25 giây) và số khóa.
+- README có **ảnh tất cả các tab** (`docs/screenshots/`, kết xuất bằng `--preview all [thư_mục] [--en]`, 1280×820, tiếng Việt). Tab Explorer chia thành hai khung chuyển bằng nút «Duyệt tệp và chi tiết tệp» / «Tùy chỉnh File Explorer» để mỗi danh sách dùng trọn chiều cao cửa sổ; nút Lên / This PC / Người dùng / Chọn tệp nằm cùng hàng Đường dẫn, nút thao tác tệp nằm trên khung chi tiết; sửa lỗi mọi tệp trong trình duyệt tệp bị tô đỏ như tệp giả dạng.
 - **Tab Explorer** (`Explorer/`): 17 công tắc File Explorer / thanh tác vụ (hiện đuôi tệp, tệp ẩn, tệp hệ thống được bảo vệ, hộp chọn, đường dẫn đầy đủ, mở vào This PC, tệp gần đây, quảng cáo OneDrive, giây trên đồng hồ, căn trái, Task View, Widgets…) — ghi HKCU qua Kho (`Kind=Explorer`, khôi phục một nút), `ExplorerSafety` chỉ cho đúng khóa/giá trị trong danh mục, Explorer tự làm mới, nút Khởi động lại Explorer (không nâng quyền shell).
 - **Xem chi tiết tệp**: chọn / kéo thả / dán đường dẫn → loại thật, thuộc tính, thời gian, chủ sở hữu, chữ ký số, phiên bản, kiến trúc PE, Mark of the Web (Zone.Identifier), SHA-256/MD5; cảnh báo đuôi kép, ký tự đảo chiều Unicode, PE giả tài liệu, tệp thực thi tải về chưa ký; sao chép báo cáo, mở hộp Thuộc tính Windows.
 - `release.ps1` tự chốt mục changelog này (đổi tiêu đề thành số bản + ngày, thêm `-Notes`) và GitHub Release dùng nó làm mô tả; sửa cảnh báo `FileVersion` 5 phần khi build.

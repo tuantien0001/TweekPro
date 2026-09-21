@@ -11,7 +11,7 @@ using TweekPro.Explorer;
 
 namespace TweekPro {
  public partial class MainForm {
-  TabPage explorerTab;ListView tweakList=new SmoothListView(),fileList=new SmoothListView();Label tweakOverlay,tweakSummary,fileOverlay,fileStage;
+  TabPage explorerTab;ListView tweakList=new SmoothListView(),fileList=new SmoothListView();Label tweakOverlay,tweakSummary,fileOverlay,fileStage;Panel explorerTweakPane,explorerBrowserPane;Button explorerBrowserButton,explorerTweakButton;
   TextBox filePathBox=new TextBox();PictureBox fileIconBox;CheckBox fileHashOption=new CheckBox();Button tweakApplyButton;
   List<TweakState> tweakStates=new List<TweakState>();FileDetails currentFile;bool tweakLoading;CancellationTokenSource fileCancellation;
   ListView browserList=new SmoothListView();ImageList browserIcons=new ImageList();Label browserOverlay,browserSummary;CheckBox browserOnlyHidden=new CheckBox();FolderListing browserListing;string browserPath="";Font browserHiddenFont;
@@ -32,7 +32,7 @@ namespace TweekPro {
    var tweakNote=Theme.Note("Tích hoặc bỏ tích rồi bấm Áp dụng thay đổi. Mỗi giá trị được ghi vào HKCU của tài khoản hiện tại và giá trị cũ lưu vào Kho khôi phục (loại Explorer) để bật lại bằng một nút. Cửa sổ Explorer đang mở tự làm mới; mục thanh tác vụ cần Khởi động lại Explorer.",NoteKind.Info);
    tweakSummary=new Label{Dock=DockStyle.Bottom,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true};Theme.BorderTop(tweakSummary);
    var top=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Surface};
-   top.Controls.Add(tweakHost);top.Controls.Add(tweakSummary);top.Controls.Add(tweakNote);top.Controls.Add(tweakBar);top.Controls.Add(SectionTitle("Tùy chỉnh File Explorer"));
+   top.Controls.Add(tweakHost);top.Controls.Add(tweakSummary);top.Controls.Add(tweakNote);top.Controls.Add(tweakBar);
 
    SetupList(browserList,new[]{"Tên","Đuôi","Mô tả (loại)","Dung lượng","Sửa lần cuối","Thuộc tính"},new[]{300,70,220,100,140,160},false,false);
    browserList.SmallImageList=browserIcons;browserIcons.ColorDepth=ColorDepth.Depth32Bit;browserIcons.ImageSize=new Size(16,16);var browserIconsHandle=browserIcons.Handle;
@@ -47,42 +47,49 @@ namespace TweekPro {
    SetupList(fileList,new[]{"Thuộc tính","Giá trị"},new[]{170,600},false,true);
    fileList.DoubleClick+=(s,e)=>{if(fileList.SelectedItems.Count>0)try{Clipboard.SetText(fileList.SelectedItems[0].SubItems[1].Text);Log(Core.L.T("Đã sao chép giá trị."));}catch(Exception){}};
    var fileHost=Theme.ListHost(fileList,out fileOverlay);
-   var fileBar=Bar();
-   Add(fileBar,"Lên một cấp",async()=>await BrowseFolder(FileInspector.ParentOf(browserPath)));
-   Add(fileBar,"This PC",async()=>await BrowseFolder(""));
-   Add(fileBar,"Thư mục người dùng",async()=>await BrowseFolder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
-   Add(fileBar,"Chọn tệp…",async()=>await PickFile());
+   var fileBar=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=true,Padding=new Padding(10,6,0,0),BackColor=Theme.Surface};Theme.BorderBottom(fileBar);
    Add(fileBar,"Xem chi tiết + băm",async()=>await InspectCurrentFile(),ButtonStyle.Primary);
    Add(fileBar,"Sao chép báo cáo",()=>{if(currentFile==null)throw new IOException(Core.L.T("Chưa có tệp nào được xem."));Clipboard.SetText(FileInspector.Report(currentFile));Log(Core.L.T("Đã sao chép báo cáo chi tiết tệp."));return Task.FromResult(0);});
    Add(fileBar,"Mở trong Explorer",()=>{var entry=SelectedEntry();string target=entry!=null?entry.Path:currentFile!=null?currentFile.Path:browserPath;if(String.IsNullOrEmpty(target))Process.Start("explorer.exe");else ExplorerShell.Reveal(target);return Task.FromResult(0);});
    Add(fileBar,"Thuộc tính Windows",()=>{var entry=SelectedEntry();string target=entry!=null?entry.Path:currentFile!=null?currentFile.Path:null;if(target==null)throw new IOException(Core.L.T("Chưa có tệp nào được xem."));ExplorerShell.ShowProperties(Handle,target);return Task.FromResult(0);});
-   fileBar.Controls.Add(browserOnlyHidden);
+   browserOnlyHidden.Dock=DockStyle.Right;browserOnlyHidden.AutoSize=false;browserOnlyHidden.Width=230;browserOnlyHidden.Margin=Padding.Empty;browserOnlyHidden.Padding=new Padding(12,0,0,0);
    var pathPanel=new Panel{Dock=DockStyle.Top,Height=48,Padding=new Padding(16,8,16,8),BackColor=Theme.Surface};Theme.BorderBottom(pathPanel);
    fileIconBox=new PictureBox{Dock=DockStyle.Left,Width=40,SizeMode=PictureBoxSizeMode.CenterImage};
-   var pathLabel=new Label{Text=Core.L.T("Đường dẫn:"),Dock=DockStyle.Left,Width=90,TextAlign=ContentAlignment.MiddleLeft,ForeColor=Theme.Muted,Font=Theme.Small};
+   Func<string,Func<Task>,Button> nav=(text,action)=>{var b=Theme.Button(text,ButtonStyle.Secondary);b.Dock=DockStyle.Left;b.AutoSize=false;b.Width=TextRenderer.MeasureText(b.Text,b.Font).Width+26;b.Margin=Padding.Empty;b.Click+=async(s,e)=>await Guard(action);actions.Add(b);return b;};
+   var upButton=nav("▲ Lên",async()=>await BrowseFolder(FileInspector.ParentOf(browserPath)));var pcButton=nav("This PC",async()=>await BrowseFolder(""));var homeButton=nav("Người dùng",async()=>await BrowseFolder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));var pickButton=nav("Chọn tệp…",async()=>await PickFile());
+   var navGap=new Panel{Dock=DockStyle.Left,Width=10};
    filePathBox.Dock=DockStyle.Fill;filePathBox.Font=Theme.Body;filePathBox.BorderStyle=BorderStyle.FixedSingle;
    filePathBox.KeyDown+=async(s,e)=>{if(e.KeyCode==Keys.Enter){e.SuppressKeyPress=true;await Guard(async()=>await InspectPath(filePathBox.Text,true));}};
-   pathPanel.Controls.Add(filePathBox);pathPanel.Controls.Add(fileIconBox);pathPanel.Controls.Add(pathLabel);
-   fileStage=new Label{Dock=DockStyle.Top,Height=28,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
+   pathPanel.Controls.Add(filePathBox);pathPanel.Controls.Add(browserOnlyHidden);pathPanel.Controls.Add(fileIconBox);pathPanel.Controls.Add(navGap);pathPanel.Controls.Add(pickButton);pathPanel.Controls.Add(homeButton);pathPanel.Controls.Add(pcButton);pathPanel.Controls.Add(upButton);
+   fileStage=new Label{Dock=DockStyle.Top,Height=28,Padding=new Padding(12,0,12,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};Theme.BorderBottom(fileStage);
    var browserSplit=new SplitContainer{Size=new Size(1200,400),Dock=DockStyle.Fill,Orientation=Orientation.Vertical,SplitterWidth=6,BackColor=Theme.Border,Panel1MinSize=200,Panel2MinSize=200};
-   browserSplit.Panel1.Controls.Add(browserPanel);browserSplit.Panel2.Controls.Add(fileHost);
-   bool browserPlaced=false;browserSplit.SizeChanged+=(s,e)=>{if(browserPlaced||browserSplit.Width<600)return;browserPlaced=true;try{browserSplit.SplitterDistance=browserSplit.Width*55/100;}catch(InvalidOperationException){}};
+   browserSplit.Panel1.Controls.Add(browserPanel);browserSplit.Panel2.Controls.Add(fileHost);browserSplit.Panel2.Controls.Add(fileStage);browserSplit.Panel2.Controls.Add(fileBar);
+   double browserRatio=0.55;bool browserResizing=false,browserPlaced=false;browserSplit.SplitterMoved+=(s,e)=>{if(browserPlaced&&!browserResizing&&browserSplit.Width>0)browserRatio=(double)browserSplit.SplitterDistance/browserSplit.Width;};
+   browserSplit.SizeChanged+=(s,e)=>{if(browserSplit.Width<450)return;browserResizing=true;try{browserSplit.SplitterDistance=(int)(browserSplit.Width*browserRatio);browserPlaced=true;}catch(InvalidOperationException){}finally{browserResizing=false;}};
    var bottom=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Surface};
-   bottom.Controls.Add(browserSplit);bottom.Controls.Add(fileStage);bottom.Controls.Add(pathPanel);bottom.Controls.Add(fileBar);bottom.Controls.Add(SectionTitle("Duyệt tệp (hiện mọi tệp ẩn / hệ thống, đuôi và mô tả) — bấm một tệp để xem chi tiết"));
+   bottom.Controls.Add(browserSplit);bottom.Controls.Add(pathPanel);
    foreach(Control c in new Control[]{bottom,browserList,browserHost,browserOverlay,fileList,fileHost,fileOverlay,filePathBox}){c.AllowDrop=true;c.DragEnter+=(s,e)=>{if(e.Data.GetDataPresent(DataFormats.FileDrop))e.Effect=DragDropEffects.Copy;};c.DragDrop+=async(s,e)=>{var files=e.Data.GetData(DataFormats.FileDrop) as string[];if(files!=null&&files.Length>0)await Guard(async()=>await InspectPath(files[0],true));};}
 
-   var split=new SplitContainer{Size=new Size(1200,720),Dock=DockStyle.Fill,Orientation=Orientation.Horizontal,SplitterWidth=6,BackColor=Theme.Border,Panel1MinSize=160,Panel2MinSize=200};
-   split.Panel1.Controls.Add(top);split.Panel2.Controls.Add(bottom);
-   tab.Controls.Add(split);
-   bool splitPlaced=false;
-   split.SizeChanged+=(s,e)=>{if(splitPlaced||split.Height<400)return;splitPlaced=true;try{split.SplitterDistance=split.Height*38/100;}catch(InvalidOperationException){}};
+   explorerTweakPane=top;explorerBrowserPane=bottom;
+   var switcher=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=false,Padding=new Padding(16,10,8,0),BackColor=Theme.Canvas};
+   explorerBrowserButton=Theme.Button("Duyệt tệp và chi tiết tệp",ButtonStyle.Primary);explorerTweakButton=Theme.Button("Tùy chỉnh File Explorer",ButtonStyle.Secondary);
+   explorerBrowserButton.Click+=(s,e)=>ShowExplorerView(true);explorerTweakButton.Click+=(s,e)=>ShowExplorerView(false);
+   var switchHint=new Label{Text=Core.L.T("Duyệt tệp hiện mọi mục ẩn / hệ thống với đuôi và mô tả; Tùy chỉnh bật/tắt các tùy chọn của File Explorer."),AutoSize=true,Margin=new Padding(12,10,0,0),ForeColor=Theme.Muted,Font=Theme.Small};
+   switcher.Controls.Add(explorerBrowserButton);switcher.Controls.Add(explorerTweakButton);switcher.Controls.Add(switchHint);
+   tab.Controls.Add(bottom);tab.Controls.Add(top);tab.Controls.Add(switcher);
+   ShowExplorerView(true);
    Theme.SetOverlay(fileOverlay,"Chọn một tệp bên trái (hoặc kéo thả / dán đường dẫn) để xem loại thật, thuộc tính ẩn/hệ thống, chữ ký số, mã băm và cảnh báo giả dạng (hoadon.pdf.exe).",NoteKind.Info);
    Theme.SetOverlay(browserOverlay,"Đang mở thư mục…",NoteKind.Info);
    tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==explorerTab&&browserListing==null)await Guard(async()=>await BrowseFolder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));};
    ReloadTweaks();
   }
 
-  static Label SectionTitle(string text){var l=new Label{Text=Core.L.T(text),Dock=DockStyle.Top,Height=34,Padding=new Padding(16,8,16,0),Font=Theme.Section,ForeColor=Theme.Text,BackColor=Theme.Surface,AutoEllipsis=true};return l;}
+  /// <summary>Switches the Explorer tab between the file browser and the tweak list; both need the full tab height on a 1240×820 window.</summary>
+  public void ShowExplorerView(bool browser){
+   explorerBrowserPane.Visible=browser;explorerTweakPane.Visible=!browser;
+   StyleToggle(explorerBrowserButton,browser);StyleToggle(explorerTweakButton,!browser);
+  }
+  static void StyleToggle(Button b,bool active){b.BackColor=active?Theme.Primary:Theme.Surface;b.ForeColor=active?Color.White:Theme.Text;b.FlatAppearance.BorderColor=active?Theme.Primary:Theme.Border;b.FlatAppearance.MouseOverBackColor=active?Theme.PrimaryDark:Theme.SoftButton;b.FlatAppearance.MouseDownBackColor=active?Theme.PrimaryDark:Theme.SoftButtonHover;}
 
   /// <summary>Re-reads every switch from HKCU and repaints the list; the check state mirrors the current value.</summary>
   void ReloadTweaks(){
@@ -162,7 +169,7 @@ namespace TweekPro {
     var row=new ListViewItem(new[]{e.Name,ext,e.TypeName,size,e.Modified==DateTime.MinValue?"":e.Modified.ToString("dd/MM/yyyy HH:mm"),String.Join(", ",flags)}){Tag=e,ToolTipText=e.Path};
     if(e.System)row.ForeColor=Theme.Warning;else if(e.Hidden)row.ForeColor=Theme.Muted;
     if(e.Hidden){if(browserHiddenFont==null)browserHiddenFont=new Font(Theme.Body,FontStyle.Italic);row.Font=browserHiddenFont;}
-    if(!e.IsDirectory&&FileInspector.DisguisedAs(e.Name)!=null){row.ForeColor=Theme.Danger;row.Font=Theme.Strong;}
+    if(!e.IsDirectory&&!String.IsNullOrEmpty(FileInspector.DisguisedAs(e.Name))){row.ForeColor=Theme.Danger;row.Font=Theme.Strong;}
     string iconKey=e.IsDrive?e.Path:e.IsDirectory?"folder":(e.Extension==""||FileInspector.PortableExecutable.Contains(e.Extension)||e.Extension.Equals(".ico",StringComparison.OrdinalIgnoreCase)||e.Extension.Equals(".lnk",StringComparison.OrdinalIgnoreCase)?e.Path:e.Extension.ToLowerInvariant());
     if(!browserIcons.Images.ContainsKey(iconKey)){var icon=FileInspector.ShellIcon(e,16)??Branding.WindowsAppGlyph(16,Theme.Muted);browserIcons.Images.Add(iconKey,icon);icon.Dispose();}
     row.ImageKey=iconKey;
@@ -229,7 +236,8 @@ namespace TweekPro {
   }
 
   /// <summary>Fills the tab with a disguised-installer sample for --preview explorer; no registry writes, no hashing of real files.</summary>
-  public void PreviewExplorer(){
+  public void PreviewExplorer(bool tweaks=false){
+   ShowExplorerView(!tweaks);
    var d=new FileDetails{Path=@"C:\Users\ADMIN\Downloads\HoaDon_Thang9.pdf.exe",Name="HoaDon_Thang9.pdf.exe",Extension=".exe",Exists=true,Bytes=1_482_752,TypeName="Application",Architecture="x86",Created=DateTime.Now.AddDays(-2),Modified=DateTime.Now.AddDays(-2),Accessed=DateTime.Now,Attributes=FileAttributes.Archive|FileAttributes.Hidden,FromInternet=true,ZoneId=3,HostUrl="https://files.example-download.net/HoaDon_Thang9.pdf.exe",Owner=@"DESKTOP\ADMIN",Sha256="9f2c4b1e0a7d6c5b4a3928170f6e5d4c3b2a1908f7e6d5c4b3a291807f6e5d4c",Md5="0e7c3d2b1a9f8e7d6c5b4a3928170f6e"};
    d.DisguisedAs=FileInspector.DisguisedAs(d.Name);FileInspector.Warn(d);
    var listing=new FolderListing{Path=@"C:\Users\ADMIN\Downloads"};var now=DateTime.Now;
