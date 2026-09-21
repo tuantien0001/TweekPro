@@ -121,9 +121,11 @@ namespace TweekPro.AI {
     if(!ok){Trace(AiTools.Describe(call)+": "+L.T("người dùng từ chối"));return "Denied: the user declined this action in the confirmation dialog.";}
    }
    try{
-    string result=await Host.RunTool(call.Name,args).ConfigureAwait(false);
-    Trace(AiTools.Describe(call)+": "+L.T("xong"));
-    return result??"";
+    string result=await Host.RunTool(call.Name,args).ConfigureAwait(false)??"";
+    string first=result.Split('\n')[0].Trim();
+    bool failed=first.StartsWith("Error",StringComparison.Ordinal)||first.StartsWith("Refused",StringComparison.Ordinal)||first.StartsWith("Ambiguous",StringComparison.Ordinal);
+    Trace(AiTools.Describe(call)+": "+(failed?first:L.T("xong")+(first==""?"":" — "+(first.Length>140?first.Substring(0,140)+"…":first))));
+    return result;
    }catch(Exception e){Trace(AiTools.Describe(call)+": "+L.T("lỗi")+" — "+e.Message);return "Error: "+e.Message;}
   }
 

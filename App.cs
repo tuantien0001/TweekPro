@@ -54,8 +54,8 @@ namespace TweekPro {
    bar.Controls.Add(searchLabel);bar.Controls.Add(search);
    details.Dock=DockStyle.Bottom;details.Height=92;details.Multiline=true;details.ReadOnly=true;details.ScrollBars=ScrollBars.Vertical;details.BackColor=Theme.Stripe;details.ForeColor=Theme.Muted;details.BorderStyle=BorderStyle.None;details.Font=Theme.Small;
    var detailsWrap=new Panel{Dock=DockStyle.Bottom,Height=104,Padding=new Padding(16,10,16,10),BackColor=Theme.Stripe};Theme.BorderTop(detailsWrap);details.Dock=DockStyle.Fill;detailsWrap.Controls.Add(details);
-   details.Text="Chọn một ứng dụng để xem thông tin. Dùng ô tìm kiếm để lọc theo tên hoặc nhà phát hành.";
-   apps.SelectedIndexChanged+=(s,e)=>{var a=Selected();details.Text=a==null?"Chọn một ứng dụng để xem thông tin.":a.Name+"  •  "+a.Version+"\r\n"+a.Publisher+"  |  "+Presentation.SizeLabel(a.Size)+"  |  "+Presentation.DateLabel(a.InstallDate)+"\r\nThư mục: "+(String.IsNullOrWhiteSpace(a.Location)?"Chưa được ứng dụng khai báo":a.Location)+"\r\nNgày do bộ cài cung cấp, có thể là ngày cập nhật. Giá trị gốc: "+(String.IsNullOrWhiteSpace(a.InstallDate)?"không có":a.InstallDate);};
+   details.Text=Core.L.T("Chọn một ứng dụng để xem thông tin. Dùng ô tìm kiếm để lọc theo tên hoặc nhà phát hành.");
+   apps.SelectedIndexChanged+=(s,e)=>{var a=Selected();details.Text=a==null?Core.L.T("Chọn một ứng dụng để xem thông tin."):a.Name+"  •  "+a.Version+"\r\n"+a.Publisher+"  |  "+Presentation.SizeLabel(a.Size)+"  |  "+Presentation.DateLabel(a.InstallDate)+"\r\n"+Core.L.T("Thư mục: ")+(String.IsNullOrWhiteSpace(a.Location)?Core.L.T("Chưa được ứng dụng khai báo"):a.Location)+"\r\n"+Core.L.T("Ngày do bộ cài cung cấp, có thể là ngày cập nhật. Giá trị gốc: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("không có"):a.InstallDate);};
    appCount.Dock=DockStyle.Top;appCount.Height=34;appCount.Padding=new Padding(16,0,16,0);appCount.TextAlign=ContentAlignment.MiddleLeft;appCount.BackColor=Theme.Surface;appCount.ForeColor=Theme.Muted;appCount.Font=Theme.Small;Theme.BorderBottom(appCount);
    installed.Controls.Add(appsHost);installed.Controls.Add(detailsWrap);installed.Controls.Add(appCount);installed.Controls.Add(bar);
 
@@ -180,7 +180,16 @@ namespace TweekPro {
   bool Confirm(string text){return MessageBox.Show(this,text,Core.L.T("Xác nhận thao tác"),MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)==DialogResult.Yes;}
   AppEntry Selected(){return apps.SelectedItems.Count==0?null:(AppEntry)apps.SelectedItems[0].Tag;}
   List<AppEntry> CheckedApps(){var list=apps.CheckedItems.Cast<ListViewItem>().Select(i=>(AppEntry)i.Tag).ToList();if(list.Count==0&&Selected()!=null)list.Add(Selected());return list;}
-  public void PopulateForPreview(){inventory=Engine.Inventory();LoadAppIcons();Filter();LoadBackups();}
+  public void PopulateForPreview(){inventory=Engine.Inventory();if(inventory.Count==0)inventory=SampleInventory();LoadAppIcons();Filter();LoadBackups();}
+  /// <summary>Representative applications for layout previews on systems without a Windows registry.</summary>
+  static List<AppEntry> SampleInventory(){
+   return new List<AppEntry>{
+    new AppEntry{Name="Adobe Acrobat (64-bit)",Version="26.002.21931",Publisher="Adobe",Size=2662400,Location=@"C:\Program Files\Adobe\Acrobat DC\",Command=@"C:\Program Files\Adobe\Acrobat DC\Acrobat\Setup.exe /uninstall",Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Acrobat",InstallDate="20260918"},
+    new AppEntry{Name="Brave",Version="153.1.95.104",Publisher="Brave Software Inc",Size=551600,Location=@"C:\Program Files\BraveSoftware\Brave-Browser\Application",Command=@"C:\Program Files\BraveSoftware\Brave-Browser\Application\153.1.95.104\Installer\setup.exe --uninstall",Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\BraveSoftware Brave-Browser",InstallDate="20260919"},
+    new AppEntry{Name="CapCut",Version="9.4.0.4015",Publisher="Bytedance Pte. Ltd.",Size=0,Location="",Command=@"C:\Users\ADMIN\AppData\Local\CapCut\Apps\uninstall.exe",Hive="HKCU",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\CapCut",InstallDate=""},
+    new AppEntry{Name="MySQL Server 8.0",Version="8.0.39",Publisher="Oracle Corporation",Size=612300,Location=@"C:\Program Files\MySQL\MySQL Server 8.0\",Command="MsiExec.exe /X{1A2B3C4D-0000-0000-0000-000000000001}",Msi=true,Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1A2B3C4D-0000-0000-0000-000000000001}",InstallDate="20260701"},
+   };
+  }
   public void PreviewRemnants(){PresentCandidates(new[]{new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Program Files\Example App",Reason="Dữ liệu minh họa giao diện, không phải kết quả quét."},new Candidate{Kind="Registry",AppName="Ứng dụng mẫu",Path=@"SOFTWARE\Example App",Hive="HKCU",View="64",Reason="Dữ liệu minh họa giao diện."}});tabs.SelectedTab=remnantsTab;SetRemnantChecks(true);}
   async Task Reload(){
    Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nTweek Pro đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
@@ -202,8 +211,8 @@ namespace TweekPro {
    }
    var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();foreach(var a in inventory.Where(a=>(a.Name+" "+a.Publisher).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0)){
    string location=String.IsNullOrWhiteSpace(a.Location)?"Chưa được ứng dụng khai báo thư mục cài":a.Location;
-   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?"Toàn máy":"Tài khoản",Presentation.DateLabel(a.InstallDate)}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+"\r\nNgày bộ cài khai báo: "+(String.IsNullOrWhiteSpace(a.InstallDate)?"Không có":a.InstallDate)};Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
-  }apps.EndUpdate();appCount.Text=apps.Items.Count+" ứng dụng hiển thị  /  "+inventory.Count+" ứng dụng trên máy";
+   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate)}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+"\r\nNgày bộ cài khai báo: "+(String.IsNullOrWhiteSpace(a.InstallDate)?"Không có":a.InstallDate)};Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
+  }apps.EndUpdate();appCount.Text=Core.L.F("{0} ứng dụng hiển thị  /  {1} ứng dụng trên máy",apps.Items.Count,inventory.Count);
    if(inventory.Count==0)Theme.SetOverlay(appsOverlay,"Không tìm thấy ứng dụng desktop nào.\r\nTweek Pro đọc các khóa Uninstall của HKLM/HKCU; chưa gồm toàn bộ ứng dụng Microsoft Store.",NoteKind.Info);
    else if(apps.Items.Count==0)Theme.SetOverlay(appsOverlay,"Không có ứng dụng khớp với «"+q+"».\r\nThử từ khóa khác hoặc xóa ô tìm kiếm.",NoteKind.Info);
    else Theme.SetOverlay(appsOverlay,null,NoteKind.Info);
@@ -211,10 +220,10 @@ namespace TweekPro {
   void Remember(IEnumerable<AppEntry> entries){foreach(var a in entries){history.RemoveAll(x=>x.Id==a.Id);history.Add(a);}Directory.CreateDirectory(Path.GetDirectoryName(sessions));Engine.Save(sessions,history);}
   async Task Uninstall(){
    var queue=CheckedApps();if(queue.Count==0)throw new IOException("Chọn ứng dụng muốn gỡ.");
-   if(!Confirm("Mở trình gỡ chính thức lần lượt cho "+queue.Count+" ứng dụng?\r\n\r\n"+String.Join("\r\n",queue.Take(12).Select(a=>a.Name))+"\r\n\r\nTrình gỡ có thể xóa dữ liệu và yêu cầu quyền quản trị. Kho Tweek Pro chỉ khôi phục phần dọn sau đó, không hoàn tác trình gỡ."))return;
+   if(!Confirm(Core.L.F("Mở trình gỡ chính thức lần lượt cho {0} ứng dụng?\r\n\r\n{1}\r\n\r\nTrình gỡ có thể xóa dữ liệu và yêu cầu quyền quản trị. Kho Tweek Pro chỉ khôi phục phần dọn sau đó, không hoàn tác trình gỡ.",queue.Count,String.Join("\r\n",queue.Take(12).Select(a=>a.Name)))))return;
    foreach(var entry in queue)Advanced.Capture(entry);Remember(queue);candidates.Clear();RenderCandidates();
    for(int i=0;i<queue.Count;i++){
-    var a=queue[i];if(i>0&&!Confirm("Tiếp tục gỡ "+a.Name+"?\r\nChọn No để dừng hàng đợi."))break;
+    var a=queue[i];if(i>0&&!Confirm(Core.L.F("Tiếp tục gỡ {0}?\r\nChọn No để dừng hàng đợi.",a.Name)))break;
     try{
      var info=Engine.UninstallInfo(a);Log("Mở trình gỡ: "+a.Name);
      using(var process=Process.Start(info)){if(process!=null)await Task.Run(()=>process.WaitForExit());}

@@ -8,14 +8,14 @@ using System.Windows.Forms;
 namespace TweekPro {
  public static class Presentation {
   public static string DateLabel(string raw){
-   if(String.IsNullOrWhiteSpace(raw))return "Không rõ";
+   if(String.IsNullOrWhiteSpace(raw))return Core.L.T("Không rõ");
    DateTime date;
    // Compact MSI and ISO formats are unambiguous. Slash dates use installer US convention.
    string[] formats={"yyyyMMdd","yyyy-MM-dd","yyyy/MM/dd","M/d/yyyy","MM/dd/yyyy","d/M/yyyy","dd/MM/yyyy"};
    if(DateTime.TryParseExact(raw.Trim(),formats,CultureInfo.InvariantCulture,DateTimeStyles.None,out date))return date.ToString("dd/MM/yyyy",CultureInfo.InvariantCulture);
-   return "Không rõ";
+   return Core.L.T("Không rõ");
   }
-  public static string SizeLabel(long kb){return kb<=0?"Không rõ":kb>=1048576?(kb/1048576.0).ToString("N2")+" GB":(kb/1024.0).ToString("N1")+" MB";}
+  public static string SizeLabel(long kb){return kb<=0?Core.L.T("Không rõ"):kb>=1048576?(kb/1048576.0).ToString("N2")+" GB":(kb/1024.0).ToString("N1")+" MB";}
   /// <summary>Formats a sortable ISO timestamp from a backup manifest as a friendly local date and time.</summary>
   public static string StampLabel(string iso){
    DateTime stamp;

@@ -28,6 +28,8 @@ Chạy `TweekPro-0.7.exe` trong thư mục phân phối (cạnh các DLL `Micros
 | Kho khôi phục | Khôi phục mục đang chọn; **Xóa vĩnh viễn mục đã đánh dấu**; **Dọn kho theo tuổi…** (xem trước số mục và dung lượng) | Xóa vĩnh viễn không hoàn tác được; mặc định chỉ xóa bản đã khôi phục; kho AppCare cũ vẫn hiển thị và khôi phục được |
 | Khởi động (Autorun) | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
 | **Mạng** (mới) | Kết nối TCP/UDP theo tiến trình (tên, PID, nhà phát hành chữ ký, endpoint, trạng thái), làm mới 1–30 giây, tạm dừng, tìm kiếm, ẩn loopback, phân giải tên máy (tắt mặc định), CSV; khi có quyền quản trị: **Bật băng thông (ETW)** hiển thị byte gửi/nhận và tốc độ theo tiến trình | Chỉ xem, không chặn, không driver; phiên ETW tên `TweekPro-Network` luôn được dừng khi đóng |
+| **Dịch vụ hệ thống** (mới) | Mọi dịch vụ Windows (WMI) với **giải thích bằng lời thường** từ cơ sở kiến thức ~180 dịch vụ + mẫu tên (trình cập nhật, nâng quyền, anti-cheat, máy chủ CSDL…), huy hiệu màu theo mức an toàn (đỏ = cốt lõi, xanh dương = Windows, vàng = tùy chọn, xanh lá = bên thứ ba), PID/RAM, nhà phát hành theo chữ ký; lọc Đang chạy / Bên thứ ba / Có thể tắt; chuột phải: Dừng, Khởi động, Khởi động lại, **Dừng và vô hiệu hóa (lưu Kho)**, Kết thúc tiến trình, mở thư mục, chi tiết | Dịch vụ cốt lõi bị khóa mọi thao tác dừng; svchost không cho kết thúc tiến trình; vô hiệu hóa lưu kiểu khởi động cũ vào Kho (`Kind=Service`) |
+| **Trợ lý AI** (mới) | Nhập API key **Anthropic (Claude)** hoặc **OpenAI (GPT/Codex)** (mã hóa DPAPI theo tài khoản), chọn model, điểm cuối tùy chỉnh cho máy chủ tương thích; khung chat với câu hỏi nhanh; AI truy vấn máy qua 9 công cụ chỉ đọc (tổng quan, ứng dụng, dịch vụ, mạng, khởi động, kho, xem trước rác…) và điều khiển qua 5 công cụ thay đổi (dừng/khởi động dịch vụ, kết thúc tiến trình, tắt khởi động, gỡ ứng dụng) | Mọi công cụ thay đổi hiện hộp xác nhận từng lần và vẫn qua các giới hạn an toàn của Tweek Pro; có thể tắt hẳn thao tác thay đổi; key chỉ gửi tới điểm cuối đã chọn |
 | Công cụ (Windows Tools) | 19 lối mở công cụ có sẵn | SFC hỏi xác nhận quyền quản trị |
 | Nhật ký | Nhật ký phiên, nút mở thư mục nhật ký/dữ liệu, lưu cài đặt | Nhật ký xoay vòng theo ngày |
 
@@ -73,6 +75,18 @@ Tab **Thư mục rỗng** quét một thư mục do người dùng chọn và ch
 - Bảng kết nối: `GetExtendedTcpTable`/`GetExtendedUdpTable` (iphlpapi, `TCP_TABLE_OWNER_PID_ALL`, IPv4 và IPv6), không cần quyền. Tên/đường dẫn tiến trình qua `QueryFullProcessImageName` với quyền truy vấn hạn chế; nhà phát hành lấy từ chữ ký Authenticode của tệp exe (cache theo đường dẫn).
 - Băng thông: phiên ETW thời gian thực trên nhà cung cấp TCP/IP của kernel (cùng nguồn Task Manager dùng) qua thư viện `Microsoft.Diagnostics.Tracing.TraceEvent`; sự kiện send/recv TCP/UDP v4/v6 được cộng theo PID trên luồng riêng, giao diện chỉ đọc ảnh chụp mỗi chu kỳ. Cần quyền quản trị. Số liệu tính từ lúc bật ETW, gồm cả loopback (có thể ẩn). Bộ đếm `EventsLost` hiển thị ở dòng tóm tắt khi có mất sự kiện.
 - Phân giải tên máy ngược là tùy chọn, bất đồng bộ, có cache; tắt thì không gửi truy vấn DNS nào.
+
+## Dịch vụ hệ thống: cơ chế
+
+- Đọc một lần qua WMI `Win32_Service` (tên, tên hiển thị, mô tả, trạng thái, kiểu khởi động, PID, đường dẫn, tài khoản); RAM lấy từ `Process.WorkingSet64`; nhà phát hành từ chữ ký số của tệp exe (không áp dụng cho `svchost.exe`).
+- Giải thích: `Services/service-knowledge.json` (nhúng) khớp theo tên dịch vụ (bỏ hậu tố `_xxxxx` của dịch vụ theo tài khoản như `cbdhsvc_4a2b1`); không có trong cơ sở kiến thức thì khớp mẫu tên (`update`, `elevation`, `anticheat`, `license`, `telemetry`, `helper`, `sql`, `vpn`) với tên ứng dụng suy từ tên hiển thị; còn lại: chạy từ thư mục Windows → "thành phần Windows" + mô tả gốc, ngược lại → "dịch vụ nền của <nhà phát hành>".
+- Mức an toàn: `Core` (danh sách `ProcessControl.CoreServices`, luôn khóa), `Windows`, `Optional`, `ThirdParty`; mỗi mức có lời khuyên riêng trong khung chi tiết. Dừng/vô hiệu hóa dùng `ProcessControl.StopService` (dùng chung với tab Mạng); khởi động qua `ServiceController`.
+
+## Trợ lý AI: cơ chế
+
+- `AI/AiClient`: Anthropic Messages API (`x-api-key`, `anthropic-version 2023-06-01`, khối `tool_use`/`tool_result`) và OpenAI Chat Completions (`Authorization: Bearer`, `tools[type=function]`, thông điệp `tool`); model mặc định `claude-sonnet-4-5` / `gpt-4.1` (sửa được), `max_completion_tokens` cho họ gpt-5/o*. Transport HTTP tách rời nên toàn bộ dựng/đọc yêu cầu được kiểm thử ngoài mạng.
+- `AI/AiAgent`: vòng lặp hỏi → gọi công cụ → trả kết quả → hỏi tiếp, tối đa 8 vòng; công cụ thay đổi phải qua `IAiHost.ConfirmAction` (hộp thoại) và có thể bị tắt hoàn toàn; lỗi công cụ trả về cho model dưới dạng văn bản thay vì làm hỏng lượt.
+- Khóa lưu trong `settings.json` dưới dạng `dpapi:<base64>` (`ProtectedData`, phạm vi người dùng hiện tại, có entropy riêng); ngoài Windows chỉ là `plain:<base64>` và giao diện nói rõ điều đó.
 
 ## Dữ liệu Tweek Pro
 
@@ -192,5 +206,7 @@ Rác hệ thống: nhóm quy tắc cần quản trị cho cache Windows Update, 
 Quyền quản trị mặc định qua `app.manifest` (kèm PerMonitorV2, long paths); bỏ nút Khởi động lại với quyền quản trị; nút ngôn ngữ thành icon quả cầu EN/VI.
 Tệp cứng đầu: `Core/StubbornFiles` (bỏ thuộc tính, chiếm quyền sở hữu với SeTakeOwnership/SeRestore, bậc thang leo thang, hẹn xóa khi khởi động lại) nối vào Quarantine thư mục/tệp; trạng thái Kho `PendingReboot`.
 Ứng dụng Windows v1: `Store/WindowsApps` (PowerShell `-EncodedCommand`, phân loại trong mã, tên thân thiện, logo từ AppxManifest với biến thể scale/targetsize, script gỡ/đăng ký lại, chặn tên gói bất thường), tab riêng với icon, `--preview store [--show]`.
+Dịch vụ hệ thống v1: tab riêng với cơ sở kiến thức nhúng, huy hiệu an toàn, khung chi tiết bằng lời thường và menu chuột phải dừng/khởi động/vô hiệu hóa; menu chuột phải cũng được thêm cho bảng Ứng dụng, Ứng dụng Windows, Khởi động và Kho khôi phục.
+Trợ lý AI v1: tab nhập API key Claude/OpenAI (DPAPI), chat có gọi công cụ, 14 công cụ (9 chỉ đọc, 5 thay đổi có xác nhận), kiểm thử ngoài mạng bằng transport giả.
 Song ngữ: `Core/L.cs` (`L.T`/`L.F`) + từ điển `Core/LangEn.cs`; cài đặt `language`; nút chuyển ngôn ngữ ở header khởi động lại ứng dụng; `LangTests` kiểm tra bảng dịch không rỗng, giữ nguyên placeholder, mọi tab/quy tắc rác có bản dịch và glyph tab khớp ở cả hai ngôn ngữ, engine Tổng quan nói tiếng Anh khi được chọn.
 Kiểm thử: `CoreTests` (chạy được ngoài Windows), `Tests07` (dọn rác/kho/purge/kho cũ/bảng kết nối + gọi `DupeTests`, `AnalyzerTests`, `NetworkStatsTests`, `PacketAnimatorTests`, `EmptyFolderTests`, `HealthTests`, `LangTests`, `StubbornTests`, `WindowsAppsTests`); `--self-test` chạy trước khi khởi tạo WinForms nên không cần màn hình; `TEST-PLAN.md` cho máy ảo.

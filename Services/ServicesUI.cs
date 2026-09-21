@@ -148,6 +148,9 @@ namespace TweekPro {
 
   void ShowServiceDialog(ServiceEntry s){MessageBox.Show(this,DescribeService(s),Core.L.T("Chi tiết dịch vụ"),MessageBoxButtons.OK,MessageBoxIcon.Information);}
 
+  /// <summary>File name of a Windows path regardless of the host platform's separator.</summary>
+  static string FileNameOf(string path){return String.IsNullOrEmpty(path)?"":path.Substring(path.LastIndexOfAny(new[]{'\\','/'})+1);}
+
   string ServiceLabel(ServiceEntry s){return s.Friendly==s.Name?s.Name:s.Friendly+" ("+s.Name+")";}
 
   async Task StopSelectedService(bool disable){
@@ -194,10 +197,10 @@ namespace TweekPro {
     MenuItem(menu,"Khởi động lại dịch vụ",async()=>await RestartService(s),s.Running&&!core,core?"dịch vụ cốt lõi":"đã dừng");
     MenuItem(menu,"Dừng và vô hiệu hóa (lưu vào Kho)",async()=>await StopService(s,true),!core&&!String.Equals(s.StartMode,"Disabled",StringComparison.OrdinalIgnoreCase),core?"dịch vụ cốt lõi":"đã vô hiệu",danger:true);
     menu.Items.Add(new ToolStripSeparator());
-    string blocked=s.Pid>0?ProcessControl.TerminateBlockReason(s.Pid,Path.GetFileName(s.Executable)):Core.L.T("không có tiến trình");
+    string blocked=s.Pid>0?ProcessControl.TerminateBlockReason(s.Pid,FileNameOf(s.Executable)):Core.L.T("không có tiến trình");
     MenuItem(menu,Core.L.F("Kết thúc tiến trình (PID {0})",s.Pid>0?s.Pid.ToString():"—"),async()=>{
-     if(!Confirm(Core.L.F("Kết thúc tiến trình {0} (PID {1})?\r\nỨng dụng sẽ đóng ngay và dữ liệu chưa lưu có thể mất. Nếu đây là dịch vụ, Windows có thể tự chạy lại nó — dùng \"Dừng và vô hiệu hóa\" để ngăn.",Path.GetFileName(s.Executable),s.Pid)))return;
-     await Task.Run(()=>ProcessControl.Terminate(s.Pid,Path.GetFileName(s.Executable)));
+     if(!Confirm(Core.L.F("Kết thúc tiến trình {0} (PID {1})?\r\nỨng dụng sẽ đóng ngay và dữ liệu chưa lưu có thể mất. Nếu đây là dịch vụ, Windows có thể tự chạy lại nó — dùng \"Dừng và vô hiệu hóa\" để ngăn.",FileNameOf(s.Executable),s.Pid)))return;
+     await Task.Run(()=>ProcessControl.Terminate(s.Pid,FileNameOf(s.Executable)));
      Log(Core.L.F("Dịch vụ: đã kết thúc tiến trình PID {0} của {1}.",s.Pid,ServiceLabel(s)));await LoadServices();
     },blocked==null,blocked,danger:true);
     menu.Items.Add(new ToolStripSeparator());
