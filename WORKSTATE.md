@@ -12,7 +12,7 @@ Autorun expansion, not released (version stays 0.7.3 until the owner asks to cut
 - Groups in order: Run / Startup, Ứng dụng Windows, Dịch vụ tự chạy, Kho Tweek Pro.
 - A Run/Startup entry Windows already disabled is turned back on by rewriting StartupApproved only (`StartupInspector.SetEnabled`, vault Purpose=`StartupApproved`). RunOnce still has no on/off flag.
 - Health count excludes services. README `### 0.7.4 (chưa phát hành)`. `docs/screenshots/` regenerated 01:35 (`autorun.png` shows the checkboxes; Windows-apps group sits under the Run group and is on screen at the owner's taller window).
-- Verification: Release build 0 warnings / 0 errors. Elevated `--self-test` PASS 01:34. `--preview autorun` status bar stays "Sẵn sàng" (the false enable error is gone) and the list shows Run / Startup then Ứng dụng Windows (1Password, Intel Graphics, Claude). Do not move tag v0.7.3. Installed exe is still the previous 0.7.3 until it is copied over `C:\Program Files\Tweek Pro\TweekPro-0.7.3.exe`.
+- Verification: Release build 0 warnings / 0 errors. Elevated `--self-test` PASS 01:34. `--preview autorun` status bar stays "Sẵn sàng" (the false enable error is gone) and the list shows Run / Startup then Ứng dụng Windows (1Password, Intel Graphics, Claude). Commit `61c126a` on `origin/main`. Installed exe replaced (SHA-256 B5C1F549…7B61) and relaunched 01:39. Do not move tag v0.7.3.
 
 ## Previous task (00:16)
 
