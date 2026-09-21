@@ -103,10 +103,11 @@ namespace TweekPro {
    BuildNetworkTab();
    BuildStoreTab();
    BuildServicesTab();
+   BuildAiTab();
    BuildListMenus();
    // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics.
    remnantsTab=clean;
-   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,servicesTab,toolsTab,logs};
+   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,servicesTab,aiTab,toolsTab,logs};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
@@ -368,7 +369,7 @@ namespace TweekPro {
     string mode=args.Length>1?args[1]:"";
     if(mode=="scan"){using(var window=new LeftoverScanForm(new[]{new AppEntry{Name="Ứng dụng mẫu",Hive="HKCU",View="64",Key="SOFTWARE\\Missing"}},true,null)){window.PopulateForPreview();Snapshot(window,"TweekPro-scan-preview.png");}return;}
     bool show=args.Contains("--show");
-    using(var form=new MainForm(true)){form.PopulateForPreview();if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services")form.PreviewAdvanced(mode);else if(mode!="")form.PreviewRemnants();if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}
+    using(var form=new MainForm(true)){form.PopulateForPreview();if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode!="")form.PreviewRemnants();if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}
    }catch(Exception error){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"preview-error.txt"),error.ToString());Environment.ExitCode=1;}return;}
    Application.ThreadException+=(s,e)=>{Core.Log.Error("Lỗi chưa xử lý",e.Exception);MessageBox.Show(e.Exception.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Error);};
    Application.Run(new MainForm());

@@ -21,6 +21,13 @@ namespace TweekPro.Core {
   [DataMember(Name="windowWidth")] public int WindowWidth=0;
   [DataMember(Name="windowHeight")] public int WindowHeight=0;
   [DataMember(Name="language")] public string Language=L.Vietnamese;
+  [DataMember(Name="aiProvider")] public string AiProvider="anthropic";
+  [DataMember(Name="aiModel")] public string AiModel="";
+  [DataMember(Name="aiEndpoint")] public string AiEndpoint="";
+  [DataMember(Name="aiKeyProtected")] public string AiKeyProtected="";
+  [DataMember(Name="aiDenyActions")] public bool AiDenyActions=false;
+  /// <summary>Stored inverted so a missing key in an older settings.json keeps the default (allowed, with confirmation).</summary>
+  public bool AiAllowActions { get { return !AiDenyActions; } set { AiDenyActions=!value; } }
 
   /// <summary>Clamps values that would make the UI unusable if the file was edited by hand.</summary>
   public void Normalize(){
@@ -30,6 +37,8 @@ namespace TweekPro.Core {
    if(DuplicateMinKB<0)DuplicateMinKB=0;if(DuplicateMinKB>1048576)DuplicateMinKB=1048576;
    if(LogRetentionDays<1)LogRetentionDays=1;if(LogRetentionDays>365)LogRetentionDays=365;
    Language=L.Normalize(Language);
+   AiProvider=(AiProvider??"").ToLowerInvariant()=="openai"?"openai":"anthropic";
+   if(AiModel==null)AiModel="";if(AiEndpoint==null)AiEndpoint="";if(AiKeyProtected==null)AiKeyProtected="";
    if(WindowWidth<0)WindowWidth=0;if(WindowHeight<0)WindowHeight=0;
   }
 

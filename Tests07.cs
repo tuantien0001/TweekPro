@@ -60,6 +60,7 @@ namespace TweekPro {
     Network.NetworkStatsTests.Run();
     Network.ProcessControlTests.Run();
     Services.ServiceCatalogTests.Run();
+    AI.AiTests.Run();
     Network.PacketAnimatorTests.Run();
     Cleaner.EmptyFolderTests.Run();
     Health.HealthTests.Run();
