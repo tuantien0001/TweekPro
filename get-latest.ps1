@@ -37,8 +37,9 @@ if ($dirty) {
   git stash push -u -m 'get-latest autostash' | Out-Null
 }
 
-git checkout $Branch 2>$null
-if ($LASTEXITCODE -ne 0) { git checkout -b $Branch "origin/$Branch"; if ($LASTEXITCODE -ne 0) { throw 'git checkout failed.' } }
+$exists = git branch --list $Branch
+if ($exists) { git checkout $Branch } else { git checkout -b $Branch "origin/$Branch" }
+if ($LASTEXITCODE -ne 0) { throw 'git checkout failed.' }
 git pull --ff-only origin $Branch
 if ($LASTEXITCODE -ne 0) { throw 'git pull failed (non fast-forward). Resolve manually with git status.' }
 
