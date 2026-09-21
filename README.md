@@ -132,7 +132,9 @@ Có hai dạng phát hành, đều do `publish.ps1` tạo ra trong thư mục `d
 
 Tạo bản phát hành trên máy Windows: `powershell -ExecutionPolicy Bypass -File .\publish.ps1` (script tự xin quyền quản trị qua UAC vì self-test cần quyền này; `-SkipTests` để chạy không cần quyền) (build → self-test → icon → zip → installer; dạng `-ExecutionPolicy Bypass` tránh lỗi "running scripts is disabled on this system" của chính sách mặc định). Trình cài dùng [Inno Setup 6.3+](https://jrsoftware.org/isinfo.php); nếu chưa có, thêm `-InstallInno` (cài qua winget) hoặc `winget install JRSoftware.InnoSetup`. Kịch bản cài đặt nằm ở `installer\TweekPro.iss`; các tham số `-SkipTests`, `-NoInstaller` để rút gọn.
 
-Không cần máy Windows: GitHub Actions (`.github/workflows/release.yml`) tự build trên `windows-latest` ở mỗi lần push — vào tab **Actions** → lần chạy mới nhất → artifact `TweekPro-dist` để tải cả hai tệp. Gắn tag `v0.7` (`git tag v0.7 && git push origin v0.7`) sẽ tạo thêm **Release** trên GitHub với installer và zip đính kèm để chia sẻ bằng đường dẫn cố định. Ứng dụng chỉ báo «có bản mới» khi có **Release** (hoặc ít nhất tag `v*`); push nhánh không đủ để cập nhật trong app.
+Không cần máy Windows: GitHub Actions (`.github/workflows/release.yml`) tự build trên `windows-latest` ở mỗi lần push — vào tab **Actions** → lần chạy mới nhất → artifact `TweekPro-dist` để tải cả hai tệp. Gắn tag `v*` sẽ tạo thêm **Release** trên GitHub với installer và zip đính kèm để chia sẻ bằng đường dẫn cố định. Ứng dụng chỉ báo «có bản mới» khi có **Release** (hoặc ít nhất tag `v*`); push nhánh không đủ để cập nhật trong app.
+
+Phát hành từ terminal bằng một lệnh (PowerShell **Run as administrator** vì có self-test): `powershell -ExecutionPolicy Bypass -File .\release.ps1 -Version 0.7.1 -Notes "Mô tả ngắn"`. Script kiểm tra cây làm việc sạch và không tụt sau remote, ghi phiên bản mới vào `TweekPro.csproj`, `App.cs`, `build.ps1`, `installer\TweekPro.iss` (giữ nguyên UTF-8/BOM), chạy `build.ps1 -SelfTest`, rồi commit «Release v0.7.1», tạo tag `v0.7.1` và push cả nhánh lẫn tag; nếu build/test lỗi thì hoàn nguyên và không commit gì. GitHub Actions nhận tag, build lại trên `windows-latest`, đính kèm `TweekPro-0.7.1-Setup.exe` + zip và xuất bản Release — vài phút sau nút **Kiểm tra cập nhật** trong app báo bản mới. `-DryRun` chỉ kiểm tra và in các tệp sẽ đổi; `-SkipTests` bỏ self-test cục bộ (Actions vẫn chạy).
 
 Icon exe/installer (`TweekPro.ico`, 16–256 px) được kết xuất từ chính logo vẽ bằng mã: `TweekPro-0.7.exe --export-icon TweekPro.ico`.
 
@@ -151,6 +153,7 @@ Icon exe/installer (`TweekPro.ico`, 16–256 px) được kết xuất từ chí
 | `Health/` | `HealthCheck` (ngưỡng, điểm, hạng — thuần logic), `HealthGauge` (`HealthRenderer` + panel vẽ thẻ điểm), `HealthUI` (tab Tổng quan, các phép đo), `HealthTests` |
 | `Branding.cs`, `TweekPro.ico` | Logo ứng dụng và icon tab vẽ bằng mã (GDI+); `.ico` xuất từ logo, nhúng vào exe |
 | `publish.ps1`, `installer/TweekPro.iss`, `.github/workflows/release.yml` | Đóng gói: zip portable + trình cài Inno Setup, build tự động trên GitHub Actions |
+| `release.ps1` | Phát hành từ terminal: tăng phiên bản, build + self-test, commit, tag `v*`, push → Actions tạo Release |
 | `Vault/PurgeForm.cs` | Hộp thoại dọn kho theo tuổi |
 | `CoreTests.cs`, `Tests07.cs` | Kiểm thử không cần Windows / kiểm thử 0.7 |
 
