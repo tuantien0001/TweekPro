@@ -1,30 +1,33 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-21 19:05 (Asia/Bangkok).
-Status: IN PROGRESS — Cursor working through the roadmap (HANDOFF.md §5). Sole writer since the localization session stopped at `e7c842b`.
-Last editor: Cursor.
+Updated: 2026-09-21 ~19:00 (Asia/Bangkok).
+Status: Update check v1 DONE (this agent). Startup/Tools still WIP in the working tree (other agents).
+Last editor: Cursor (Update agent).
 
-## Owner objective (2026-09-21 18:04)
+## Owner objective (this job)
 
-"Icon fixed. Move the AI tab to the end, continue the project, self-improve, upgrade into a deep Windows management super-app." Commit + push each verified part to `cursor/integration-all-features-e772`; never merge main.
+In-app update detection from GitHub — honest about no live-patch without download; poll Releases (fallback tags); opt-in UI; `Update/` folder; build+SelfTest; commit+push.
 
-## Done this session (all pushed unless noted)
+## Done (Update)
 
-- Taskbar icon `30d7a30`; AI tab last `74f2717` (owner confirmed both).
-- PUP / bloatware detector v1 `b1b5962`: `Pup/` (rules JSON, `PupSafety`, `PupLang`, tests), Flag column in Applications + Windows Apps, 7th Health area, `--preview apps`.
-- **Old Downloads (stale files) v1** (this commit): `Stale/StaleFinder.cs` (scan Downloads/Desktop for installers, archives, disk images, partial downloads, large files older than N days; `StaleSafety` allow = Downloads/Desktop only, deny = Documents/media/cloud/system/vault; quarantine `Kind=Stale` with `files.xml` layout; restore never overwrites), `Stale/StaleUI.cs` tab "Tệp tải về cũ" (options: Downloads/Desktop, age days, large MB; vault/direct modes; open location), `Stale/StaleLang.cs`, `Stale/StaleTests.cs` wired in `Tests07`. Settings `staleMinAgeDays=30`, `staleLargeMB=200`, `staleIncludeDesktop` with `[OnDeserializing]` defaults for old files. `Engine.Restore` dispatch, vault kind label, Branding glyph `download`, `LangTests` tab list, README, AGENTS preview list, `--preview stale`.
-- Verified: Release build 0/0; `--self-test` PASS; previews `apps`/`health`/`stale` render correct Vietnamese.
+- `Update/UpdateCheck.cs`: GitHub Releases/latest vs `MainForm.Version`; 404 → newest `v*` tag; asset prefer `.exe`/setup then `.zip`; no silent overwrite.
+- `Update/UpdateUI.cs`: `CheckForUpdates()` (opt-in MessageBox → open download/release URL).
+- `Update/UpdateLang.cs` + `Update/UpdateTests.cs` (no network); wired in `Core/L` and `Tests07`.
+- Overview button in `Health/HealthUI.cs`; Tools tab may call the same method (thin hook in local AdvancedUI — may be uncommitted with Tools WIP).
+- README: limits + publish note + changelog bullet.
+- Verified: Release build 0/0; `--self-test` PASS.
 
-## Lessons (also in AGENTS.md)
+## Not this job (leave for other agents)
 
-Never rewrite sources with PowerShell `Set-Content` (ANSI). The editor's string-replace tool now writes non-ASCII into `App.cs` as `?` (encoding cache after the incident) — for `App.cs` keep new text ASCII (move Vietnamese literals into feature classes, e.g. `StaleFinder.BackupKindLabel()`), or use an explicit UTF-8 script. Always scan edited files for `?`/mojibake before committing.
+- `Startup/*`, Advanced autorun columns, Health AutorunBroken — do not own.
+- Tools icons / catalog expansion in `AdvancedUI` / `Advanced.cs`.
 
-## Next concrete action
+## Next concrete action (owner / other agents)
 
-4. Startup impact + broken shortcuts (Autorun tab: measure exe size/signature/last-run, flag missing targets; Start Menu/Desktop `.lnk` with missing targets → vault `Kind=File`).
-1. Localization completion: Health/Junk/Services/Store/AI runtime strings; `LangTests` source scan for unwrapped `Log("…")`.
-Optional: Health area for stale downloads (reuse `StaleFinder.Scan` on Downloads, read-only); AI tools `list_unwanted` / `list_stale`.
+1. Publish a GitHub Release (tag `v*`) so in-app check sees a real installer URL.
+2. Startup impact + Tools icons agents finish and push their files.
+3. Localization completion (HANDOFF §5).
 
 ## Git
 
-`cursor/integration-all-features-e772`; PR #7. Push after each verified commit.
+`cursor/integration-all-features-e772`; PR #7. Push Update commit after green SelfTest.

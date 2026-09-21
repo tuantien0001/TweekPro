@@ -109,7 +109,7 @@ Dữ liệu chỉ lưu cục bộ, không gửi đi đâu. Đây không phải b
 
 ## Giới hạn của bản 0.7
 
-Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, quản lý tiện ích trình duyệt, chặn mạng, trợ lý AI, bộ cài, chữ ký số hay tự cập nhật (xem lộ trình 1.0/2.0). Không xác định được mọi dấu vết của mọi ứng dụng. Băng thông theo tiến trình cần quyền quản trị và chỉ tính từ khi bật. Bản phân phối là một thư mục (exe + DLL), chưa gộp thành một tệp. Chuỗi giao diện vẫn nằm trong mã (chưa `.resx`).
+Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, quản lý tiện ích trình duyệt, chặn mạng, trợ lý AI, bộ cài, chữ ký số hay tự vá exe đang chạy (xem lộ trình 1.0/2.0). Nút **Kiểm tra cập nhật** (Tổng quan / Công cụ) chỉ hỏi GitHub Releases và mở trang tải — vẫn cần tải bản mới và khởi động lại. Không xác định được mọi dấu vết của mọi ứng dụng. Băng thông theo tiến trình cần quyền quản trị và chỉ tính từ khi bật. Bản phân phối là một thư mục (exe + DLL), chưa gộp thành một tệp. Chuỗi giao diện vẫn nằm trong mã (chưa `.resx`).
 
 ## Kiểm chứng đã thực hiện
 
@@ -132,7 +132,7 @@ Có hai dạng phát hành, đều do `publish.ps1` tạo ra trong thư mục `d
 
 Tạo bản phát hành trên máy Windows: `powershell -ExecutionPolicy Bypass -File .\publish.ps1` (script tự xin quyền quản trị qua UAC vì self-test cần quyền này; `-SkipTests` để chạy không cần quyền) (build → self-test → icon → zip → installer; dạng `-ExecutionPolicy Bypass` tránh lỗi "running scripts is disabled on this system" của chính sách mặc định). Trình cài dùng [Inno Setup 6.3+](https://jrsoftware.org/isinfo.php); nếu chưa có, thêm `-InstallInno` (cài qua winget) hoặc `winget install JRSoftware.InnoSetup`. Kịch bản cài đặt nằm ở `installer\TweekPro.iss`; các tham số `-SkipTests`, `-NoInstaller` để rút gọn.
 
-Không cần máy Windows: GitHub Actions (`.github/workflows/release.yml`) tự build trên `windows-latest` ở mỗi lần push — vào tab **Actions** → lần chạy mới nhất → artifact `TweekPro-dist` để tải cả hai tệp. Gắn tag `v0.7` (`git tag v0.7 && git push origin v0.7`) sẽ tạo thêm **Release** trên GitHub với installer và zip đính kèm để chia sẻ bằng đường dẫn cố định.
+Không cần máy Windows: GitHub Actions (`.github/workflows/release.yml`) tự build trên `windows-latest` ở mỗi lần push — vào tab **Actions** → lần chạy mới nhất → artifact `TweekPro-dist` để tải cả hai tệp. Gắn tag `v0.7` (`git tag v0.7 && git push origin v0.7`) sẽ tạo thêm **Release** trên GitHub với installer và zip đính kèm để chia sẻ bằng đường dẫn cố định. Ứng dụng chỉ báo «có bản mới» khi có **Release** (hoặc ít nhất tag `v*`); push nhánh không đủ để cập nhật trong app.
 
 Icon exe/installer (`TweekPro.ico`, 16–256 px) được kết xuất từ chính logo vẽ bằng mã: `TweekPro-0.7.exe --export-icon TweekPro.ico`.
 
@@ -226,5 +226,6 @@ Tệp cứng đầu: `Core/StubbornFiles` (bỏ thuộc tính, chiếm quyền s
 Ứng dụng Windows v1: `Store/WindowsApps` (PowerShell `-EncodedCommand`, phân loại trong mã, tên thân thiện, logo từ AppxManifest với biến thể scale/targetsize, script gỡ/đăng ký lại, chặn tên gói bất thường), tab riêng với icon, `--preview store [--show]`.
 Dịch vụ hệ thống v1: tab riêng với cơ sở kiến thức nhúng, huy hiệu an toàn, khung chi tiết bằng lời thường và menu chuột phải dừng/khởi động/vô hiệu hóa; menu chuột phải cũng được thêm cho bảng Ứng dụng, Ứng dụng Windows, Khởi động và Kho khôi phục.
 Trợ lý AI v1: tab nhập API key Claude/OpenAI (DPAPI), chat có gọi công cụ, 14 công cụ (9 chỉ đọc, 5 thay đổi có xác nhận), kiểm thử ngoài mạng bằng transport giả.
+Kiểm tra cập nhật v1 (`Update/`): nút opt-in trên tab Tổng quan (và Công cụ nếu có) hỏi GitHub Releases/latest, so sánh với `MainForm.Version`; nếu chưa có Release thì fallback tag `v*` mới nhất (không có URL bộ cài). Chỉ thông báo và mở trang tải — không tải/ghi đè Program Files im lặng. `UpdateTests` không cần mạng.
 Song ngữ: `Core/L.cs` (`L.T`/`L.F`) + từ điển `Core/LangEn.cs`; cài đặt `language`; nút chuyển ngôn ngữ ở header khởi động lại ứng dụng; `LangTests` kiểm tra bảng dịch không rỗng, giữ nguyên placeholder, mọi tab/quy tắc rác có bản dịch và glyph tab khớp ở cả hai ngôn ngữ, engine Tổng quan nói tiếng Anh khi được chọn.
 Kiểm thử: `CoreTests` (chạy được ngoài Windows), `Tests07` (dọn rác/kho/purge/kho cũ/bảng kết nối + gọi `DupeTests`, `AnalyzerTests`, `NetworkStatsTests`, `PacketAnimatorTests`, `EmptyFolderTests`, `HealthTests`, `LangTests`, `StubbornTests`, `WindowsAppsTests`); `--self-test` chạy trước khi khởi tạo WinForms nên không cần màn hình; `TEST-PLAN.md` cho máy ảo.
