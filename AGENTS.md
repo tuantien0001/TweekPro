@@ -25,11 +25,11 @@ Read `WORKSTATE.md` for the latest task checkpoint, then `HANDOFF.md` for archit
 
 ## Git
 
-- Work on `cursor/integration-all-features-e772` (PR #7 collects everything; PRs #1–#6 are its ancestors). Small logical commits with descriptive messages; never force-push.
+- Work directly on `main` (since 2026-09-21; PR #7 merged `cursor/integration-all-features-e772` into `main`, that branch is now frozen history). The owner wants the GitHub front page to always show the newest code, so every verified commit goes to `main`. Small logical commits with descriptive messages; never force-push.
 
 ## Continuity between Cursor and Codex
 
-- Use the owner's existing checkout `C:\Users\ADMIN\TweekPro` when working locally, on `cursor/integration-all-features-e772`. Only one agent may write to this checkout at a time. Do not infer that a session stopped from an old note alone; the owner controls handoff.
+- Use the owner's existing checkout `C:\Users\ADMIN\TweekPro` when working locally, on `main`. Only one agent may write to this checkout at a time. Do not infer that a session stopped from an old note alone; the owner controls handoff.
 - At task start, inspect branch, status and latest commits. Fetch the remote and compare before making changes. Fast-forward only when the working tree is clean and it is safe; preserve uncommitted work, and never reset/clean/stash it away automatically. A dirty tree may be the previous agent's unfinished work.
 - Update `WORKSTATE.md` at the start of substantive work, after meaningful milestones, before long verification, and before handing off. Record the user's objective, completed work, pending files/steps, exact test results, blockers, and the next concrete action. Keep it short; replace stale status rather than appending an endless diary.
 - Commit coherent, validated changes and push them to the existing development branch as part of the owner's established GitHub workflow. Verify remote commit identity before saying work is backed up. Do not wait until the very end of a long task to checkpoint. Do not force-push, merge main, create a release, or include secrets merely to hand off.

@@ -4,7 +4,11 @@ Updated: 2026-09-21 19:58 (Asia/Bangkok).
 Status: PAUSED by owner — "finish current work, report, do not continue the roadmap yet".
 Last editor: Cursor.
 
-## Shipped today (all on `cursor/integration-all-features-e772`, pushed)
+## Branch switch (20:05)
+
+PR #7 merged by fast-forwarding `main` to `f8ce05c`; `main` is the only working branch from now on (AGENTS.md updated). `cursor/integration-all-features-e772` is frozen history. `release.ps1` runs from `main`.
+
+## Shipped today (pushed; now all on `main`)
 
 - `30d7a30` taskbar icon; `74f2717` AI tab last.
 - `b1b5962` PUP/bloatware detector (`Pup/`), Flag column, 7th Health area.
@@ -31,3 +35,7 @@ Release build 0 W / 0 E; `--self-test` PASS at `fdf8658`. `release.ps1 -DryRun` 
 ## Notes for agents
 
 Cursor prompts Allow per shell command; pass `required_permissions:["all"]` from the first call and batch commands. Never `Set-Content` on Vietnamese sources.
+
+## Git
+
+`main` (local checkout tracks `origin/main`). Push after each verified commit.
