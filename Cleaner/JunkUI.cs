@@ -54,10 +54,10 @@ namespace TweekPro {
   /// <summary>Loads rules from the override file or the embedded defaults and shows them as unmeasured rows.</summary>
   void LoadJunkRules(bool announce){
    try{junkRules=JunkRules.Load(Core.Paths.JunkRulesOverride);}
-   catch(Exception e){junkRules=new JunkRuleSet{Rules=new List<JunkRule>()};Log("Không đọc được quy tắc dọn rác: "+e.Message);}
+   catch(Exception e){junkRules=new JunkRuleSet{Rules=new List<JunkRule>()};Log(Core.L.T("Không đọc được quy tắc dọn rác: ")+e.Message);}
    junkResults=junkRules.Rules.Select(r=>new JunkRuleResult{Rule=r}).ToList();
    RenderJunk(false);
-   if(announce)Log("Đã nạp "+junkRules.Rules.Count+" quy tắc dọn rác từ "+junkRules.Source+".");
+   if(announce)Log(Core.L.F("Đã nạp {0} quy tắc dọn rác từ {1}.",junkRules.Rules.Count,junkRules.Source));
   }
 
   /// <summary>Redraws the rule list; measured is false before the first preview so sizes show as pending.</summary>
@@ -91,14 +91,14 @@ namespace TweekPro {
    if(junkRules==null||junkRules.Rules.Count==0)throw new IOException("Không có quy tắc dọn rác.");
    junkCancellation=new CancellationTokenSource();var token=junkCancellation.Token;
    junkStage.Visible=true;junkStage.Text="Đang xem trước…";Theme.SetOverlay(junkOverlay,null,NoteKind.Info);
-   Log("Dọn rác: đang xem trước "+junkRules.Rules.Count+" quy tắc (chỉ đọc).");
+   Log(Core.L.F("Dọn rác: đang xem trước {0} quy tắc (chỉ đọc).",junkRules.Rules.Count));
    try{
     var rules=junkRules.Rules.ToList();bool elevated=Core.Elevation.IsElevated;int minAge=settings.JunkMinAgeHours;
     junkResults=await Task.Run(()=>JunkCleaner.Preview(rules,elevated,minAge,token,ReportJunk),token);
     RenderJunk(true);
     long total=junkResults.Sum(r=>r.Bytes);int files=junkResults.Sum(r=>r.Count);int locked=junkResults.Count(r=>r.Locked);
     junkStage.Text=Core.L.F("Xem trước xong: {0} tệp, {1}",files.ToString("N0"),Presentation.BytesLabel(total))+(locked>0?Core.L.F("  •  {0} nhóm bị khóa (di chuột lên dòng đỏ để xem lý do)",locked):"");
-    Log("Dọn rác: xem trước xong — "+files.ToString("N0")+" tệp, "+Presentation.BytesLabel(total)+", "+locked+" nhóm bị khóa.");
+    Log(Core.L.F("Dọn rác: xem trước xong — {0} tệp, {1}, {2} nhóm bị khóa.",files.ToString("N0"),Presentation.BytesLabel(total),locked));
     if(files==0)Theme.SetOverlay(junkOverlay,Core.L.F("Không có tệp rác đủ điều kiện theo quy tắc hiện tại.\r\nTệp mới hơn {0} giờ và tệp đang mở không được tính.",settings.JunkMinAgeHours),NoteKind.Info);
    }catch(OperationCanceledException){junkStage.Text=Core.L.T("Đã dừng xem trước.");}
    finally{junkCancellation.Dispose();junkCancellation=null;}
@@ -122,15 +122,15 @@ namespace TweekPro {
     if(!Confirm(Core.L.F("Chuyển {0} tệp ({1}) vào Kho khôi phục?\r\n\r\n{2}\r\n\r\nMỗi nhóm tạo một bản sao lưu; có thể khôi phục hoặc xóa vĩnh viễn sau trong tab Kho khôi phục. Dung lượng ổ đĩa chưa được giải phóng cho đến khi xóa vĩnh viễn.",files.ToString("N0"),Presentation.BytesLabel(bytes),list)))return;
    }
    junkCancellation=new CancellationTokenSource();var token=junkCancellation.Token;junkStage.Visible=true;junkStage.Text=Core.L.T(direct?"Đang xóa thẳng…":"Đang chuyển vào kho…");
-   Log("Dọn rác: bắt đầu "+(direct?"xóa thẳng ":"chuyển vào kho ")+files.ToString("N0")+" tệp trong "+selected.Count+" nhóm.");
+   Log(Core.L.F(direct?"Dọn rác: bắt đầu xóa thẳng {0} tệp trong {1} nhóm.":"Dọn rác: bắt đầu chuyển vào kho {0} tệp trong {1} nhóm.",files.ToString("N0"),selected.Count));
    JunkReport report;
    try{report=await Task.Run(()=>JunkCleaner.Clean(selected,direct,token,ReportJunk),token);}
    catch(OperationCanceledException){junkStage.Text="Đã dừng dọn.";return;}
    finally{junkCancellation.Dispose();junkCancellation=null;}
    LoadBackups();
    string summary=Core.L.F(direct?"Đã xóa thẳng {0} tệp ({1}). Bỏ qua vì đang dùng: {2}. Lỗi: {3}.":"Đã chuyển vào kho {0} tệp ({1}). Bỏ qua vì đang dùng: {2}. Lỗi: {3}.",report.Cleaned.ToString("N0"),Presentation.BytesLabel(report.Bytes),report.SkippedInUse.ToString("N0"),report.Failed.ToString("N0"))+(direct?"":Core.L.F(" Bản sao lưu: {0}.",report.Backups.Count));
-   junkStage.Text=summary;Log("Dọn rác: "+summary);
-   foreach(string err in report.Errors.Take(20))Log("Dọn rác lỗi: "+err);
+   junkStage.Text=summary;Log(Core.L.T("Dọn rác: ")+summary);
+   foreach(string err in report.Errors.Take(20))Log(Core.L.T("Dọn rác lỗi: ")+err);
    MessageBox.Show(this,summary+(report.Errors.Count>0?Core.L.T("\r\n\r\nLỗi đầu tiên:\r\n")+String.Join("\r\n",report.Errors.Take(5)):"")+(direct?"":Core.L.T("\r\n\r\nCó thể khôi phục hoặc xóa vĩnh viễn trong tab Kho khôi phục.")),Core.L.T("Kết quả dọn rác"),MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
    await PreviewJunk();
   }

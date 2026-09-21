@@ -121,6 +121,9 @@ namespace TweekPro.Core {
    {"Chọn một quy tắc để xem tệp.","Select a rule to view its files."},{"Tệp sẽ dọn — ","Files to clean — "},{"Sửa lần cuối","Last modified"},
    {"Hiển thị 2.000 tệp lớn nhất trong {0} tệp.","Showing the 2,000 largest of {0} files."},{"Chưa xem trước hoặc không có tệp đủ điều kiện.","Not previewed yet, or no file qualifies."},{"Danh sách chỉ để xem; chưa có gì bị thay đổi.","Read-only list; nothing has changed."},
 
+   {"Không đọc được quy tắc dọn rác: ","Could not read junk rules: "},{"Đã nạp {0} quy tắc dọn rác từ {1}.","Loaded {0} junk rules from {1}."},{"Dọn rác: đang xem trước {0} quy tắc (chỉ đọc).","Junk: previewing {0} rules (read-only)."},
+   {"Dọn rác: xem trước xong — {0} tệp, {1}, {2} nhóm bị khóa.","Junk: preview done — {0} files, {1}, {2} groups locked."},{"Dọn rác: bắt đầu xóa thẳng {0} tệp trong {1} nhóm.","Junk: deleting {0} files in {1} groups directly."},{"Dọn rác: bắt đầu chuyển vào kho {0} tệp trong {1} nhóm.","Junk: moving {0} files in {1} groups to the vault."},
+   {"Dọn rác: ","Junk: "},{"Dọn rác lỗi: ","Junk error: "},
    // Junk rule groups and names (junk-rules.json)
    {"Hệ thống","System"},{"Trình duyệt","Browsers"},{"Bộ đệm","Caches"},{"Rác hệ thống (cần quyền quản trị)","System junk (administrator required)"},
    {"Tệp tạm của tài khoản (%TEMP%)","User temporary files (%TEMP%)"},{"Tệp tạm của Windows (C:\\Windows\\Temp)","Windows temporary files (C:\\Windows\\Temp)"},
