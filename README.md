@@ -219,13 +219,10 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 
 ## Lịch sử phiên bản
 
-### 0.7.n (chưa phát hành)
+### 0.7.3 (21/09/2026)
 
 - Dòng mô tả trên thanh tiêu đề rút còn «Gỡ ứng dụng, dọn rác, theo dõi mạng • Mọi thao tác xóa đều được sao lưu và hoàn tác» và dừng trước nút ngôn ngữ / quyền, không còn bị che.
 - Nút ngôn ngữ trên thanh tiêu đề là lá cờ (Việt Nam khi đang tiếng Việt, Union Jack khi tiếng Anh) thay cho quả địa cầu kèm chữ VI/EN.
-
-### 0.7.3 (21/09/2026)
-
 - **Explorer → Duyệt tệp**: trình duyệt thư mục riêng của Tweek Pro hiện **mọi** tệp/thư mục ẩn và hệ thống bất kể thiết lập Explorer, có cột Đuôi, Mô tả (loại theo shell), Dung lượng, Sửa lần cuối, Thuộc tính; mục ẩn in nghiêng, hệ thống màu vàng, tệp giả dạng (`hoadon.pdf.exe`) màu đỏ; bấm một tệp là xem chi tiết ngay (mã băm tính khi bấm «Xem chi tiết + băm»); Lên một cấp / This PC / Thư mục người dùng / lọc «Chỉ hiện mục ẩn / hệ thống» / Mở trong Explorer / Thuộc tính Windows.
 - **Mạng → Chặn mạng theo ứng dụng** (`Network/FirewallBlock.cs`): chuột phải một ứng dụng → **Chặn mạng** tạo cặp quy tắc Windows Firewall (vào + ra) chỉ cho tệp .exe đó, tên quy tắc `TweekPro Block - <exe> [hash]`; cột **Chặn mạng** đỏ, menu **Bỏ chặn**, nút **Đang chặn mạng…** liệt kê và bỏ chặn hàng loạt; mỗi lần chặn là một mục Kho khôi phục (`Kind=Firewall`) — khôi phục = gỡ đúng quy tắc theo tên. Từ chối tiến trình cốt lõi, tệp trong `Windows\System32`, chính Tweek Pro, đường dẫn mạng và tệp không phải .exe.
 - **Quét sâu phần còn sót — dò dấu vết mở rộng** (`Remnants/TraceHunter.cs`): tên biến thể (bỏ phiên bản/năm/kiến trúc/ngoặc, bỏ tiền tố nhà phát hành, tên gộp, tên tệp .exe đã ghi nhận; tên ngắn/chung chỉ đưa vào mục Chỉ xem); giá trị dọn được qua Kho: MUICache, Trợ lý tương thích (Persisted), bộ đếm FeatureUsage, quy tắc Firewall trỏ tới exe đã gỡ, SharedDLLs, StartupApproved; mục Chỉ xem: đăng ký «Mở bằng», ProgID/CLSID trỏ tới tệp đã gỡ, RegisteredApplications, biến PATH, nguồn Event Log, đăng ký Windows Installer/Tracing, CrashDumps, báo cáo WER, Prefetch, shortcut Gần đây, thư mục Start Menu, Documents / Saved Games / thư mục «.tên». Toàn bộ giai đoạn có giới hạn thời gian (25 giây) và số khóa.
