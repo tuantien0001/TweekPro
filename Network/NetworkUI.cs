@@ -121,10 +121,10 @@ namespace TweekPro {
 
   /// <summary>Starts or stops the ETW bandwidth session; the fixed session name is always stopped on exit.</summary>
   void ToggleBandwidth(){
-   if(etw!=null&&etw.IsRunning){etw.Stop();etw.Dispose();etw=null;netTraffic.Clear();netBandwidth.Text=Core.L.T("Bật băng thông (ETW)");Log("Mạng: đã dừng phiên ETW "+EtwNetworkSession.SessionName+".");RenderNetwork();return;}
+   if(etw!=null&&etw.IsRunning){etw.Stop();etw.Dispose();etw=null;netTraffic.Clear();netBandwidth.Text=Core.L.T("Bật băng thông (ETW)");Log(Core.L.F("Mạng: đã dừng phiên ETW {0}.",EtwNetworkSession.SessionName));RenderNetwork();return;}
    etw=new EtwNetworkSession();
-   try{etw.Start();}catch(Exception e){etw.Dispose();etw=null;throw new IOException("Không bật được ETW: "+e.Message);}
-   netBandwidth.Text=Core.L.T("Dừng băng thông (ETW)");Log("Mạng: đã bật phiên ETW "+EtwNetworkSession.SessionName+" (kernel TCP/IP, chỉ đọc).");
+   try{etw.Start();}catch(Exception e){etw.Dispose();etw=null;throw new IOException(Core.L.T("Không bật được ETW: ")+e.Message);}
+   netBandwidth.Text=Core.L.T("Dừng băng thông (ETW)");Log(Core.L.F("Mạng: đã bật phiên ETW {0} (kernel TCP/IP, chỉ đọc).",EtwNetworkSession.SessionName));
   }
 
   /// <summary>Reads the connection table on a worker thread, resolves processes and redraws the list.</summary>
@@ -143,10 +143,10 @@ namespace TweekPro {
     if(IsDisposed)return;
     netRows=rows;
     if(etw!=null&&etw.IsRunning){netTraffic=etw.Snapshot();etw.Trim(new HashSet<int>(rows.Select(c=>c.Pid)));}
-    else if(etw!=null&&!etw.IsRunning&&etw.Failure!=""){Log("Mạng: phiên ETW dừng — "+etw.Failure);etw.Dispose();etw=null;netBandwidth.Text=Core.L.T("Bật băng thông (ETW)");}
+    else if(etw!=null&&!etw.IsRunning&&etw.Failure!=""){Log(Core.L.T("Mạng: phiên ETW dừng — ")+etw.Failure);etw.Dispose();etw=null;netBandwidth.Text=Core.L.T("Bật băng thông (ETW)");}
     RenderNetwork();
-    if(manual)Log("Mạng: "+rows.Count+" kết nối, "+rows.Select(c=>c.Pid).Distinct().Count()+" tiến trình.");
-   }catch(Exception e){Theme.SetOverlay(netOverlay,"Không đọc được bảng kết nối.\r\n"+e.Message,NoteKind.Error);if(manual)throw;}
+    if(manual)Log(Core.L.F("Mạng: {0} kết nối, {1} tiến trình.",rows.Count,rows.Select(c=>c.Pid).Distinct().Count()));
+   }catch(Exception e){Theme.SetOverlay(netOverlay,Core.L.T("Không đọc được bảng kết nối.\r\n")+e.Message,NoteKind.Error);if(manual)throw;}
    finally{netRefreshing=false;}
   }
 
@@ -287,7 +287,7 @@ namespace TweekPro {
    }
    netMenu.Items.Add(new ToolStripSeparator());
    var open=new ToolStripMenuItem(Core.L.T("Mở thư mục chứa tệp")){Enabled=id.Path!=""&&File.Exists(id.Path)};
-   open.Click+=(s,e)=>{try{Process.Start(new ProcessStartInfo("explorer.exe","/select,\""+id.Path+"\""){UseShellExecute=true});}catch(Exception error){Log("LỖI: "+error.Message);}};
+   open.Click+=(s,e)=>{try{Process.Start(new ProcessStartInfo("explorer.exe","/select,\""+id.Path+"\""){UseShellExecute=true});}catch(Exception error){Log(Core.L.T("LỖI: ")+error.Message);}};
    var copy=new ToolStripMenuItem(Core.L.T("Sao chép đường dẫn")){Enabled=id.Path!=""};
    copy.Click+=(s,e)=>{try{Clipboard.SetText(id.Path);}catch(Exception){}};
    var details=new ToolStripMenuItem(Core.L.T("Chi tiết ứng dụng"));
@@ -320,7 +320,7 @@ namespace TweekPro {
   void ShowConnectionDetails(){
    if(netList.SelectedItems.Count==0)return;var c=(ConnectionInfo)netList.SelectedItems[0].Tag;var id=ProcessResolver.Resolve(c.Pid);
    TrafficSample t;netTraffic.TryGetValue(c.Pid,out t);
-   MessageBox.Show(this,id.Display+"  (PID "+c.Pid+")\r\nĐường dẫn: "+(id.Path==""?"không đọc được (tiến trình được bảo vệ hoặc đã kết thúc)":id.Path)+"\r\nNhà phát hành (chữ ký): "+(id.Publisher==""?"—":id.Publisher)+"\r\n\r\n"+c.Protocol+"  "+c.Local+(c.Remote==""?"":"  →  "+c.Remote)+(c.State==""?"":"\r\nTrạng thái: "+c.State)+(t==null?"":"\r\n\r\nĐã gửi: "+Presentation.BytesLabel(t.Sent)+"  •  Đã nhận: "+Presentation.BytesLabel(t.Received)+" (từ khi bật ETW, toàn tiến trình)")+"\r\n\r\nTweek Pro chỉ hiển thị; không chặn hay thay đổi kết nối.","Chi tiết kết nối",MessageBoxButtons.OK,MessageBoxIcon.Information);
+   MessageBox.Show(this,id.Display+"  (PID "+c.Pid+")\r\n"+Core.L.T("Đường dẫn:")+" "+(id.Path==""?Core.L.T("không đọc được (tiến trình được bảo vệ hoặc đã kết thúc)"):id.Path)+"\r\n"+Core.L.T("Nhà phát hành (chữ ký):")+" "+(id.Publisher==""?"—":id.Publisher)+"\r\n\r\n"+c.Protocol+"  "+c.Local+(c.Remote==""?"":"  →  "+c.Remote)+(c.State==""?"":"\r\n"+Core.L.T("Trạng thái")+": "+Core.L.T(c.State))+(t==null?"":"\r\n\r\n"+Core.L.F("Đã gửi: {0}  •  Đã nhận: {1} (từ khi bật ETW, toàn tiến trình)",Presentation.BytesLabel(t.Sent),Presentation.BytesLabel(t.Received)))+"\r\n\r\n"+Core.L.T("Tweek Pro chỉ hiển thị; không chặn hay thay đổi kết nối."),Core.L.T("Chi tiết kết nối"),MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
 
   /// <summary>Fills the tab with synthetic applications, connections and moving rates so the layout can be reviewed without Windows.</summary>
@@ -368,7 +368,7 @@ namespace TweekPro {
    var lines=new List<string>{"Process,PID,Path,Publisher,Protocol,Local,Remote,State,RemoteHost,SentBytes,ReceivedBytes"};
    foreach(ListViewItem item in netList.Items){var c=(ConnectionInfo)item.Tag;var id=ProcessResolver.Resolve(c.Pid);TrafficSample t;netTraffic.TryGetValue(c.Pid,out t);
     lines.Add(String.Join(",",new[]{id.Display,c.Pid.ToString(),id.Path,id.Publisher,c.Protocol,c.Local,c.Remote,c.State,item.SubItems[8].Text,t==null?"":t.Sent.ToString(),t==null?"":t.Received.ToString()}.Select(Engine.Csv)));}
-   File.WriteAllLines(p,lines,new UTF8Encoding(true));Log("Đã xuất bảng kết nối: "+p);
+   File.WriteAllLines(p,lines,new UTF8Encoding(true));Log(Core.L.T("Đã xuất bảng kết nối: ")+p);
   }
  }
 }

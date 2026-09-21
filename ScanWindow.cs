@@ -39,16 +39,16 @@ namespace TweekPro {
    apps=targets.ToList();deep=deepScan;log=logger??(s=>{});
    string names=String.Join(", ",apps.Select(a=>a.Name));
    SuspendLayout();
-   Text="Phần còn sót — "+names;Size=new Size(1180,760);MinimumSize=new Size(960,600);StartPosition=FormStartPosition.CenterParent;
+   Text=Core.L.T("Phần còn sót")+" — "+names;Size=new Size(1180,760);MinimumSize=new Size(960,600);StartPosition=FormStartPosition.CenterParent;
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleDimensions=new SizeF(96F,96F);AutoScaleMode=AutoScaleMode.Dpi;ShowIcon=false;
 
-   var header=Theme.HeaderBand("Quét phần còn sót",(deep?"Quét sâu":"Quét nhanh")+"  •  "+names,92);
+   var header=Theme.HeaderBand("Quét phần còn sót",Core.L.T(deep?"Quét sâu":"Quét nhanh")+"  •  "+names,92);
 
    var progressPanel=new Panel{Dock=DockStyle.Top,Height=84,BackColor=Theme.Surface,Padding=new Padding(28,16,28,14)};
    Theme.BorderBottom(progressPanel);
    progress.Dock=DockStyle.Bottom;progress.Height=6;progress.Style=ProgressBarStyle.Marquee;progress.MarqueeAnimationSpeed=30;
    counters.Dock=DockStyle.Right;counters.Width=360;counters.TextAlign=ContentAlignment.MiddleRight;counters.ForeColor=Theme.Muted;counters.Font=Theme.Small;
-   stage.Dock=DockStyle.Fill;stage.TextAlign=ContentAlignment.MiddleLeft;stage.AutoEllipsis=true;stage.Font=Theme.Strong;stage.Text="Đang chuẩn bị quét…";
+   stage.Dock=DockStyle.Fill;stage.TextAlign=ContentAlignment.MiddleLeft;stage.AutoEllipsis=true;stage.Font=Theme.Strong;stage.Text=Core.L.T("Đang chuẩn bị quét…");
    var textRow=new Panel{Dock=DockStyle.Fill,Padding=new Padding(0,0,0,10)};
    textRow.Controls.Add(stage);textRow.Controls.Add(counters);
    progressPanel.Controls.Add(textRow);progressPanel.Controls.Add(progress);
@@ -57,7 +57,7 @@ namespace TweekPro {
    var note=Theme.Note("Các mục dưới đây chỉ là nghi ngờ còn sót và có thể chứa dữ liệu cá nhân. Hãy kiểm tra đường dẫn trước khi chọn. Xóa sẽ chuyển mục vào Kho khôi phục, không xóa vĩnh viễn.",NoteKind.Warning);
 
    Theme.StyleList(list);list.CheckBoxes=true;list.ShowGroups=true;
-   foreach(var column in new[]{new{Name="Loại",Width=120},new{Name="Đường dẫn",Width=520},new{Name="Dung lượng",Width=110},new{Name="Trạng thái",Width=150},new{Name="Cơ sở đề xuất",Width=420}})list.Columns.Add(column.Name,column.Width);
+   foreach(var column in new[]{new{Name="Loại",Width=120},new{Name="Đường dẫn",Width=520},new{Name="Dung lượng",Width=110},new{Name="Trạng thái",Width=150},new{Name="Cơ sở đề xuất",Width=420}})list.Columns.Add(Core.L.T(column.Name),column.Width);
    list.ItemCheck+=(s,e)=>{var c=(Candidate)list.Items[e.Index].Tag;if(c.ReviewOnly||IsDone(list.Items[e.Index]))e.NewValue=CheckState.Unchecked;};
    list.ItemChecked+=(s,e)=>UpdateSummary();
    list.DoubleClick+=(s,e)=>Inspect();
@@ -90,7 +90,7 @@ namespace TweekPro {
    SetBusy(true);
    Shown+=async(s,e)=>{if(!previewMode)await RunScan();};
    FormClosing+=(s,e)=>{
-    if(deleting){e.Cancel=true;MessageBox.Show(this,"Đang sao lưu và xóa. Hãy chờ thao tác hoàn tất.","Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+    if(deleting){e.Cancel=true;MessageBox.Show(this,Core.L.T("Đang sao lưu và xóa. Hãy chờ thao tác hoàn tất."),"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
     if(scanning&&cancellation!=null){closeRequested=true;cancellation.Cancel();e.Cancel=true;return;}
     if(measuring&&cancellation!=null)cancellation.Cancel();
     Remaining=list.Items.Cast<ListViewItem>().Where(i=>!IsDone(i)).Select(i=>(Candidate)i.Tag).ToList();
@@ -106,18 +106,18 @@ namespace TweekPro {
     locked=await Task.Run(()=>apps.Any(a=>{try{return Engine.Installed(a.Id);}catch(Exception){return false;}}));
     foreach(var app in apps){
      var target=app;
-     log((deep?"Quét sâu: ":"Quét nhanh: ")+target.Name);
+     log(Core.L.T(deep?"Quét sâu: ":"Quét nhanh: ")+target.Name);
      var result=await Task.Run(()=>deep?Advanced.DeepScan(target,token,null,Report):Advanced.QuickScan(target,Report),token);
      visited+=result.Visited;noteCount+=result.Notes.Count;Notes.AddRange(result.Notes);
      foreach(string n in result.Notes.Take(30))log(target.Name+": "+n);
-     if(result.Notes.Count>30)log("Còn "+(result.Notes.Count-30)+" ghi chú được rút gọn.");
+     if(result.Notes.Count>30)log(Core.L.F("Còn {0} ghi chú được rút gọn.",result.Notes.Count-30));
      AddCandidates(result.Items);
     }
    }catch(OperationCanceledException){cancelled=true;}
-   catch(Exception e){scanFailed=true;scanError=e.Message;log("LỖI quét: "+e.Message);}
+   catch(Exception e){scanFailed=true;scanError=e.Message;log(Core.L.T("LỖI quét: ")+e.Message);}
    finally{scanning=false;}
    if(!scanFailed&&!token.IsCancellationRequested&&!IsDisposed&&list.Items.Count>0){
-    measuring=true;SetBusy(false);stage.Text="Đang tính dung lượng các mục tìm thấy…";
+    measuring=true;SetBusy(false);stage.Text=Core.L.T("Đang tính dung lượng các mục tìm thấy…");
     try{await MeasureAll(token);}catch(OperationCanceledException){}
     measuring=false;
    }
@@ -126,11 +126,11 @@ namespace TweekPro {
    progress.Style=ProgressBarStyle.Continuous;progress.Value=100;
    Found=list.Items.Count;
    stage.Text=OutcomeStage(cancelled);
-   counters.Text=visited.ToString("N0")+" thư mục đã duyệt  •  "+noteCount+" ghi chú (xem Nhật ký)";
+   counters.Text=Core.L.F("{0} thư mục đã duyệt  •  {1} ghi chú (xem Nhật ký)",visited.ToString("N0"),noteCount);
    ShowScanOutcome(cancelled);
    SetBusy(false);
    if(closeRequested){Close();return;}
-   log("Cửa sổ quét: "+Found+" mục, "+visited.ToString("N0")+" thư mục đã duyệt, "+noteCount+" ghi chú.");
+   log(Core.L.F("Cửa sổ quét: {0} mục, {1} thư mục đã duyệt, {2} ghi chú.",Found,visited.ToString("N0"),noteCount));
   }
 
   /// <summary>Marshals a worker-thread progress snapshot to the UI, throttled to avoid flooding the message loop.</summary>
@@ -141,7 +141,7 @@ namespace TweekPro {
    try{BeginInvoke((Action)(()=>{
     if(IsDisposed)return;
     stage.Text=p.Stage+(String.IsNullOrEmpty(p.Current)?"":"   "+Presentation.ShortPath(p.Current,70));
-    counters.Text=(visited+p.Visited).ToString("N0")+" thư mục đã duyệt  •  "+(list.Items.Count+p.Found)+" mục tìm thấy";
+    counters.Text=Core.L.F("{0} thư mục đã duyệt  •  {1} mục tìm thấy",(visited+p.Visited).ToString("N0"),list.Items.Count+p.Found);
    }));}catch(InvalidOperationException){}
   }
 
@@ -150,7 +150,7 @@ namespace TweekPro {
    list.BeginUpdate();
    foreach(var c in items.GroupBy(Advanced.Id,StringComparer.OrdinalIgnoreCase).Select(g=>g.First())){
     if(rows.Keys.Any(k=>String.Equals(Advanced.Id(k),Advanced.Id(c),StringComparison.OrdinalIgnoreCase)))continue;
-    var item=new ListViewItem(new[]{Presentation.KindLabel(c),Presentation.CandidatePath(c),c.Kind=="Folder"||c.Kind=="File"?"…":"—",c.ReviewOnly?"Chỉ xem":"Chờ duyệt",c.Reason}){Tag=c,ToolTipText=Presentation.CandidatePath(c)+"\r\n"+c.Reason};
+    var item=new ListViewItem(new[]{Presentation.KindLabel(c),Presentation.CandidatePath(c),c.Kind=="Folder"||c.Kind=="File"?"…":"—",Core.L.T(c.ReviewOnly?"Chỉ xem":"Chờ duyệt"),c.Reason}){Tag=c,ToolTipText=Presentation.CandidatePath(c)+"\r\n"+c.Reason};
     if(c.ReviewOnly)item.ForeColor=Theme.Muted;
     Theme.AssignGroup(list,item,Presentation.KindGroup(c),Presentation.KindGroupHeader(Presentation.KindGroup(c)));
     Theme.StripeRow(item,list.Items.Count);
@@ -192,31 +192,31 @@ namespace TweekPro {
   /// <summary>Backs up and removes the checked items one by one, then reports the outcome in the window.</summary>
   async Task DeleteChecked(){
    var selected=list.Items.Cast<ListViewItem>().Where(i=>i.Checked&&!((Candidate)i.Tag).ReviewOnly&&!IsDone(i)).ToList();
-   if(selected.Count==0){MessageBox.Show(this,"Hãy đánh dấu những mục đã kiểm tra và muốn xóa.","Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+   if(selected.Count==0){MessageBox.Show(this,Core.L.T("Hãy đánh dấu những mục đã kiểm tra và muốn xóa."),"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
    long bytes=selected.Sum(i=>{Footprint fp;return footprints.TryGetValue((Candidate)i.Tag,out fp)&&fp.Bytes>0?fp.Bytes:0;});
    string preview=String.Join("\r\n",selected.Take(8).Select(i=>Presentation.CandidatePath((Candidate)i.Tag)));
-   if(selected.Count>8)preview+="\r\n… và "+(selected.Count-8)+" mục khác";
-   var answer=MessageBox.Show(this,"Sao lưu và xóa "+selected.Count+" mục đã chọn"+(bytes>0?" (khoảng "+Presentation.BytesLabel(bytes)+")":"")+"?\r\n\r\n"+preview+"\r\n\r\nFile và thư mục được chuyển vào Kho khôi phục trên cùng ổ đĩa. Registry được lưu giá trị và khóa con trước khi xóa.","Xác nhận xóa",MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2);
+   if(selected.Count>8)preview+=Core.L.F("\r\n… và {0} mục khác",selected.Count-8);
+   var answer=MessageBox.Show(this,Core.L.F("Sao lưu và xóa {0} mục đã chọn{1}?\r\n\r\n{2}\r\n\r\nFile và thư mục được chuyển vào Kho khôi phục trên cùng ổ đĩa. Registry được lưu giá trị và khóa con trước khi xóa.",selected.Count,bytes>0?Core.L.F(" (khoảng {0})",Presentation.BytesLabel(bytes)):"",preview),Core.L.T("Xác nhận xóa"),MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2);
    if(answer!=DialogResult.Yes)return;
    deleting=true;SetBusy(true);banner.Visible=false;
    progress.Style=ProgressBarStyle.Continuous;progress.Maximum=selected.Count;progress.Value=0;
    int ok=0,failed=0;
    foreach(var item in selected){
     var c=(Candidate)item.Tag;
-    stage.Text="Đang sao lưu và xóa "+(ok+failed+1)+"/"+selected.Count+"   "+Presentation.ShortPath(Presentation.CandidatePath(c),70);
+    stage.Text=Core.L.F("Đang sao lưu và xóa {0}/{1}",ok+failed+1,selected.Count)+"   "+Presentation.ShortPath(Presentation.CandidatePath(c),70);
     try{
      await Task.Run(()=>Engine.Quarantine(c));
-     ok++;item.Checked=false;item.SubItems[3].Text="Đã xóa (có sao lưu)";item.ForeColor=Theme.Muted;item.Font=new Font(Theme.Body,FontStyle.Strikeout);
-     log("Đã sao lưu và xóa: "+Presentation.CandidatePath(c));
+     ok++;item.Checked=false;item.SubItems[3].Text=Core.L.T("Đã xóa (có sao lưu)");item.ForeColor=Theme.Muted;item.Font=new Font(Theme.Body,FontStyle.Strikeout);
+     log(Core.L.T("Đã sao lưu và xóa: ")+Presentation.CandidatePath(c));
     }catch(Exception e){
-     failed++;item.Checked=false;item.SubItems[3].Text="Lỗi";item.ForeColor=Theme.Danger;item.ToolTipText=Presentation.CandidatePath(c)+"\r\n"+e.Message;
-     log("Giữ lại "+Presentation.CandidatePath(c)+": "+e.Message);
+     failed++;item.Checked=false;item.SubItems[3].Text=Core.L.T("Lỗi");item.ForeColor=Theme.Danger;item.ToolTipText=Presentation.CandidatePath(c)+"\r\n"+e.Message;
+     log(Core.L.T("Giữ lại ")+Presentation.CandidatePath(c)+": "+e.Message);
     }
     progress.Value=ok+failed;
    }
    Deleted+=ok;Failed+=failed;deleting=false;
-   stage.Text="Hoàn tất xóa.  Còn "+list.Items.Cast<ListViewItem>().Count(i=>!IsDone(i))+" mục chờ duyệt.";
-   string outcome="Đã xóa "+ok+" mục và lưu bản khôi phục"+(failed>0?"; "+failed+" mục chưa xóa được — di chuột lên dòng màu đỏ để xem lý do.":".")+" Có thể khôi phục trong tab Kho khôi phục.";
+   stage.Text=Core.L.F("Hoàn tất xóa.  Còn {0} mục chờ duyệt.",list.Items.Cast<ListViewItem>().Count(i=>!IsDone(i)));
+   string outcome=Core.L.F("Đã xóa {0} mục và lưu bản khôi phục",ok)+(failed>0?Core.L.F("; {0} mục chưa xóa được — di chuột lên dòng màu đỏ để xem lý do.",failed):".")+Core.L.T(" Có thể khôi phục trong tab Kho khôi phục.");
    ShowBanner(outcome,failed>0?NoteKind.Warning:NoteKind.Success);
    SetBusy(false);
   }
@@ -227,7 +227,7 @@ namespace TweekPro {
    try{
     if(c.Kind=="Folder"&&Directory.Exists(c.Path))Process.Start("explorer.exe","\""+c.Path+"\"");
     else if(c.Kind=="File"&&File.Exists(c.Path))Process.Start("explorer.exe","/select,\""+c.Path+"\"");
-    else MessageBox.Show(this,Presentation.CandidatePath(c)+"\r\n\r\n"+c.Reason,"Chi tiết mục còn sót",MessageBoxButtons.OK,MessageBoxIcon.Information);
+    else MessageBox.Show(this,Presentation.CandidatePath(c)+"\r\n\r\n"+c.Reason,Core.L.T("Chi tiết mục còn sót"),MessageBoxButtons.OK,MessageBoxIcon.Information);
    }catch(Exception e){MessageBox.Show(this,e.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
   }
 
@@ -238,34 +238,34 @@ namespace TweekPro {
    bool denied=Notes.Any(Presentation.PermissionNote);
    bool incomplete=cancelled||denied;
    if(scanFailed&&Found==0){
-    Theme.SetOverlay(overlay,"Không hoàn tất quét.\r\n"+(String.IsNullOrEmpty(scanError)?"Lỗi không xác định.":scanError)+"\r\n\r\nĐóng cửa sổ rồi quét lại từ tab Phần còn sót.",NoteKind.Error);
-    ShowBanner("Không hoàn tất quét: "+scanError,NoteKind.Error);
+    Theme.SetOverlay(overlay,Core.L.F("Không hoàn tất quét.\r\n{0}\r\n\r\nĐóng cửa sổ rồi quét lại từ tab Phần còn sót.",String.IsNullOrEmpty(scanError)?Core.L.T("Lỗi không xác định."):scanError),NoteKind.Error);
+    ShowBanner(Core.L.T("Không hoàn tất quét: ")+scanError,NoteKind.Error);
    }else if(Found==0){
     Theme.SetOverlay(overlay,cancelled?"Chưa tìm thấy mục nào trước khi dừng.\r\nCó thể quét lại từ tab Phần còn sót.":"Không tìm thấy phần còn sót theo các quy tắc hiện tại.\r\nĐiều này không bảo đảm hệ thống đã sạch hoàn toàn.",cancelled?NoteKind.Warning:NoteKind.Info);
     if(incomplete)ShowBanner(IncompleteText(cancelled,denied),NoteKind.Warning);
     else banner.Visible=false;
    }else{
     Theme.SetOverlay(overlay,null,NoteKind.Info);
-    if(scanFailed)ShowBanner("Quét gặp lỗi: "+scanError+". Kết quả bên dưới có thể chưa đầy đủ.",NoteKind.Error);
-    else if(locked)ShowBanner("Ứng dụng vẫn còn đăng ký cài đặt nên chỉ có thể xem. Hãy gỡ chính thức rồi quét lại để dọn."+(incomplete?" Quét có thể chưa đầy đủ.":""),NoteKind.Warning);
+    if(scanFailed)ShowBanner(Core.L.F("Quét gặp lỗi: {0}. Kết quả bên dưới có thể chưa đầy đủ.",scanError),NoteKind.Error);
+    else if(locked)ShowBanner(Core.L.T("Ứng dụng vẫn còn đăng ký cài đặt nên chỉ có thể xem. Hãy gỡ chính thức rồi quét lại để dọn.")+(incomplete?Core.L.T(" Quét có thể chưa đầy đủ."):""),NoteKind.Warning);
     else if(incomplete)ShowBanner(IncompleteText(cancelled,denied),NoteKind.Warning);
     else banner.Visible=false;
    }
   }
   string OutcomeStage(bool cancelled){
-   if(scanFailed)return "Không hoàn tất quét.";
-   return (cancelled?"Đã dừng quét — kết quả có thể chưa đầy đủ.":"Hoàn tất quét.")+"  Tìm thấy "+Found+" mục.";
+   if(scanFailed)return Core.L.T("Không hoàn tất quét.");
+   return Core.L.T(cancelled?"Đã dừng quét — kết quả có thể chưa đầy đủ.":"Hoàn tất quét.")+Core.L.F("  Tìm thấy {0} mục.",Found);
   }
   static string IncompleteText(bool cancelled,bool denied){
-   if(cancelled&&denied)return "Quét chưa đầy đủ: đã dừng và một số thư mục hoặc khóa không đọc được vì thiếu quyền. Kết quả bên dưới vẫn có thể duyệt. Chạy lại với quyền quản trị (cùng tài khoản Windows) nếu cần.";
-   if(cancelled)return "Quét đã dừng. Kết quả có thể chưa đầy đủ. Có thể quét lại từ tab Phần còn sót.";
-   return "Quét chưa đầy đủ: một số thư mục hoặc khóa Registry không đọc được vì thiếu quyền. Kết quả bên dưới vẫn có thể duyệt. Chạy lại với quyền quản trị (cùng tài khoản Windows) nếu cần.";
+   if(cancelled&&denied)return Core.L.T("Quét chưa đầy đủ: đã dừng và một số thư mục hoặc khóa không đọc được vì thiếu quyền. Kết quả bên dưới vẫn có thể duyệt. Chạy lại với quyền quản trị (cùng tài khoản Windows) nếu cần.");
+   if(cancelled)return Core.L.T("Quét đã dừng. Kết quả có thể chưa đầy đủ. Có thể quét lại từ tab Phần còn sót.");
+   return Core.L.T("Quét chưa đầy đủ: một số thư mục hoặc khóa Registry không đọc được vì thiếu quyền. Kết quả bên dưới vẫn có thể duyệt. Chạy lại với quyền quản trị (cùng tài khoản Windows) nếu cần.");
   }
 
   /// <summary>Enables or disables the action buttons while scanning or deleting is in progress.</summary>
   void SetBusy(bool busy){
    bool hasDeletable=list.Items.Cast<ListViewItem>().Any(i=>!((Candidate)i.Tag).ReviewOnly&&!IsDone(i));
-   stop.Visible=scanning||measuring;stop.Enabled=scanning||measuring;stop.Text=scanning?"Dừng quét":"Bỏ qua tính dung lượng";
+   stop.Visible=scanning||measuring;stop.Enabled=scanning||measuring;stop.Text=Core.L.T(scanning?"Dừng quét":"Bỏ qua tính dung lượng");
    selectAll.Enabled=!busy&&hasDeletable;selectNone.Enabled=!busy&&hasDeletable;
    delete.Enabled=!busy&&!measuring&&hasDeletable&&!locked;
    close.Enabled=!busy||scanning||measuring;
@@ -277,11 +277,11 @@ namespace TweekPro {
    int total=list.Items.Count;int checkedCount=list.CheckedItems.Count;
    long bytes=list.CheckedItems.Cast<ListViewItem>().Sum(i=>{Footprint fp;return footprints.TryGetValue((Candidate)i.Tag,out fp)&&fp.Bytes>0?fp.Bytes:0;});
    long all=footprints.Values.Where(f=>f.Bytes>0).Sum(f=>f.Bytes);
-   summary.Text="Tìm thấy "+total+" mục"+(all>0?" (~"+Presentation.BytesLabel(all)+")":"")+"  •  Đã chọn "+checkedCount+(bytes>0?" (~"+Presentation.BytesLabel(bytes)+")":"")+(Deleted+Failed>0?"  •  Đã xóa "+Deleted+", lỗi "+Failed:"");
+   summary.Text=Core.L.F("Tìm thấy {0} mục",total)+(all>0?" (~"+Presentation.BytesLabel(all)+")":"")+Core.L.F("  •  Đã chọn {0}",checkedCount)+(bytes>0?" (~"+Presentation.BytesLabel(bytes)+")":"")+(Deleted+Failed>0?Core.L.F("  •  Đã xóa {0}, lỗi {1}",Deleted,Failed):"");
    if(!scanning&&!deleting)SetBusy(false);
   }
 
-  static bool IsDone(ListViewItem item){return item.SubItems[3].Text.StartsWith("Đã xóa");}
+  static bool IsDone(ListViewItem item){return item.SubItems[3].Text==Core.L.T("Đã xóa (có sao lưu)");}
 
   /// <summary>Fills the window with illustrative rows so the layout can be rendered without a real scan.</summary>
   public void PopulateForPreview(){
