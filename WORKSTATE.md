@@ -1,8 +1,17 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-21 19:58 (Asia/Bangkok).
-Status: PAUSED by owner — "finish current work, report, do not continue the roadmap yet".
+Updated: 2026-09-21 21:50 (Asia/Bangkok).
+Status: IN PROGRESS (Cursor). Owner resumed the roadmap: "automate README changelog on release; continue upgrading; add Explorer tab (file details, show extensions, show hidden files)".
 Last editor: Cursor.
+
+## Current task (22:25)
+
+1. DONE `40d0764` `release.ps1` finalizes the README changelog (pending `### 0.7.n (chưa phát hành)` → `### x.y.z (dd/MM/yyyy)`, `-Notes` first bullet, new section when none pending; section = tag message); `release.yml` extracts that section into the Release body (`body_path`) + auto notes. Script now saved with UTF-8 BOM (contains Vietnamese regexes). Bug found/fixed: `$` in .NET multiline mode does not match before `\r` → anchors dropped.
+2. DONE (this commit) `Explorer/` tab between Khởi động and Mạng: `ExplorerTweaks` (17-entry catalog, `Interpret`, `Read`, `Apply`→vault `Kind=Explorer` payload `absent|dword:n|…`, `Restore`, `RefreshExplorer` via SHChangeNotify + WM_SETTINGCHANGE, `RestartExplorer` via `runas /trustlevel:0x20000`), `ExplorerSafety` (exact HKCU key allow-list + catalog identity check; fixture key `Software\TweekProTest\Explorer`), `ExplorerShell` (Properties dialog, reveal), `FileInspector` (PE machine, Zone.Identifier ADS, signer via `ProcessResolver.PublisherOf`, owner, version, SHA-256/MD5 ≤ 2 GB, `Warn` rules, `Rows`/`Report`), `ExplorerUI` (SplitContainer; drag-drop; preview sample), `ExplorerLang`, `ExplorerTests` (catalog, interpretation, payload round-trip, refusals, HKCU fixture apply/restore/purge, disguise, PE header, zone, temp-file inspection incl. ADS + hidden). Wired: `Core.L`, `Engine.Restore`, `App.cs` (build, order, KindLabel, `--preview explorer`), `Branding` glyph `explorer`, `LangTests` tab list, `Tests07`. csproj `FileVersion` fixed (`$(TweekVersion).0`, was 5-part → CS7035).
+3. Verification: Release build 0 W / 0 E; `--self-test` (elevated, UAC) PASS 22:16 before the last UI-only fixes (null-safe `PendingTweaks`, `ItemChecked` guard, SplitContainer min sizes); `--preview explorer` renders (PNG checked). Re-run self-test before commit.
+4. NEXT: commit + push `main`; copy Release exe over `C:\Program Files\Tweek Pro\TweekPro-0.7.2.exe` (owner asked for auto-install after green builds) and relaunch; then roadmap (broken shortcuts → vault, localization completion, AI tools `list_unwanted`/`list_stale`, Health area for Explorer "extensions hidden" hint).
+
+Lessons: WinForms `ListView.ItemChecked` fires during handle creation and `Items` may yield null then; `SplitContainer` needs a `Size` before `Panel*MinSize`; Windows PowerShell reads BOM-less `.ps1` as ANSI — keep Vietnamese scripts BOM'd.
 
 ## Branch switch (20:05)
 

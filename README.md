@@ -61,6 +61,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 | **Phân tích ổ đĩa** | Thư mục con nặng nhất, dung lượng theo phần mở rộng, tệp lớn nhất; mở vị trí, CSV | Hoàn toàn chỉ đọc; giới hạn 1.000.000 tệp / 120 giây |
 | **Kho khôi phục** | Khôi phục mục đã chọn; xóa vĩnh viễn mục đánh dấu; **Dọn kho theo tuổi…** có xem trước | Xóa vĩnh viễn không hoàn tác; mặc định chỉ xóa bản đã khôi phục |
 | **Khởi động** | Run/RunOnce/Startup với trạng thái Windows (StartupApproved), **tác động**, chữ ký, kích cỡ, mục hỏng; tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
+| **Explorer** | **Tùy chỉnh File Explorer** (17 công tắc HKCU: hiện đuôi tệp, tệp ẩn, tệp hệ thống được bảo vệ, hộp chọn, thanh trạng thái, chế độ gọn, đường dẫn đầy đủ, mở vào This PC, tệp gần đây / thường dùng, quảng cáo OneDrive, giây trên đồng hồ, căn trái thanh tác vụ, Task View, Widgets) với nút Mặc định Windows / Khuyến nghị an toàn / Khởi động lại Explorer; **Xem chi tiết tệp** (chọn, kéo thả hoặc dán đường dẫn): loại thật, thuộc tính ẩn/hệ thống, thời gian, chủ sở hữu, chữ ký số, thông tin phiên bản, kiến trúc PE, Mark of the Web, SHA-256/MD5, cảnh báo đuôi kép (`hoadon.pdf.exe`), ký tự đảo chiều Unicode, PE giả tài liệu; mở hộp Thuộc tính Windows | `ExplorerSafety` chỉ cho ghi đúng các giá trị trong danh mục dưới `HKCU\…\Explorer`; giá trị cũ vào Kho (`Kind=Explorer`) và khôi phục bằng một nút; xem chi tiết tệp hoàn toàn chỉ đọc |
 | **Mạng** | Kết nối TCP/UDP theo ứng dụng, icon và hướng gửi/nhận, thanh tốc độ, dải packet realtime; băng thông ETW tự bật khi quản trị; chuột phải kết thúc tiến trình / dừng dịch vụ | Chỉ xem, không chặn, không driver; `ProcessControl` khóa tiến trình và dịch vụ cốt lõi; phiên ETW luôn dừng khi đóng |
 | **Dịch vụ hệ thống** | Mọi dịch vụ với **giải thích bằng lời thường** (~180 dịch vụ + mẫu tên), huy hiệu an toàn, PID/RAM, nhà phát hành; lọc; Dừng / Khởi động / **Dừng và vô hiệu hóa (lưu Kho)** | Dịch vụ cốt lõi bị khóa; svchost không cho kết thúc; kiểu khởi động cũ lưu `Kind=Service` |
 | **Công cụ** | Lối mở công cụ Windows với icon hệ thống thật từ .exe/.cpl/.msc và cột dòng lệnh; Kiểm tra cập nhật | SFC/chkdsk hỏi xác nhận |
@@ -171,7 +172,9 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 
 ### 0.7.n (chưa phát hành)
 
-- `release.ps1` tự chốt mục changelog này (đổi tiêu đề thành số bản + ngày, thêm `-Notes`) và GitHub Release dùng nó làm mô tả.
+- **Tab Explorer** (`Explorer/`): 17 công tắc File Explorer / thanh tác vụ (hiện đuôi tệp, tệp ẩn, tệp hệ thống được bảo vệ, hộp chọn, đường dẫn đầy đủ, mở vào This PC, tệp gần đây, quảng cáo OneDrive, giây trên đồng hồ, căn trái, Task View, Widgets…) — ghi HKCU qua Kho (`Kind=Explorer`, khôi phục một nút), `ExplorerSafety` chỉ cho đúng khóa/giá trị trong danh mục, Explorer tự làm mới, nút Khởi động lại Explorer (không nâng quyền shell).
+- **Xem chi tiết tệp**: chọn / kéo thả / dán đường dẫn → loại thật, thuộc tính, thời gian, chủ sở hữu, chữ ký số, phiên bản, kiến trúc PE, Mark of the Web (Zone.Identifier), SHA-256/MD5; cảnh báo đuôi kép, ký tự đảo chiều Unicode, PE giả tài liệu, tệp thực thi tải về chưa ký; sao chép báo cáo, mở hộp Thuộc tính Windows.
+- `release.ps1` tự chốt mục changelog này (đổi tiêu đề thành số bản + ngày, thêm `-Notes`) và GitHub Release dùng nó làm mô tả; sửa cảnh báo `FileVersion` 5 phần khi build.
 
 ### 0.7.2 (21/09/2026)
 

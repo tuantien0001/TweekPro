@@ -158,6 +158,7 @@ namespace TweekPro {
      case "doc":Document(g,r,pen);break;
      case "layers":Layers(g,r,pen,brush);break;
      case "spark":Spark(g,r,brush);break;
+     case "explorer":ExplorerGlyph(g,r,pen);break;
      default:g.FillEllipse(brush,r.X+r.Width/2-3,r.Y+r.Height/2-3,6,6);break;
     }
    }
@@ -182,6 +183,7 @@ namespace TweekPro {
    if(has("Mạng","Network"))return "globe";
    if(has("Dịch vụ hệ thống","Services"))return "layers";
    if(has("Trợ lý AI","AI Assistant"))return "spark";
+   if(has("Explorer","File Explorer"))return "explorer";
    if(has("Tools","Công cụ"))return "gear";
    if(has("Nhật ký","Log"))return "doc";
    return "dot";
@@ -197,6 +199,14 @@ namespace TweekPro {
    path.CloseFigure();return path;
   }
 
+  /// <summary>Folder with a magnifier over its corner: the Explorer tab (settings + file details).</summary>
+  static void ExplorerGlyph(Graphics g,Rectangle r,Pen pen){
+   int w=r.Width,h=r.Height;var body=new Rectangle(r.X+1,r.Y+4,w-4,h-6);
+   using(var path=Rounded(body,2))g.DrawPath(pen,path);
+   g.DrawLine(pen,r.X+1,r.Y+4,r.X+w*4/10,r.Y+4);g.DrawLine(pen,r.X+w*4/10,r.Y+4,r.X+w*5/10,r.Y+1);g.DrawLine(pen,r.X+w*5/10,r.Y+1,r.X+w*7/10,r.Y+1);
+   int d=Math.Max(4,w*4/10);var lens=new Rectangle(r.Right-d-1,r.Bottom-d-1,d,d);
+   g.DrawEllipse(pen,lens);g.DrawLine(pen,lens.Right-1,lens.Bottom-1,r.Right,r.Bottom);
+  }
   /// <summary>Arrow pointing down into a tray: the Old Downloads tab.</summary>
   static void Download(Graphics g,Rectangle r,Pen pen){
    int cx=r.X+r.Width/2;int top=r.Y+1,tip=r.Bottom-5;
