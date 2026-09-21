@@ -16,7 +16,7 @@ namespace TweekPro {
 
   /// <summary>Builds the Empty Folders tab: pick a folder, find truly empty directory branches and delete the selected ones.</summary>
   void BuildEmptyTab(){
-   var tab=emptyTab=new TabPage("Thư mục rỗng");
+   var tab=emptyTab=new TabPage(Core.L.T("Thư mục rỗng"));
    SetupList(emptyList,new[]{"Thư mục rỗng (xóa sẽ dọn cả nhánh con rỗng)","Số nhánh con"},new[]{700,110},true);
    emptyList.ItemChecked+=(s,e)=>UpdateEmptySummary();
    emptyList.DoubleClick+=async(s,e)=>await Guard(()=>{if(emptyList.SelectedItems.Count>0)OpenEmptyLocation();return Task.FromResult(0);});

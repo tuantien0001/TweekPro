@@ -34,8 +34,8 @@ namespace TweekPro.Health {
    }
    int x=ringRect.Right+28,y=card.Y+22,w=card.Right-x-24;
    if(!has){
-    using(var brush=new SolidBrush(Theme.Text))g.DrawString(busyText??"Chưa kiểm tra",Theme.Section,brush,x,y);
-    using(var muted=new SolidBrush(Theme.Muted))using(var wrap=Wrap())g.DrawString("Bấm Kiểm tra ngay để đo tệp rác, phần còn sót, thư mục rỗng, kho khôi phục, mục khởi động và dung lượng trống. Chỉ đọc, không thay đổi gì.",Theme.Body,muted,new RectangleF(x,y+34,w,card.Bottom-y-40),wrap);
+    using(var brush=new SolidBrush(Theme.Text))g.DrawString(busyText??Core.L.T("Chưa kiểm tra"),Theme.Section,brush,x,y);
+    using(var muted=new SolidBrush(Theme.Muted))using(var wrap=Wrap())g.DrawString(Core.L.T("Bấm Kiểm tra ngay để đo tệp rác, phần còn sót, thư mục rỗng, kho khôi phục, mục khởi động và dung lượng trống. Chỉ đọc, không thay đổi gì."),Theme.Body,muted,new RectangleF(x,y+34,w,card.Bottom-y-40),wrap);
     g.SmoothingMode=saved;return;
    }
    using(var badgeFont=new Font("Segoe UI Semibold",13f))using(var badgeBrush=new SolidBrush(accent))using(var white=new SolidBrush(Color.White)){
@@ -48,7 +48,7 @@ namespace TweekPro.Health {
    using(var brush=new SolidBrush(Theme.Text))using(var wrap=Wrap())g.DrawString(report.Headline,Theme.Strong,brush,new RectangleF(x,y,w,44),wrap);
    y+=46;
    using(var muted=new SolidBrush(Theme.Muted))using(var line=Wrap(false)){
-    string text="Có thể giải phóng: "+Presentation.BytesLabel(report.Reclaimable)+"   •   "+report.Issues+" khu vực cần chú ý   •   Kiểm tra lúc "+report.Generated.ToString("HH:mm dd/MM");
+    string text=Core.L.F("Có thể giải phóng: {0}   •   {1} khu vực cần chú ý   •   Kiểm tra lúc {2}",Presentation.BytesLabel(report.Reclaimable),report.Issues,report.Generated.ToString("HH:mm dd/MM"));
     g.DrawString(text,Theme.Small,muted,new RectangleF(x,y,w,20),line);
    }
    g.SmoothingMode=saved;

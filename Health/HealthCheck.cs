@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TweekPro.Core;
 
 namespace TweekPro.Health {
  /// <summary>How much attention one area needs; Good adds no penalty.</summary>
@@ -70,81 +71,81 @@ namespace TweekPro.Health {
   public static string Grade(int score){return score>=90?"A":score>=75?"B":score>=60?"C":score>=40?"D":"E";}
 
   public static string GradeLabel(string grade){
-   switch(grade){case "A":return "Rất tốt";case "B":return "Tốt";case "C":return "Nên dọn";case "D":return "Cần dọn";default:return "Cần xử lý ngay";}
+   switch(grade){case "A":return L.T("Rất tốt");case "B":return L.T("Tốt");case "C":return L.T("Nên dọn");case "D":return L.T("Cần dọn");default:return L.T("Cần xử lý ngay");}
   }
 
-  public static string SeverityLabel(HealthSeverity s){return s==HealthSeverity.High?"Khẩn":s==HealthSeverity.Medium?"Cần dọn":s==HealthSeverity.Low?"Nên xem":"Tốt";}
+  public static string SeverityLabel(HealthSeverity s){return s==HealthSeverity.High?L.T("Khẩn"):s==HealthSeverity.Medium?L.T("Cần dọn"):s==HealthSeverity.Low?L.T("Nên xem"):L.T("Tốt");}
 
   /// <summary>One-sentence summary for the gauge card.</summary>
   public static string Headline(int score,long reclaimable,int issues){
-   if(issues==0)return "Máy đang sạch. Không có gì cần dọn ở các khu vực đã kiểm tra.";
-   string space=reclaimable>0?" Có thể giải phóng khoảng "+Presentation.BytesLabel(reclaimable)+".":"";
-   return issues+" khu vực cần chú ý."+space+(score<60?" Nên dọn ngay để máy nhẹ hơn.":"");
+   if(issues==0)return L.T("Máy đang sạch. Không có gì cần dọn ở các khu vực đã kiểm tra.");
+   string space=reclaimable>0?L.F(" Có thể giải phóng khoảng {0}.",Presentation.BytesLabel(reclaimable)):"";
+   return L.F("{0} khu vực cần chú ý.",issues)+space+(score<60?L.T(" Nên dọn ngay để máy nhẹ hơn."):"");
   }
 
   static HealthFinding Junk(HealthInputs i){
-   var f=new HealthFinding{Area="Tệp rác",Tab=TabJunk,Measured=i.JunkMeasured,Bytes=i.JunkBytes,Count=i.JunkFiles};
+   var f=new HealthFinding{Area=L.T("Tệp rác"),Tab=TabJunk,Measured=i.JunkMeasured,Bytes=i.JunkBytes,Count=i.JunkFiles};
    if(!i.JunkMeasured){Unmeasured(f);return f;}
    f.Severity=i.JunkBytes>=2*GB?HealthSeverity.High:i.JunkBytes>=500*MB?HealthSeverity.Medium:i.JunkBytes>=100*MB?HealthSeverity.Low:HealthSeverity.Good;
-   f.Verdict=f.Severity==HealthSeverity.Good?"Rất ít tệp rác":f.Severity==HealthSeverity.Low?"Có một ít tệp rác":f.Severity==HealthSeverity.Medium?"Nhiều tệp rác":"Rất nhiều tệp rác";
-   f.Detail=i.JunkFiles.ToString("N0")+" tệp, "+Presentation.BytesLabel(i.JunkBytes)+(i.JunkLockedRules>0?"; "+i.JunkLockedRules+" nhóm đang bị khóa (trình duyệt còn chạy hoặc cần quyền quản trị)":"");
+   f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Rất ít tệp rác":f.Severity==HealthSeverity.Low?"Có một ít tệp rác":f.Severity==HealthSeverity.Medium?"Nhiều tệp rác":"Rất nhiều tệp rác");
+   f.Detail=L.F("{0} tệp, {1}",i.JunkFiles.ToString("N0"),Presentation.BytesLabel(i.JunkBytes))+(i.JunkLockedRules>0?L.F("; {0} nhóm đang bị khóa (trình duyệt còn chạy hoặc cần quyền quản trị)",i.JunkLockedRules):"");
    return f;
   }
 
   static HealthFinding Leftovers(HealthInputs i){
-   var f=new HealthFinding{Area="Phần còn sót",Tab=TabLeftovers,Measured=i.LeftoverMeasured,Count=i.LeftoverCandidates};
+   var f=new HealthFinding{Area=L.T("Phần còn sót"),Tab=TabLeftovers,Measured=i.LeftoverMeasured,Count=i.LeftoverCandidates};
    if(!i.LeftoverMeasured){Unmeasured(f);return f;}
    f.Severity=i.LeftoverCandidates==0?HealthSeverity.Good:i.LeftoverCandidates<=5?HealthSeverity.Low:HealthSeverity.Medium;
-   f.Verdict=f.Severity==HealthSeverity.Good?"Không có mục chờ duyệt":"Có mục còn sót chờ duyệt";
-   f.Detail=i.LeftoverCandidates==0?"Danh sách chờ duyệt trống.":i.LeftoverCandidates+" mục từ các lần gỡ trước chưa được xử lý.";
+   f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Không có mục chờ duyệt":"Có mục còn sót chờ duyệt");
+   f.Detail=i.LeftoverCandidates==0?L.T("Danh sách chờ duyệt trống."):L.F("{0} mục từ các lần gỡ trước chưa được xử lý.",i.LeftoverCandidates);
    return f;
   }
 
   static HealthFinding Empty(HealthInputs i){
-   var f=new HealthFinding{Area="Thư mục rỗng",Tab=TabEmpty,Measured=i.EmptyMeasured,Count=i.EmptyFolders};
+   var f=new HealthFinding{Area=L.T("Thư mục rỗng"),Tab=TabEmpty,Measured=i.EmptyMeasured,Count=i.EmptyFolders};
    if(!i.EmptyMeasured){Unmeasured(f);return f;}
    f.Severity=i.EmptyFolders==0?HealthSeverity.Good:HealthSeverity.Low;
-   f.Verdict=i.EmptyFolders==0?"Không có thư mục rỗng":"Có thư mục rỗng";
-   f.Detail=(i.EmptyFolders==0?"Không tìm thấy nhánh rỗng":i.EmptyFolders+" nhánh thư mục hoàn toàn rỗng")+(String.IsNullOrEmpty(i.EmptyRoot)?"":" trong "+i.EmptyRoot)+".";
+   f.Verdict=L.T(i.EmptyFolders==0?"Không có thư mục rỗng":"Có thư mục rỗng");
+   f.Detail=(i.EmptyFolders==0?L.T("Không tìm thấy nhánh rỗng"):L.F("{0} nhánh thư mục hoàn toàn rỗng",i.EmptyFolders))+(String.IsNullOrEmpty(i.EmptyRoot)?"":L.F(" trong {0}",i.EmptyRoot))+".";
    return f;
   }
 
   static HealthFinding Vault(HealthInputs i){
-   var f=new HealthFinding{Area="Kho khôi phục",Tab=TabVault,Measured=i.VaultMeasured,Bytes=i.VaultStaleBytes,Count=i.VaultStale};
+   var f=new HealthFinding{Area=L.T("Kho khôi phục"),Tab=TabVault,Measured=i.VaultMeasured,Bytes=i.VaultStaleBytes,Count=i.VaultStale};
    if(!i.VaultMeasured){Unmeasured(f);return f;}
    f.Severity=i.VaultStaleBytes>=1*GB?HealthSeverity.Medium:i.VaultStaleBytes>=200*MB?HealthSeverity.Low:HealthSeverity.Good;
-   f.Verdict=i.VaultBackups==0?"Kho trống":f.Severity==HealthSeverity.Good?"Kho gọn":"Kho giữ bản sao lưu cũ";
-   f.Detail=i.VaultBackups==0?"Chưa có bản sao lưu.":i.VaultBackups+" bản sao lưu ("+Presentation.BytesLabel(i.VaultBytes)+"); "+i.VaultStale+" bản cũ hơn "+i.VaultStaleDays+" ngày có thể xóa vĩnh viễn bằng Dọn kho theo tuổi… ("+Presentation.BytesLabel(i.VaultStaleBytes)+").";
+   f.Verdict=L.T(i.VaultBackups==0?"Kho trống":f.Severity==HealthSeverity.Good?"Kho gọn":"Kho giữ bản sao lưu cũ");
+   f.Detail=i.VaultBackups==0?L.T("Chưa có bản sao lưu."):L.F("{0} bản sao lưu ({1}); {2} bản cũ hơn {3} ngày có thể xóa vĩnh viễn bằng Dọn kho theo tuổi… ({4}).",i.VaultBackups,Presentation.BytesLabel(i.VaultBytes),i.VaultStale,i.VaultStaleDays,Presentation.BytesLabel(i.VaultStaleBytes));
    return f;
   }
 
   static HealthFinding Autorun(HealthInputs i){
-   var f=new HealthFinding{Area="Khởi động cùng Windows",Tab=TabAutorun,Measured=i.AutorunMeasured,Count=i.AutorunEntries};
+   var f=new HealthFinding{Area=L.T("Khởi động cùng Windows"),Tab=TabAutorun,Measured=i.AutorunMeasured,Count=i.AutorunEntries};
    if(!i.AutorunMeasured){Unmeasured(f);return f;}
    f.Severity=i.AutorunEntries<=8?HealthSeverity.Good:i.AutorunEntries<=15?HealthSeverity.Low:i.AutorunEntries<=25?HealthSeverity.Medium:HealthSeverity.High;
-   f.Verdict=f.Severity==HealthSeverity.Good?"Ít mục khởi động":f.Severity==HealthSeverity.Low?"Khá nhiều mục khởi động":"Quá nhiều mục khởi động";
-   f.Detail=i.AutorunEntries+" mục đang bật (Run/RunOnce/Startup). Mỗi mục kéo dài thời gian mở máy.";
+   f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Ít mục khởi động":f.Severity==HealthSeverity.Low?"Khá nhiều mục khởi động":"Quá nhiều mục khởi động");
+   f.Detail=L.F("{0} mục đang bật (Run/RunOnce/Startup). Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries);
    return f;
   }
 
   static HealthFinding Disk(HealthInputs i){
-   var f=new HealthFinding{Area="Dung lượng trống",Tab=TabAnalyzer,Measured=i.DiskMeasured&&i.DiskTotalBytes>0};
+   var f=new HealthFinding{Area=L.T("Dung lượng trống"),Tab=TabAnalyzer,Measured=i.DiskMeasured&&i.DiskTotalBytes>0};
    if(!f.Measured){Unmeasured(f);return f;}
    double ratio=(double)i.DiskFreeBytes/i.DiskTotalBytes;
    f.Severity=ratio>=0.20?HealthSeverity.Good:ratio>=0.10?HealthSeverity.Low:ratio>=0.05?HealthSeverity.Medium:HealthSeverity.High;
-   f.Verdict=f.Severity==HealthSeverity.Good?"Còn đủ chỗ trống":f.Severity==HealthSeverity.Low?"Chỗ trống bắt đầu ít":f.Severity==HealthSeverity.Medium?"Sắp đầy":"Gần như đầy";
-   f.Detail=(String.IsNullOrEmpty(i.DiskName)?"Ổ hệ thống":i.DiskName)+" còn trống "+Presentation.BytesLabel(i.DiskFreeBytes)+" / "+Presentation.BytesLabel(i.DiskTotalBytes)+" ("+(ratio*100).ToString("N0")+"%).";
+   f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Còn đủ chỗ trống":f.Severity==HealthSeverity.Low?"Chỗ trống bắt đầu ít":f.Severity==HealthSeverity.Medium?"Sắp đầy":"Gần như đầy");
+   f.Detail=L.F("{0} còn trống {1} / {2} ({3}%).",String.IsNullOrEmpty(i.DiskName)?L.T("Ổ hệ thống"):i.DiskName,Presentation.BytesLabel(i.DiskFreeBytes),Presentation.BytesLabel(i.DiskTotalBytes),(ratio*100).ToString("N0"));
    return f;
   }
 
-  static void Unmeasured(HealthFinding f){f.Severity=HealthSeverity.Good;f.Verdict="Chưa đo được";f.Detail="Không đọc được dữ liệu khu vực này trong lần kiểm tra vừa rồi.";f.Bytes=0;}
+  static void Unmeasured(HealthFinding f){f.Severity=HealthSeverity.Good;f.Verdict=L.T("Chưa đo được");f.Detail=L.T("Không đọc được dữ liệu khu vực này trong lần kiểm tra vừa rồi.");f.Bytes=0;}
 
   /// <summary>Plain-text report suitable for the clipboard or the log.</summary>
   public static string Summary(HealthReport r){
    var sb=new StringBuilder();
-   sb.AppendLine("Tweek Pro – Kiểm tra sức khỏe máy "+r.Generated.ToString("dd/MM/yyyy HH:mm"));
-   sb.AppendLine("Điểm: "+r.Score+"/100 ("+r.Grade+" – "+r.GradeLabel+"). "+r.Headline);
-   foreach(var f in r.Findings)sb.AppendLine("- "+f.Area+": "+f.Verdict+" ["+(f.Measured?SeverityLabel(f.Severity):"chưa đo")+"] – "+f.Detail);
+   sb.AppendLine(L.F("Tweek Pro – Kiểm tra sức khỏe máy {0}",r.Generated.ToString("dd/MM/yyyy HH:mm")));
+   sb.AppendLine(L.F("Điểm: {0}/100 ({1} – {2}). {3}",r.Score,r.Grade,r.GradeLabel,r.Headline));
+   foreach(var f in r.Findings)sb.AppendLine("- "+f.Area+": "+f.Verdict+" ["+(f.Measured?SeverityLabel(f.Severity):L.T("chưa đo"))+"] – "+f.Detail);
    return sb.ToString();
   }
  }

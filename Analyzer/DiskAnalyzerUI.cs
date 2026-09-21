@@ -16,7 +16,7 @@ namespace TweekPro {
 
   /// <summary>Builds the read-only Disk Analyzer tab: pick a folder and see heavy child folders, usage by extension and the largest files.</summary>
   void BuildAnalyzerTab(){
-   var tab=analyzerTab=new TabPage("Phân tích ổ đĩa");
+   var tab=analyzerTab=new TabPage(Core.L.T("Phân tích ổ đĩa"));
    SetupList(analyzerList,new[]{"Mục","Dung lượng","Chi tiết"},new[]{620,150,240},false,true);
    analyzerList.DoubleClick+=async(s,e)=>await Guard(()=>{if(analyzerList.SelectedItems.Count>0)OpenAnalyzerLocation(true);return Task.FromResult(0);});
    var host=Theme.ListHost(analyzerList,out analyzerOverlay);

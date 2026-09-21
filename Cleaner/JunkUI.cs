@@ -17,7 +17,7 @@ namespace TweekPro {
 
   /// <summary>Builds the Junk Cleaner tab: rule list with per-rule checkboxes, mode selector and preview/clean actions.</summary>
   void BuildJunkTab(){
-   var tab=junkTab=new TabPage("Dọn rác");tabs.TabPages.Add(tab);
+   var tab=junkTab=new TabPage(Core.L.T("Dọn rác"));tabs.TabPages.Add(tab);
    SetupList(junkList,new[]{"Quy tắc","Tệp","Dung lượng","Trạng thái","Vị trí","Mô tả"},new[]{300,80,110,220,300,360},true,true);
    junkList.ItemCheck+=(s,e)=>{var r=(JunkRuleResult)junkList.Items[e.Index].Tag;if(r.Locked||r.Count==0)e.NewValue=CheckState.Unchecked;};
    junkList.ItemChecked+=(s,e)=>UpdateJunkSummary();
@@ -36,13 +36,13 @@ namespace TweekPro {
 
    var modePanel=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=true,Padding=new Padding(16,8,16,6),BackColor=Theme.Surface};
    Theme.BorderBottom(modePanel);
-   var modeLabel=new Label{Text="Chế độ dọn:",AutoSize=true,Margin=new Padding(0,6,12,0),ForeColor=Theme.Muted,Font=Theme.Small};
-   junkVaultMode.Text="Chuyển vào Kho khôi phục (có thể hoàn tác)";junkVaultMode.Checked=true;junkVaultMode.AutoSize=true;junkVaultMode.Margin=new Padding(0,4,24,0);junkVaultMode.ForeColor=Theme.Text;junkVaultMode.Font=Theme.Body;
-   junkDirectMode.Text="Xóa thẳng — KHÔNG thể khôi phục";junkDirectMode.AutoSize=true;junkDirectMode.Margin=new Padding(0,4,0,0);junkDirectMode.ForeColor=Theme.Danger;junkDirectMode.Font=Theme.Strong;
+   var modeLabel=new Label{Text=Core.L.T("Chế độ dọn:"),AutoSize=true,Margin=new Padding(0,6,12,0),ForeColor=Theme.Muted,Font=Theme.Small};
+   junkVaultMode.Text=Core.L.T("Chuyển vào Kho khôi phục (có thể hoàn tác)");junkVaultMode.Checked=true;junkVaultMode.AutoSize=true;junkVaultMode.Margin=new Padding(0,4,24,0);junkVaultMode.ForeColor=Theme.Text;junkVaultMode.Font=Theme.Body;
+   junkDirectMode.Text=Core.L.T("Xóa thẳng — KHÔNG thể khôi phục");junkDirectMode.AutoSize=true;junkDirectMode.Margin=new Padding(0,4,0,0);junkDirectMode.ForeColor=Theme.Danger;junkDirectMode.Font=Theme.Strong;
    junkVaultMode.CheckedChanged+=(s,e)=>UpdateJunkSummary();junkDirectMode.CheckedChanged+=(s,e)=>UpdateJunkSummary();
    modePanel.Controls.Add(modeLabel);modePanel.Controls.Add(junkVaultMode);modePanel.Controls.Add(junkDirectMode);
 
-   var note=Theme.Note("Chỉ dọn tệp tạm, dump, báo cáo lỗi và bộ đệm theo quy tắc; không bao giờ chạm vào Documents, Desktop, Downloads hay dữ liệu ứng dụng. Bỏ qua tệp mới và tệp đang mở. Nhóm cache trình duyệt bị khóa khi trình duyệt còn chạy.",NoteKind.Warning);
+   var note=Theme.Note("Chỉ dọn tệp tạm, dump, báo cáo lỗi, bộ đệm và rác hệ thống theo quy tắc; không bao giờ chạm vào Documents, Desktop, Downloads, dữ liệu ứng dụng hay thư mục Windows cốt lõi (System32, WinSxS, Program Files bị chặn cứng trong mã). Nhóm “Rác hệ thống” cần quyền quản trị; nhóm cache trình duyệt bị khóa khi trình duyệt còn chạy.",NoteKind.Warning);
    junkStage=new Label{Dock=DockStyle.Top,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
    junkSummary=new Label{Dock=DockStyle.Bottom,Height=34,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small};Theme.BorderTop(junkSummary);
    tab.Controls.Add(host);tab.Controls.Add(junkSummary);tab.Controls.Add(junkStage);tab.Controls.Add(note);tab.Controls.Add(modePanel);tab.Controls.Add(bar);
@@ -64,10 +64,10 @@ namespace TweekPro {
   void RenderJunk(bool measured){
    junkList.BeginUpdate();junkList.Items.Clear();junkList.Groups.Clear();
    foreach(var r in junkResults){
-    string state=r.Locked?"Bị khóa":!measured?"Chưa xem trước":r.Count==0?"Không có gì để dọn":r.Partial?"Có thể dọn (chưa đủ)":"Có thể dọn";
-    var row=new ListViewItem(new[]{r.Rule.Name,measured?r.Count.ToString("N0"):"…",measured?Presentation.BytesLabel(r.Bytes):"…",state+(r.Rule.RequiresAdmin?"  •  cần quản trị":""),r.Roots.Count>0?String.Join(" | ",r.Roots.Select(p=>Presentation.ShortPath(p,60))):String.Join(" | ",r.Rule.Paths),r.Rule.Description}){Tag=r,ToolTipText=r.Rule.Description+"\r\n"+String.Join("\r\n",r.Rule.Paths)+(r.LockReason==""?"":"\r\n\r\n"+r.LockReason)+(r.Note==""?"":"\r\n"+r.Note)};
+    string state=Core.L.T(r.Locked?"Bị khóa":!measured?"Chưa xem trước":r.Count==0?"Không có gì để dọn":r.Partial?"Có thể dọn (chưa đủ)":"Có thể dọn");
+    var row=new ListViewItem(new[]{Core.L.T(r.Rule.Name),measured?r.Count.ToString("N0"):"…",measured?Presentation.BytesLabel(r.Bytes):"…",state+(r.Rule.RequiresAdmin?Core.L.T("  •  cần quản trị"):""),r.Roots.Count>0?String.Join(" | ",r.Roots.Select(p=>Presentation.ShortPath(p,60))):String.Join(" | ",r.Rule.Paths),Core.L.T(r.Rule.Description)}){Tag=r,ToolTipText=Core.L.T(r.Rule.Description)+"\r\n"+String.Join("\r\n",r.Rule.Paths)+(r.LockReason==""?"":"\r\n\r\n"+r.LockReason)+(r.Note==""?"":"\r\n"+r.Note)};
     if(r.Locked)row.ForeColor=Theme.Danger;else if(measured&&r.Count==0)row.ForeColor=Theme.Muted;
-    Theme.AssignGroup(junkList,row,r.Rule.Group,r.Rule.Group);
+    Theme.AssignGroup(junkList,row,r.Rule.Group,Core.L.T(r.Rule.Group));
     Theme.StripeRow(row,junkList.Items.Count);junkList.Items.Add(row);
     row.Checked=measured&&!r.Locked&&r.Count>0&&r.Rule.DefaultChecked;
    }
@@ -81,9 +81,9 @@ namespace TweekPro {
   void UpdateJunkSummary(){
    var selected=CheckedJunk();long bytes=selected.Sum(r=>r.Bytes);int files=selected.Sum(r=>r.Count);
    bool direct=junkDirectMode.Checked;
-   junkSummary.Text=(junkResults.Count+" quy tắc  •  Đã chọn "+selected.Count+" nhóm, "+files.ToString("N0")+" tệp, "+Presentation.BytesLabel(bytes))+(direct?"  •  XÓA THẲNG: không thể khôi phục":"  •  Chuyển vào Kho: chưa giải phóng dung lượng cho đến khi xóa vĩnh viễn trong kho");
+   junkSummary.Text=Core.L.F("{0} quy tắc  •  Đã chọn {1} nhóm, {2} tệp, {3}",junkResults.Count,selected.Count,files.ToString("N0"),Presentation.BytesLabel(bytes))+Core.L.T(direct?"  •  XÓA THẲNG: không thể khôi phục":"  •  Chuyển vào Kho: chưa giải phóng dung lượng cho đến khi xóa vĩnh viễn trong kho");
    junkSummary.ForeColor=direct?Theme.Danger:Theme.Muted;
-   if(junkCleanButton!=null)junkCleanButton.Text=direct?"Xóa thẳng mục đã chọn":"Dọn mục đã chọn (vào kho)";
+   if(junkCleanButton!=null)junkCleanButton.Text=Core.L.T(direct?"Xóa thẳng mục đã chọn":"Dọn mục đã chọn (vào kho)");
   }
 
   /// <summary>Runs the read-only preview on a worker thread and fills sizes per rule.</summary>
@@ -97,10 +97,10 @@ namespace TweekPro {
     junkResults=await Task.Run(()=>JunkCleaner.Preview(rules,elevated,minAge,token,ReportJunk),token);
     RenderJunk(true);
     long total=junkResults.Sum(r=>r.Bytes);int files=junkResults.Sum(r=>r.Count);int locked=junkResults.Count(r=>r.Locked);
-    junkStage.Text="Xem trước xong: "+files.ToString("N0")+" tệp, "+Presentation.BytesLabel(total)+(locked>0?"  •  "+locked+" nhóm bị khóa (di chuột lên dòng đỏ để xem lý do)":"");
+    junkStage.Text=Core.L.F("Xem trước xong: {0} tệp, {1}",files.ToString("N0"),Presentation.BytesLabel(total))+(locked>0?Core.L.F("  •  {0} nhóm bị khóa (di chuột lên dòng đỏ để xem lý do)",locked):"");
     Log("Dọn rác: xem trước xong — "+files.ToString("N0")+" tệp, "+Presentation.BytesLabel(total)+", "+locked+" nhóm bị khóa.");
-    if(files==0)Theme.SetOverlay(junkOverlay,"Không có tệp rác đủ điều kiện theo quy tắc hiện tại.\r\nTệp mới hơn "+settings.JunkMinAgeHours+" giờ và tệp đang mở không được tính.",NoteKind.Info);
-   }catch(OperationCanceledException){junkStage.Text="Đã dừng xem trước.";}
+    if(files==0)Theme.SetOverlay(junkOverlay,Core.L.F("Không có tệp rác đủ điều kiện theo quy tắc hiện tại.\r\nTệp mới hơn {0} giờ và tệp đang mở không được tính.",settings.JunkMinAgeHours),NoteKind.Info);
+   }catch(OperationCanceledException){junkStage.Text=Core.L.T("Đã dừng xem trước.");}
    finally{junkCancellation.Dispose();junkCancellation=null;}
   }
 
@@ -111,33 +111,33 @@ namespace TweekPro {
 
   /// <summary>Confirms and cleans the checked rules in the chosen mode, then reports counts, bytes and skipped files.</summary>
   async Task CleanJunk(){
-   var selected=CheckedJunk();if(selected.Count==0)throw new IOException("Xem trước rồi đánh dấu nhóm muốn dọn.");
+   var selected=CheckedJunk();if(selected.Count==0)throw new IOException(Core.L.T("Xem trước rồi đánh dấu nhóm muốn dọn."));
    bool direct=junkDirectMode.Checked;long bytes=selected.Sum(r=>r.Bytes);int files=selected.Sum(r=>r.Count);
-   string list=String.Join("\r\n",selected.Select(r=>"• "+r.Rule.Name+" — "+r.Count.ToString("N0")+" tệp, "+Presentation.BytesLabel(r.Bytes)));
+   string list=String.Join("\r\n",selected.Select(r=>"• "+Core.L.T(r.Rule.Name)+" — "+Core.L.F("{0} tệp, {1}",r.Count.ToString("N0"),Presentation.BytesLabel(r.Bytes))));
    if(direct){
-    var answer=MessageBox.Show(this,"XÓA THẲNG "+files.ToString("N0")+" tệp ("+Presentation.BytesLabel(bytes)+") mà KHÔNG lưu bản khôi phục?\r\n\r\n"+list+"\r\n\r\nThao tác này không thể hoàn tác. Chỉ tiếp tục khi chắc chắn các nhóm trên chỉ chứa bộ đệm/tệp tạm.","Xác nhận xóa vĩnh viễn",MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2);
+    var answer=MessageBox.Show(this,Core.L.F("XÓA THẲNG {0} tệp ({1}) mà KHÔNG lưu bản khôi phục?\r\n\r\n{2}\r\n\r\nThao tác này không thể hoàn tác. Chỉ tiếp tục khi chắc chắn các nhóm trên chỉ chứa bộ đệm/tệp tạm.",files.ToString("N0"),Presentation.BytesLabel(bytes),list),Core.L.T("Xác nhận xóa vĩnh viễn"),MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2);
     if(answer!=DialogResult.Yes)return;
-    if(!Confirm("Xác nhận lần cuối: xóa thẳng "+files.ToString("N0")+" tệp, không có bản sao lưu?"))return;
+    if(!Confirm(Core.L.F("Xác nhận lần cuối: xóa thẳng {0} tệp, không có bản sao lưu?",files.ToString("N0"))))return;
    }else{
-    if(!Confirm("Chuyển "+files.ToString("N0")+" tệp ("+Presentation.BytesLabel(bytes)+") vào Kho khôi phục?\r\n\r\n"+list+"\r\n\r\nMỗi nhóm tạo một bản sao lưu; có thể khôi phục hoặc xóa vĩnh viễn sau trong tab Kho khôi phục. Dung lượng ổ đĩa chưa được giải phóng cho đến khi xóa vĩnh viễn."))return;
+    if(!Confirm(Core.L.F("Chuyển {0} tệp ({1}) vào Kho khôi phục?\r\n\r\n{2}\r\n\r\nMỗi nhóm tạo một bản sao lưu; có thể khôi phục hoặc xóa vĩnh viễn sau trong tab Kho khôi phục. Dung lượng ổ đĩa chưa được giải phóng cho đến khi xóa vĩnh viễn.",files.ToString("N0"),Presentation.BytesLabel(bytes),list)))return;
    }
-   junkCancellation=new CancellationTokenSource();var token=junkCancellation.Token;junkStage.Visible=true;junkStage.Text=direct?"Đang xóa thẳng…":"Đang chuyển vào kho…";
+   junkCancellation=new CancellationTokenSource();var token=junkCancellation.Token;junkStage.Visible=true;junkStage.Text=Core.L.T(direct?"Đang xóa thẳng…":"Đang chuyển vào kho…");
    Log("Dọn rác: bắt đầu "+(direct?"xóa thẳng ":"chuyển vào kho ")+files.ToString("N0")+" tệp trong "+selected.Count+" nhóm.");
    JunkReport report;
    try{report=await Task.Run(()=>JunkCleaner.Clean(selected,direct,token,ReportJunk),token);}
    catch(OperationCanceledException){junkStage.Text="Đã dừng dọn.";return;}
    finally{junkCancellation.Dispose();junkCancellation=null;}
    LoadBackups();
-   string summary=(direct?"Đã xóa thẳng ":"Đã chuyển vào kho ")+report.Cleaned.ToString("N0")+" tệp ("+Presentation.BytesLabel(report.Bytes)+"). Bỏ qua vì đang dùng: "+report.SkippedInUse.ToString("N0")+". Lỗi: "+report.Failed.ToString("N0")+"."+(direct?"":" Bản sao lưu: "+report.Backups.Count+".");
+   string summary=Core.L.F(direct?"Đã xóa thẳng {0} tệp ({1}). Bỏ qua vì đang dùng: {2}. Lỗi: {3}.":"Đã chuyển vào kho {0} tệp ({1}). Bỏ qua vì đang dùng: {2}. Lỗi: {3}.",report.Cleaned.ToString("N0"),Presentation.BytesLabel(report.Bytes),report.SkippedInUse.ToString("N0"),report.Failed.ToString("N0"))+(direct?"":Core.L.F(" Bản sao lưu: {0}.",report.Backups.Count));
    junkStage.Text=summary;Log("Dọn rác: "+summary);
    foreach(string err in report.Errors.Take(20))Log("Dọn rác lỗi: "+err);
-   MessageBox.Show(this,summary+(report.Errors.Count>0?"\r\n\r\nLỗi đầu tiên:\r\n"+String.Join("\r\n",report.Errors.Take(5)):"")+(direct?"":"\r\n\r\nCó thể khôi phục hoặc xóa vĩnh viễn trong tab Kho khôi phục."),"Kết quả dọn rác",MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
+   MessageBox.Show(this,summary+(report.Errors.Count>0?Core.L.T("\r\n\r\nLỗi đầu tiên:\r\n")+String.Join("\r\n",report.Errors.Take(5)):"")+(direct?"":Core.L.T("\r\n\r\nCó thể khôi phục hoặc xóa vĩnh viễn trong tab Kho khôi phục.")),Core.L.T("Kết quả dọn rác"),MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
    await PreviewJunk();
   }
 
   /// <summary>Opens a window listing the files that a rule would clean.</summary>
   void ShowJunkDetails(){
-   if(junkList.SelectedItems.Count==0)throw new IOException("Chọn một quy tắc để xem tệp.");
+   if(junkList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một quy tắc để xem tệp."));
    var r=(JunkRuleResult)junkList.SelectedItems[0].Tag;
    using(var form=new JunkDetailForm(r))form.ShowDialog(this);
   }
@@ -146,14 +146,14 @@ namespace TweekPro {
  /// <summary>Read-only list of files matched by one junk rule so the user can inspect before cleaning.</summary>
  public class JunkDetailForm:Form {
   public JunkDetailForm(JunkRuleResult result){
-   Text="Tệp sẽ dọn — "+result.Rule.Name;Size=new Size(960,620);MinimumSize=new Size(720,420);StartPosition=FormStartPosition.CenterParent;ShowIcon=false;
+   Text=Core.L.T("Tệp sẽ dọn — ")+Core.L.T(result.Rule.Name);Size=new Size(960,620);MinimumSize=new Size(720,420);StartPosition=FormStartPosition.CenterParent;ShowIcon=false;
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;
-   var header=Theme.HeaderBand(result.Rule.Name,result.Count.ToString("N0")+" tệp  •  "+Presentation.BytesLabel(result.Bytes)+(result.Locked?"  •  "+result.LockReason:""),84);
-   var list=new SmoothListView();Theme.StyleList(list);list.Columns.Add("Đường dẫn",620);list.Columns.Add("Dung lượng",110);list.Columns.Add("Sửa lần cuối",150);
+   var header=Theme.HeaderBand(Core.L.T(result.Rule.Name),result.Count.ToString("N0")+Core.L.T(" tệp  •  ")+Presentation.BytesLabel(result.Bytes)+(result.Locked?"  •  "+result.LockReason:""),84);
+   var list=new SmoothListView();Theme.StyleList(list);list.Columns.Add(Core.L.T("Đường dẫn"),620);list.Columns.Add(Core.L.T("Dung lượng"),110);list.Columns.Add(Core.L.T("Sửa lần cuối"),150);
    int shown=0;list.BeginUpdate();
    foreach(var item in result.Items.OrderByDescending(i=>i.Bytes).Take(2000)){var row=new ListViewItem(new[]{item.Path,Presentation.BytesLabel(item.Bytes),item.LastWrite.ToString("dd/MM/yyyy HH:mm")}){ToolTipText=item.Path};Theme.StripeRow(row,shown++);list.Items.Add(row);}
    list.EndUpdate();
-   string noteText=result.Count>2000?"Hiển thị 2.000 tệp lớn nhất trong "+result.Count.ToString("N0")+" tệp.":result.Count==0?"Chưa xem trước hoặc không có tệp đủ điều kiện.":"Danh sách chỉ để xem; chưa có gì bị thay đổi.";
+   string noteText=result.Count>2000?Core.L.F("Hiển thị 2.000 tệp lớn nhất trong {0} tệp.",result.Count.ToString("N0")):Core.L.T(result.Count==0?"Chưa xem trước hoặc không có tệp đủ điều kiện.":"Danh sách chỉ để xem; chưa có gì bị thay đổi.");
    var note=Theme.Note(noteText+(result.Note==""?"":"  "+result.Note),result.Locked?NoteKind.Warning:NoteKind.Info);
    var footer=new Panel{Dock=DockStyle.Bottom,Height=64,BackColor=Theme.Surface,Padding=new Padding(20,14,20,14)};Theme.BorderTop(footer);
    var close=Theme.Button("Đóng",ButtonStyle.Primary);close.Dock=DockStyle.Right;close.AutoSize=false;close.Width=120;close.Click+=(s,e)=>Close();

@@ -120,7 +120,7 @@ namespace TweekPro {
 
   /// <summary>Creates a flat button with the given semantic style and hover feedback.</summary>
   public static Button Button(string text,ButtonStyle style){
-   var b=new Button{Text=text,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,FlatStyle=FlatStyle.Flat,Font=Body,Cursor=Cursors.Hand,Margin=new Padding(0,0,8,0),Padding=new Padding(12,0,12,0),MinimumSize=new Size(0,36),UseVisualStyleBackColor=false};
+   var b=new Button{Text=Core.L.T(text),AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,FlatStyle=FlatStyle.Flat,Font=Body,Cursor=Cursors.Hand,Margin=new Padding(0,0,8,0),Padding=new Padding(12,0,12,0),MinimumSize=new Size(0,36),UseVisualStyleBackColor=false};
    b.FlatAppearance.BorderSize=1;
    if(style==ButtonStyle.Primary){b.BackColor=Primary;b.ForeColor=Color.White;b.FlatAppearance.BorderColor=Primary;b.FlatAppearance.MouseOverBackColor=PrimaryDark;b.FlatAppearance.MouseDownBackColor=PrimaryDark;}
    else if(style==ButtonStyle.Danger){b.BackColor=Danger;b.ForeColor=Color.White;b.FlatAppearance.BorderColor=Danger;b.FlatAppearance.MouseOverBackColor=DangerDark;b.FlatAppearance.MouseDownBackColor=DangerDark;}
@@ -136,7 +136,7 @@ namespace TweekPro {
   }
   /// <summary>Creates a tinted, single-purpose message strip such as a warning or a result summary.</summary>
   public static Label Note(string text,NoteKind kind){
-   var note=new Label{Text=text,Dock=DockStyle.Top,AutoSize=false,Height=52,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,Font=Body};
+   var note=new Label{Text=Core.L.T(text),Dock=DockStyle.Top,AutoSize=false,Height=52,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,Font=Body};
    Tint(note,kind);
    return note;
   }
@@ -152,8 +152,8 @@ namespace TweekPro {
    var band=new Panel{Dock=DockStyle.Top,Height=height,BackColor=Header,Padding=new Padding(92,18,28,0)};
    int logo=44;
    band.Paint+=(s,e)=>Branding.DrawLogo(e.Graphics,new Rectangle(28,(height-logo)/2,logo,logo));
-   var sub=new Label{Text=subtitle,Dock=DockStyle.Top,Height=24,Font=Body,ForeColor=HeaderMuted,AutoEllipsis=true};
-   var main=new Label{Text=title,Dock=DockStyle.Top,Height=38,Font=Title,ForeColor=HeaderText,AutoEllipsis=true};
+   var sub=new Label{Text=Core.L.T(subtitle),Dock=DockStyle.Top,Height=24,Font=Body,ForeColor=HeaderMuted,AutoEllipsis=true};
+   var main=new Label{Text=Core.L.T(title),Dock=DockStyle.Top,Height=38,Font=Title,ForeColor=HeaderText,AutoEllipsis=true};
    band.Controls.Add(sub);
    band.Controls.Add(main);
    return band;
@@ -192,7 +192,7 @@ namespace TweekPro {
   public static void SetOverlay(Label overlay,string text,NoteKind kind){
    if(overlay==null)return;
    if(String.IsNullOrEmpty(text)){overlay.Visible=false;return;}
-   overlay.Text=text;Tint(overlay,kind);overlay.Visible=true;overlay.BringToFront();
+   overlay.Text=Core.L.T(text);Tint(overlay,kind);overlay.Visible=true;overlay.BringToFront();
   }
   /// <summary>Places a row into a named group, creating the group in kind-key order if needed.</summary>
   public static void AssignGroup(ListView list,ListViewItem item,string key,string header){

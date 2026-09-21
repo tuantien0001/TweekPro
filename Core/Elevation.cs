@@ -20,7 +20,7 @@ namespace TweekPro.Core {
   }
 
   /// <summary>Vietnamese badge text for the header.</summary>
-  public static string BadgeText { get { return IsElevated?"Quyền quản trị viên":"Quyền người dùng"; } }
+  public static string BadgeText { get { return IsElevated?L.T("Quyền quản trị viên"):L.T("Quyền người dùng"); } }
 
   /// <summary>Starts a second instance of this executable with the runas verb; the caller closes the current instance when this returns true.</summary>
   public static bool RelaunchAsAdministrator(string arguments=""){

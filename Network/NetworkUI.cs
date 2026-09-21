@@ -17,7 +17,7 @@ namespace TweekPro {
 
   /// <summary>Builds the read-only Network tab: live connection table per process, optional ETW bandwidth when elevated.</summary>
   void BuildNetworkTab(){
-   netTab=new TabPage("Mạng");tabs.TabPages.Add(netTab);
+   netTab=new TabPage(Core.L.T("Mạng"));tabs.TabPages.Add(netTab);
    SetupList(netList,new[]{"Tiến trình","Hướng","PID","Nhà phát hành","Giao thức","Cục bộ","Từ xa","Trạng thái","Máy từ xa","Đã gửi","Đã nhận","Gửi/s","Nhận/s"},new[]{190,60,70,170,70,190,210,120,200,90,90,90,90},false,true);
    netIcons.ColorDepth=ColorDepth.Depth32Bit;netIcons.ImageSize=new Size(16,16);
    foreach(string k in new[]{"out","in","both","listen","idle"})using(var bmp=NetworkGlyphs.Icon(k,16))netIcons.Images.Add(k,bmp);
@@ -27,16 +27,16 @@ namespace TweekPro {
 
    var bar=Bar();
    Add(bar,"Làm mới",async()=>await RefreshNetwork(true));
-   netPause=Theme.Button("Tạm dừng",ButtonStyle.Secondary);netPause.Margin=new Padding(0,0,8,8);netPause.Click+=(s,e)=>{netPaused=!netPaused;netPause.Text=netPaused?"Tiếp tục":"Tạm dừng";UpdateNetworkSummary();};bar.Controls.Add(netPause);
-   var intervalLabel=new Label{Text="Chu kỳ (giây)",AutoSize=true,Margin=new Padding(8,9,4,0),ForeColor=Theme.Muted};
+   netPause=Theme.Button("Tạm dừng",ButtonStyle.Secondary);netPause.Margin=new Padding(0,0,8,8);netPause.Click+=(s,e)=>{netPaused=!netPaused;netPause.Text=netPaused?Core.L.T("Tiếp tục"):Core.L.T("Tạm dừng");UpdateNetworkSummary();};bar.Controls.Add(netPause);
+   var intervalLabel=new Label{Text=Core.L.T("Chu kỳ (giây)"),AutoSize=true,Margin=new Padding(8,9,4,0),ForeColor=Theme.Muted};
    netInterval.Minimum=1;netInterval.Maximum=30;netInterval.Value=Math.Min(30,Math.Max(1,settings.NetworkRefreshSeconds));netInterval.Width=56;netInterval.Margin=new Padding(0,5,12,0);netInterval.Font=Theme.Body;
    netInterval.ValueChanged+=(s,e)=>{netTimer.Interval=(int)netInterval.Value*1000;settings.NetworkRefreshSeconds=(int)netInterval.Value;};
-   var searchLabel=new Label{Text="Tìm kiếm",AutoSize=true,Margin=new Padding(0,9,4,0),ForeColor=Theme.Muted};
+   var searchLabel=new Label{Text=Core.L.T("Tìm kiếm"),AutoSize=true,Margin=new Padding(0,9,4,0),ForeColor=Theme.Muted};
    netSearch.Width=200;netSearch.Margin=new Padding(0,4,12,0);netSearch.Font=Theme.Body;netSearch.BorderStyle=BorderStyle.FixedSingle;netSearch.TextChanged+=(s,e)=>RenderNetwork();
-   netResolve.Text="Phân giải tên máy";netResolve.AutoSize=true;netResolve.Margin=new Padding(0,8,12,0);netResolve.Checked=settings.NetworkResolveHosts;netResolve.ForeColor=Theme.Text;
+   netResolve.Text=Core.L.T("Phân giải tên máy");netResolve.AutoSize=true;netResolve.Margin=new Padding(0,8,12,0);netResolve.Checked=settings.NetworkResolveHosts;netResolve.ForeColor=Theme.Text;
    netResolve.CheckedChanged+=(s,e)=>{settings.NetworkResolveHosts=netResolve.Checked;if(!netResolve.Checked)HostResolver.Clear();RenderNetwork();};
-   netHideLoopback.Text="Ẩn loopback";netHideLoopback.AutoSize=true;netHideLoopback.Margin=new Padding(0,8,12,0);netHideLoopback.ForeColor=Theme.Text;netHideLoopback.CheckedChanged+=(s,e)=>RenderNetwork();
-   netBandwidth=Theme.Button(EtwNetworkSession.CanStart?"Bật băng thông (ETW)":"Băng thông: cần quyền quản trị",EtwNetworkSession.CanStart?ButtonStyle.Primary:ButtonStyle.Secondary);netBandwidth.Margin=new Padding(0,0,8,8);netBandwidth.Enabled=EtwNetworkSession.CanStart;
+   netHideLoopback.Text=Core.L.T("Ẩn loopback");netHideLoopback.AutoSize=true;netHideLoopback.Margin=new Padding(0,8,12,0);netHideLoopback.ForeColor=Theme.Text;netHideLoopback.CheckedChanged+=(s,e)=>RenderNetwork();
+   netBandwidth=Theme.Button(EtwNetworkSession.CanStart?Core.L.T("Bật băng thông (ETW)"):Core.L.T("Băng thông: cần quyền quản trị"),EtwNetworkSession.CanStart?ButtonStyle.Primary:ButtonStyle.Secondary);netBandwidth.Margin=new Padding(0,0,8,8);netBandwidth.Enabled=EtwNetworkSession.CanStart;
    netBandwidth.Click+=async(s,e)=>await Guard(()=>{ToggleBandwidth();return Task.FromResult(0);});
    bar.Controls.Add(intervalLabel);bar.Controls.Add(netInterval);bar.Controls.Add(searchLabel);bar.Controls.Add(netSearch);bar.Controls.Add(netResolve);bar.Controls.Add(netHideLoopback);bar.Controls.Add(netBandwidth);
    Add(bar,"Xuất CSV",()=>{ExportNetwork();return Task.FromResult(0);});
@@ -56,10 +56,10 @@ namespace TweekPro {
 
   /// <summary>Starts or stops the ETW bandwidth session; the fixed session name is always stopped on exit.</summary>
   void ToggleBandwidth(){
-   if(etw!=null&&etw.IsRunning){etw.Stop();etw.Dispose();etw=null;netTraffic.Clear();netBandwidth.Text="Bật băng thông (ETW)";Log("Mạng: đã dừng phiên ETW "+EtwNetworkSession.SessionName+".");RenderNetwork();return;}
+   if(etw!=null&&etw.IsRunning){etw.Stop();etw.Dispose();etw=null;netTraffic.Clear();netBandwidth.Text=Core.L.T("Bật băng thông (ETW)");Log("Mạng: đã dừng phiên ETW "+EtwNetworkSession.SessionName+".");RenderNetwork();return;}
    etw=new EtwNetworkSession();
    try{etw.Start();}catch(Exception e){etw.Dispose();etw=null;throw new IOException("Không bật được ETW: "+e.Message);}
-   netBandwidth.Text="Dừng băng thông (ETW)";Log("Mạng: đã bật phiên ETW "+EtwNetworkSession.SessionName+" (kernel TCP/IP, chỉ đọc).");
+   netBandwidth.Text=Core.L.T("Dừng băng thông (ETW)");Log("Mạng: đã bật phiên ETW "+EtwNetworkSession.SessionName+" (kernel TCP/IP, chỉ đọc).");
   }
 
   /// <summary>Reads the connection table on a worker thread, resolves processes and redraws the list.</summary>
@@ -78,7 +78,7 @@ namespace TweekPro {
     if(IsDisposed)return;
     netRows=rows;
     if(etw!=null&&etw.IsRunning){netTraffic=etw.Snapshot();etw.Trim(new HashSet<int>(rows.Select(c=>c.Pid)));}
-    else if(etw!=null&&!etw.IsRunning&&etw.Failure!=""){Log("Mạng: phiên ETW dừng — "+etw.Failure);etw.Dispose();etw=null;netBandwidth.Text="Bật băng thông (ETW)";}
+    else if(etw!=null&&!etw.IsRunning&&etw.Failure!=""){Log("Mạng: phiên ETW dừng — "+etw.Failure);etw.Dispose();etw=null;netBandwidth.Text=Core.L.T("Bật băng thông (ETW)");}
     RenderNetwork();
     if(manual)Log("Mạng: "+rows.Count+" kết nối, "+rows.Select(c=>c.Pid).Distinct().Count()+" tiến trình.");
    }catch(Exception e){Theme.SetOverlay(netOverlay,"Không đọc được bảng kết nối.\r\n"+e.Message,NoteKind.Error);if(manual)throw;}

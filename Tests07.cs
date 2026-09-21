@@ -40,6 +40,7 @@ namespace TweekPro {
     Network.PacketAnimatorTests.Run();
     Cleaner.EmptyFolderTests.Run();
     Health.HealthTests.Run();
+    Core.LangTests.Run();
 
     // Safety boundary: rules cannot reach user documents, the data folder or a whole AppData root.
     MustFail(()=>JunkSafety.ValidateRoot(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)),"Documents refused");

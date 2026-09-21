@@ -20,6 +20,7 @@ namespace TweekPro.Core {
   [DataMember(Name="logRetentionDays")] public int LogRetentionDays=14;
   [DataMember(Name="windowWidth")] public int WindowWidth=0;
   [DataMember(Name="windowHeight")] public int WindowHeight=0;
+  [DataMember(Name="language")] public string Language=L.Vietnamese;
 
   /// <summary>Clamps values that would make the UI unusable if the file was edited by hand.</summary>
   public void Normalize(){
@@ -28,6 +29,7 @@ namespace TweekPro.Core {
    if(JunkMinAgeHours<0)JunkMinAgeHours=0;if(JunkMinAgeHours>24*30)JunkMinAgeHours=24*30;
    if(DuplicateMinKB<0)DuplicateMinKB=0;if(DuplicateMinKB>1048576)DuplicateMinKB=1048576;
    if(LogRetentionDays<1)LogRetentionDays=1;if(LogRetentionDays>365)LogRetentionDays=365;
+   Language=L.Normalize(Language);
    if(WindowWidth<0)WindowWidth=0;if(WindowHeight<0)WindowHeight=0;
   }
 

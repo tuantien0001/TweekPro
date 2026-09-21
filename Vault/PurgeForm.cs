@@ -22,9 +22,9 @@ namespace TweekPro {
    var header=Theme.HeaderBand("Xóa vĩnh viễn bản sao lưu cũ","Chỉ xóa những gì bạn xác nhận; dung lượng được giải phóng ngay.",84);
    var body=new Panel{Dock=DockStyle.Fill,Padding=new Padding(28,20,28,12),BackColor=Theme.Surface};
    var row1=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,WrapContents=false,Padding=new Padding(0,0,0,12)};
-   row1.Controls.Add(new Label{Text="Xóa bản sao lưu cũ hơn",AutoSize=true,Margin=new Padding(0,7,8,0)});
+   row1.Controls.Add(new Label{Text=Core.L.T("Xóa bản sao lưu cũ hơn"),AutoSize=true,Margin=new Padding(0,7,8,0)});
    days.Minimum=0;days.Maximum=3650;days.Value=Math.Min(3650,Math.Max(0,defaultDays));days.Width=80;days.Font=Theme.Body;days.ValueChanged+=(s,e)=>Recompute();
-   row1.Controls.Add(days);row1.Controls.Add(new Label{Text="ngày (0 = tất cả)",AutoSize=true,Margin=new Padding(8,7,0,0),ForeColor=Theme.Muted});
+   row1.Controls.Add(days);row1.Controls.Add(new Label{Text=Core.L.T("ngày (0 = tất cả)"),AutoSize=true,Margin=new Padding(8,7,0,0),ForeColor=Theme.Muted});
    includeUnrestored.Text="Bao gồm cả bản CHƯA khôi phục (mất khả năng hoàn tác các lần dọn đó)";includeUnrestored.AutoSize=true;includeUnrestored.ForeColor=Theme.Danger;includeUnrestored.Font=Theme.Strong;includeUnrestored.Dock=DockStyle.Top;includeUnrestored.Padding=new Padding(0,0,0,12);includeUnrestored.CheckedChanged+=(s,e)=>Recompute();
    preview.Dock=DockStyle.Top;preview.AutoSize=false;preview.Height=110;preview.Font=Theme.Body;preview.ForeColor=Theme.Text;
    var hint=new Label{Dock=DockStyle.Top,AutoSize=false,Height=48,Text="Mặc định chỉ xóa bản đã khôi phục (thư mục gần như trống). Bản đã sao lưu nhưng chưa khôi phục là cách duy nhất để hoàn tác lần dọn tương ứng.",ForeColor=Theme.Muted,Font=Theme.Small};

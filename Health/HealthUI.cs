@@ -16,7 +16,7 @@ namespace TweekPro {
 
   /// <summary>Builds the Overview tab: one read-only health check that scores the machine and points to the tab that fixes each finding.</summary>
   void BuildHealthTab(){
-   var tab=healthTab=new TabPage("Tổng quan");
+   var tab=healthTab=new TabPage(Core.L.T("Tổng quan"));
    SetupList(healthList,new[]{"Khu vực","Đánh giá","Chi tiết","Có thể giải phóng","Mức","Xử lý ở tab"},new[]{180,210,470,130,90,150},false);
    healthList.DoubleClick+=async(s,e)=>await Guard(()=>{if(healthList.SelectedItems.Count>0)OpenHealthTab();return Task.FromResult(0);});
    var host=Theme.ListHost(healthList,out healthOverlay);
@@ -38,45 +38,45 @@ namespace TweekPro {
 
   /// <summary>Runs every probe on a worker thread, then scores and renders the report.</summary>
   async Task RunHealthCheck(){
-   healthStage.Visible=true;healthGauge.Report=null;healthGauge.BusyText="Đang kiểm tra…";
+   healthStage.Visible=true;healthGauge.Report=null;healthGauge.BusyText=Core.L.T("Đang kiểm tra…");
    var inputs=new HealthInputs{LeftoverCandidates=candidates.Count};
    bool elevated=Core.Elevation.IsElevated;int minAge=settings.JunkMinAgeHours;int purgeDays=settings.PurgeDefaultDays;
    Action<string> stage=text=>{try{BeginInvoke((Action)(()=>healthStage.Text=text));}catch(InvalidOperationException){}};
    healthCancellation=new CancellationTokenSource();var token=healthCancellation.Token;healthStop.Visible=true;
    try{
    await Task.Run(()=>{
-    stage("Đang đo tệp rác theo quy tắc…");
+    stage(Core.L.T("Đang đo tệp rác theo quy tắc…"));
     try{var rules=JunkRules.Load(Core.Paths.JunkRulesOverride).Rules;var preview=JunkCleaner.Preview(rules,elevated,minAge,token);
      inputs.JunkBytes=preview.Where(r=>!r.Locked).Sum(r=>r.Bytes);inputs.JunkFiles=preview.Where(r=>!r.Locked).Sum(r=>r.Count);inputs.JunkLockedRules=preview.Count(r=>r.Locked);}
     catch(OperationCanceledException){throw;}
     catch(Exception e){inputs.JunkMeasured=false;Core.Log.Warn("Health: junk probe failed: "+e.Message);}
-    stage("Đang đo kho khôi phục…");
+    stage(Core.L.T("Đang đo kho khôi phục…"));
     // Restored backups are already empty; what still occupies disk is old backups the purge dialog would select.
     try{var all=Engine.Backups();inputs.VaultBackups=all.Count;inputs.VaultStaleDays=purgeDays;
      var stale=new HashSet<string>(Engine.SelectForPurge(all,purgeDays,DateTime.Now,true).Select(b=>b.Id));
      foreach(var b in all){token.ThrowIfCancellationRequested();long bytes=Engine.BackupSize(b);if(bytes>0)inputs.VaultBytes+=bytes;if(stale.Contains(b.Id)){inputs.VaultStale++;if(bytes>0)inputs.VaultStaleBytes+=bytes;}}}
     catch(OperationCanceledException){throw;}
     catch(Exception e){inputs.VaultMeasured=false;Core.Log.Warn("Health: vault probe failed: "+e.Message);}
-    stage("Đang đếm mục khởi động…");
+    stage(Core.L.T("Đang đếm mục khởi động…"));
     try{inputs.AutorunEntries=Advanced.Autoruns().Count(a=>a.State=="Có đăng ký");}
     catch(Exception e){inputs.AutorunMeasured=false;Core.Log.Warn("Health: autorun probe failed: "+e.Message);}
     token.ThrowIfCancellationRequested();
-    stage("Đang tìm thư mục rỗng trong Downloads…");
+    stage(Core.L.T("Đang tìm thư mục rỗng trong Downloads…"));
     // Only Downloads is probed: falling back to the whole profile could take minutes while the window is busy.
     try{string root=DownloadsFolder();if(root==null)inputs.EmptyMeasured=false;else{inputs.EmptyRoot=root;inputs.EmptyFolders=EmptyFolders.Find(root,token).Folders.Count;}}
     catch(OperationCanceledException){throw;}
     catch(Exception e){inputs.EmptyMeasured=false;Core.Log.Warn("Health: empty-folder probe failed: "+e.Message);}
-    stage("Đang đọc dung lượng trống…");
-    try{var drive=new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory));inputs.DiskName="Ổ "+drive.Name.TrimEnd('\\','/');inputs.DiskFreeBytes=drive.AvailableFreeSpace;inputs.DiskTotalBytes=drive.TotalSize;}
+    stage(Core.L.T("Đang đọc dung lượng trống…"));
+    try{var drive=new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory));inputs.DiskName=Core.L.F("Ổ {0}",drive.Name.TrimEnd('\\','/'));inputs.DiskFreeBytes=drive.AvailableFreeSpace;inputs.DiskTotalBytes=drive.TotalSize;}
     catch(Exception e){inputs.DiskMeasured=false;Core.Log.Warn("Health: disk probe failed: "+e.Message);}
    },token);
-   }catch(OperationCanceledException){if(!IsDisposed){healthGauge.Report=healthReport;Log("Đã dừng kiểm tra sức khỏe.");}return;}
+   }catch(OperationCanceledException){if(!IsDisposed){healthGauge.Report=healthReport;Log(Core.L.T("Đã dừng kiểm tra sức khỏe."));}return;}
    finally{healthCancellation.Dispose();healthCancellation=null;if(!IsDisposed){healthStage.Visible=false;healthStop.Visible=false;healthGauge.BusyText=null;}}
    if(IsDisposed)return;
    healthReport=HealthCheck.Evaluate(inputs);
    healthGauge.Report=healthReport;
    RenderHealth();
-   Log("Kiểm tra sức khỏe: "+healthReport.Score+"/100 ("+healthReport.Grade+"). "+healthReport.Headline);
+   Log(Core.L.F("Kiểm tra sức khỏe: {0}/100 ({1}). {2}",healthReport.Score,healthReport.Grade,healthReport.Headline));
   }
 
   static string DownloadsFolder(){
@@ -87,7 +87,7 @@ namespace TweekPro {
   void RenderHealth(){
    healthList.BeginUpdate();healthList.Items.Clear();
    foreach(var f in healthReport.Findings){
-    var row=new ListViewItem(new[]{f.Area,f.Verdict,f.Detail,f.Bytes>0?Presentation.BytesLabel(f.Bytes):"—",f.Measured?HealthCheck.SeverityLabel(f.Severity):"Chưa đo",f.Tab}){Tag=f,ToolTipText=f.Detail};
+    var row=new ListViewItem(new[]{f.Area,f.Verdict,f.Detail,f.Bytes>0?Presentation.BytesLabel(f.Bytes):"—",f.Measured?HealthCheck.SeverityLabel(f.Severity):Core.L.T("Chưa đo"),Core.L.T(f.Tab)}){Tag=f,ToolTipText=f.Detail};
     if(!f.Measured)row.ForeColor=Theme.Muted;else if(f.Severity!=HealthSeverity.Good)row.ForeColor=HealthRenderer.SeverityColor(f.Severity);
     Theme.StripeRow(row,healthList.Items.Count);healthList.Items.Add(row);
    }
@@ -97,10 +97,10 @@ namespace TweekPro {
 
   /// <summary>Switches to the tab that acts on the selected finding.</summary>
   void OpenHealthTab(){
-   if(healthList.SelectedItems.Count==0)throw new IOException("Chọn một dòng kết quả trước.");
+   if(healthList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một dòng kết quả trước."));
    var f=(HealthFinding)healthList.SelectedItems[0].Tag;
-   var page=tabs.TabPages.Cast<TabPage>().FirstOrDefault(p=>String.Equals(p.Text,f.Tab,StringComparison.OrdinalIgnoreCase));
-   if(page==null)throw new IOException("Không tìm thấy tab "+f.Tab+".");
+   var page=tabs.TabPages.Cast<TabPage>().FirstOrDefault(p=>String.Equals(p.Text,Core.L.T(f.Tab),StringComparison.OrdinalIgnoreCase));
+   if(page==null)throw new IOException(Core.L.F("Không tìm thấy tab {0}.",Core.L.T(f.Tab)));
    tabs.SelectedTab=page;
    // The autorun list loads lazily on tab change, but that handler skips while Guard holds busy; queue the load for after this action.
    if(page==autorunTab&&autorunList.Items.Count==0)BeginInvoke((Action)(async()=>await Guard(async()=>await LoadAutoruns())));
@@ -113,8 +113,8 @@ namespace TweekPro {
   }
 
   void CopyHealthReport(){
-   if(healthReport==null)throw new IOException("Chưa có báo cáo. Bấm Kiểm tra ngay trước.");
-   Clipboard.SetText(HealthCheck.Summary(healthReport));Log("Đã sao chép báo cáo sức khỏe vào clipboard.");
+   if(healthReport==null)throw new IOException(Core.L.T("Chưa có báo cáo. Bấm Kiểm tra ngay trước."));
+   Clipboard.SetText(HealthCheck.Summary(healthReport));Log(Core.L.T("Đã sao chép báo cáo sức khỏe vào clipboard."));
   }
  }
 }

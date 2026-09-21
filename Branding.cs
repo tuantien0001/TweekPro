@@ -75,18 +75,19 @@ namespace TweekPro {
   /// <summary>Maps a Vietnamese tab title to a glyph key.</summary>
   public static string GlyphKey(string title){
    string t=title??"";
-   if(t.IndexOf("Tổng quan",StringComparison.OrdinalIgnoreCase)>=0)return "pulse";
-   if(t.IndexOf("Ứng dụng",StringComparison.OrdinalIgnoreCase)>=0)return "apps";
-   if(t.IndexOf("còn sót",StringComparison.OrdinalIgnoreCase)>=0)return "magnifier";
-   if(t.IndexOf("trùng",StringComparison.OrdinalIgnoreCase)>=0)return "duplicate";
-   if(t.IndexOf("rác",StringComparison.OrdinalIgnoreCase)>=0)return "trash";
-   if(t.IndexOf("rỗng",StringComparison.OrdinalIgnoreCase)>=0)return "folder";
-   if(t.IndexOf("Phân tích",StringComparison.OrdinalIgnoreCase)>=0)return "chart";
-   if(t.IndexOf("Kho",StringComparison.OrdinalIgnoreCase)>=0)return "shield";
-   if(t.IndexOf("Autorun",StringComparison.OrdinalIgnoreCase)>=0||t.IndexOf("Khởi động",StringComparison.OrdinalIgnoreCase)>=0)return "bolt";
-   if(t.IndexOf("Mạng",StringComparison.OrdinalIgnoreCase)>=0)return "globe";
-   if(t.IndexOf("Tools",StringComparison.OrdinalIgnoreCase)>=0||t.IndexOf("Công cụ",StringComparison.OrdinalIgnoreCase)>=0)return "gear";
-   if(t.IndexOf("Nhật ký",StringComparison.OrdinalIgnoreCase)>=0)return "doc";
+   Func<string,string,bool> has=(vi,en)=>t.IndexOf(vi,StringComparison.OrdinalIgnoreCase)>=0||t.IndexOf(en,StringComparison.OrdinalIgnoreCase)>=0;
+   if(has("Tổng quan","Overview"))return "pulse";
+   if(has("Ứng dụng","Applications"))return "apps";
+   if(has("còn sót","Leftovers"))return "magnifier";
+   if(has("trùng","Duplicates"))return "duplicate";
+   if(has("rác","Junk"))return "trash";
+   if(has("rỗng","Empty"))return "folder";
+   if(has("Phân tích","Analyzer"))return "chart";
+   if(has("Kho","Vault"))return "shield";
+   if(has("Autorun","Startup")||t.IndexOf("Khởi động",StringComparison.OrdinalIgnoreCase)>=0)return "bolt";
+   if(has("Mạng","Network"))return "globe";
+   if(has("Tools","Công cụ"))return "gear";
+   if(has("Nhật ký","Log"))return "doc";
    return "dot";
   }
 

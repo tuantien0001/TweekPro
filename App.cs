@@ -26,19 +26,19 @@ namespace TweekPro {
 
   /// <summary>Builds the main window; when preview is true the inventory is not loaded automatically.</summary>
   public MainForm(bool preview=false){
-   Text=AppTitle+" "+Version+" – "+Tagline;Size=new Size(1240,820);MinimumSize=new Size(1120,700);StartPosition=FormStartPosition.CenterScreen;
+   Text=AppTitle+" "+Version+" – "+Core.L.T(Tagline);Size=new Size(1240,820);MinimumSize=new Size(1120,700);StartPosition=FormStartPosition.CenterScreen;
    if(settings.WindowWidth>=MinimumSize.Width&&settings.WindowHeight>=MinimumSize.Height)Size=new Size(settings.WindowWidth,settings.WindowHeight);
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;
    try{brandIcon=Branding.AppIcon(32);Icon=brandIcon;ShowIcon=true;}catch(Exception){}
    FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();};
-   var header=Theme.HeaderBand(AppTitle+" – "+Tagline,"Kiểm tra sức khỏe một nút  •  Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác, tệp trùng, thư mục rỗng  •  Theo dõi mạng realtime  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
+   var header=Theme.HeaderBand(AppTitle+" – "+Core.L.T(Tagline),"Kiểm tra sức khỏe một nút  •  Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác, tệp trùng, thư mục rỗng  •  Theo dõi mạng realtime  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
    BuildHeaderActions(header);
-   status.Text="Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.";
+   status.Text=Core.L.T("Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.");
    BuildTabs();
    appIcons.ColorDepth=ColorDepth.Depth32Bit;appIcons.ImageSize=new Size(32,32);apps.SmallImageList=appIcons;
    FormClosed+=(s,e)=>appIcons.Dispose();
 
-   var installed=new TabPage("Ứng dụng");var clean=new TabPage("Phần còn sót");var vault=new TabPage("Kho khôi phục");var logs=new TabPage("Nhật ký");
+   var installed=new TabPage(Core.L.T("Ứng dụng"));var clean=new TabPage(Core.L.T("Phần còn sót"));var vault=new TabPage(Core.L.T("Kho khôi phục"));var logs=new TabPage(Core.L.T("Nhật ký"));
    tabs.TabPages.AddRange(new[]{installed,clean,vault,logs});
 
    SetupList(apps,new[]{"Ứng dụng","Phiên bản","Nhà phát hành","Dung lượng *","Phạm vi","Ngày cài / cập nhật"},new[]{340,140,240,120,120,165},true);
@@ -48,8 +48,8 @@ namespace TweekPro {
    Add(bar,"Gỡ mục đã chọn",async()=>await Uninstall(),ButtonStyle.Primary);
    Add(bar,"Quét mục đang xem",async()=>await ScanSelected());
    Add(bar,"Xuất CSV",()=>{ExportApps();return Task.FromResult(0);});
-   deepMode.Text="Quét sâu sau khi gỡ";deepMode.Checked=settings.DeepScanAfterUninstall;deepMode.CheckedChanged+=(s,e)=>settings.DeepScanAfterUninstall=deepMode.Checked;deepMode.AutoSize=true;deepMode.Margin=new Padding(12,8,16,0);deepMode.ForeColor=Theme.Text;bar.Controls.Add(deepMode);
-   var searchLabel=new Label{Text="Tìm kiếm",AutoSize=true,Margin=new Padding(8,9,4,0),ForeColor=Theme.Muted};
+   deepMode.Text=Core.L.T("Quét sâu sau khi gỡ");deepMode.Checked=settings.DeepScanAfterUninstall;deepMode.CheckedChanged+=(s,e)=>settings.DeepScanAfterUninstall=deepMode.Checked;deepMode.AutoSize=true;deepMode.Margin=new Padding(12,8,16,0);deepMode.ForeColor=Theme.Text;bar.Controls.Add(deepMode);
+   var searchLabel=new Label{Text=Core.L.T("Tìm kiếm"),AutoSize=true,Margin=new Padding(8,9,4,0),ForeColor=Theme.Muted};
    search.Width=240;search.Height=28;search.Margin=new Padding(0,4,0,0);search.Font=Theme.Body;search.BorderStyle=BorderStyle.FixedSingle;search.ForeColor=Theme.Text;search.TextChanged+=(s,e)=>Filter();
    bar.Controls.Add(searchLabel);bar.Controls.Add(search);
    details.Dock=DockStyle.Bottom;details.Height=92;details.Multiline=true;details.ReadOnly=true;details.ScrollBars=ScrollBars.Vertical;details.BackColor=Theme.Stripe;details.ForeColor=Theme.Muted;details.BorderStyle=BorderStyle.None;details.Font=Theme.Small;
@@ -138,7 +138,7 @@ namespace TweekPro {
    var b=Theme.Button(text,style);b.Margin=new Padding(0,0,8,8);
    b.Click+=async(s,e)=>await Guard(action);bar.Controls.Add(b);actions.Add(b);
   }
-  void SetupList(ListView list,string[] names,int[] widths,bool check,bool groups=false){Theme.StyleList(list);list.CheckBoxes=check;list.ShowGroups=groups;for(int i=0;i<names.Length;i++)list.Columns.Add(names[i],widths[i]);}
+  void SetupList(ListView list,string[] names,int[] widths,bool check,bool groups=false){Theme.StyleList(list);list.CheckBoxes=check;list.ShowGroups=groups;for(int i=0;i<names.Length;i++)list.Columns.Add(Core.L.T(names[i]),widths[i]);}
   async Task Guard(Func<Task> action){if(busy)return;busy=true;foreach(var b in actions)b.Enabled=false;deepMode.Enabled=false;search.Enabled=false;apps.Enabled=false;remnants.Enabled=false;backups.Enabled=false;try{await action();}catch(Exception e){Log("LỖI: "+e.Message);MessageBox.Show(this,e.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Warning);}finally{busy=false;foreach(var b in actions)b.Enabled=true;deepMode.Enabled=true;search.Enabled=true;apps.Enabled=true;remnants.Enabled=true;backups.Enabled=true;}}
   void Log(string value){log.AppendText(DateTime.Now.ToString("HH:mm:ss")+"  "+value+"\r\n");status.Text=value;if(value.StartsWith("LỖI",StringComparison.OrdinalIgnoreCase))Core.Log.Error(value);else Core.Log.Info(value);}
   /// <summary>Persists settings.json; failures are logged, never shown as blocking errors.</summary>
@@ -149,6 +149,9 @@ namespace TweekPro {
    bool elevated=Core.Elevation.IsElevated;
    var badge=new Label{Text=Core.Elevation.BadgeText,AutoSize=true,Padding=new Padding(10,6,10,6),Margin=new Padding(8,4,0,0),Font=Theme.Small,ForeColor=Color.White,BackColor=elevated?Theme.Success:Color.FromArgb(51,65,85)};
    right.Controls.Add(badge);
+   var language=Theme.Button(Core.L.English?"Tiếng Việt":"English",ButtonStyle.Secondary);language.Margin=new Padding(8,0,0,0);
+   language.Click+=async(s,e)=>await Guard(()=>{SwitchLanguage();return Task.FromResult(0);});
+   right.Controls.Add(language);
    if(!elevated){
     var restart=Theme.Button("Khởi động lại với quyền quản trị",ButtonStyle.Primary);restart.Margin=new Padding(8,0,0,0);
     restart.Click+=async(s,e)=>await Guard(()=>{RestartElevated();return Task.FromResult(0);});
@@ -164,7 +167,16 @@ namespace TweekPro {
    Log("Đang mở phiên bản quyền quản trị; đóng cửa sổ hiện tại.");
    BeginInvoke((Action)Close);
   }
-  bool Confirm(string text){return MessageBox.Show(this,text,"Xác nhận thao tác",MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)==DialogResult.Yes;}
+  /// <summary>Toggles between Vietnamese and English, saves the preference and relaunches so every tab is rebuilt in the new language.</summary>
+  void SwitchLanguage(){
+   bool toEnglish=!Core.L.English;
+   if(!Confirm(Core.L.T(toEnglish?"Đổi ngôn ngữ sang tiếng Anh và khởi động lại Tweek Pro?\r\n\r\nCài đặt và kho khôi phục được giữ nguyên.":"Đổi ngôn ngữ sang tiếng Việt và khởi động lại Tweek Pro?\r\n\r\nCài đặt và kho khôi phục được giữ nguyên.")))return;
+   settings.Language=toEnglish?Core.L.EnglishCode:Core.L.Vietnamese;SaveSettings();
+   Log(toEnglish?"Language set to English; restarting.":"Đã đặt ngôn ngữ tiếng Việt; khởi động lại.");
+   try{System.Diagnostics.Process.Start(Application.ExecutablePath);}catch(Exception ex){Log("LỖI: "+ex.Message);return;}
+   BeginInvoke((Action)Close);
+  }
+  bool Confirm(string text){return MessageBox.Show(this,text,Core.L.T("Xác nhận thao tác"),MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)==DialogResult.Yes;}
   AppEntry Selected(){return apps.SelectedItems.Count==0?null:(AppEntry)apps.SelectedItems[0].Tag;}
   List<AppEntry> CheckedApps(){var list=apps.CheckedItems.Cast<ListViewItem>().Select(i=>(AppEntry)i.Tag).ToList();if(list.Count==0&&Selected()!=null)list.Add(Selected());return list;}
   public void PopulateForPreview(){inventory=Engine.Inventory();LoadAppIcons();Filter();LoadBackups();}
@@ -325,6 +337,7 @@ namespace TweekPro {
   static void Bootstrap(){
    var migration=Core.Paths.Migrate();
    var settings=Core.Settings.Load(Core.Paths.SettingsFile);
+   Core.L.Lang=settings.Language;
    Core.Log.Configure(Core.Paths.Logs,settings.LogRetentionDays);
    Core.Log.Info("Tweek Pro "+MainForm.Version+" khởi động. Quyền: "+Core.Elevation.BadgeText+".");
    if(migration.Outcome==Core.MigrationOutcome.Moved)Core.Log.Info("Đã chuyển dữ liệu từ "+migration.Source+" sang "+migration.Target+".");

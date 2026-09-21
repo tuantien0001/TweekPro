@@ -19,7 +19,7 @@ namespace TweekPro {
 
   /// <summary>Builds the Duplicate Finder tab: pick a folder, scan for byte-identical files and quarantine the redundant copies.</summary>
   void BuildDuplicateTab(){
-   var tab=dupeTab=new TabPage("Tệp trùng lặp");
+   var tab=dupeTab=new TabPage(Core.L.T("Tệp trùng lặp"));
    SetupList(dupeList,new[]{"Nhóm (bản giữ lại)","Số bản","Dung lượng mỗi tệp","Tiết kiệm được","Thư mục bản giữ lại"},new[]{340,80,150,150,430},true);
    dupeList.ItemCheck+=(s,e)=>{var g=(DuplicateGroup)dupeList.Items[e.Index].Tag;if(g.Count<2)e.NewValue=CheckState.Unchecked;};
    dupeList.ItemChecked+=(s,e)=>UpdateDupeSummary();
@@ -36,17 +36,17 @@ namespace TweekPro {
    Add(bar,"Xem tệp",()=>{ShowDupeDetails();return Task.FromResult(0);});
 
    var keepPanel=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=true,Padding=new Padding(16,8,16,4),BackColor=Theme.Surface};
-   var keepLabel=new Label{Text="Giữ lại bản:",AutoSize=true,Margin=new Padding(0,6,12,0),ForeColor=Theme.Muted,Font=Theme.Small};
-   dupeKeepOldest.Text="Cũ nhất (bản gốc)";dupeKeepOldest.Checked=!settings.DuplicateKeepNewest;dupeKeepOldest.AutoSize=true;dupeKeepOldest.Margin=new Padding(0,4,16,0);dupeKeepOldest.ForeColor=Theme.Text;dupeKeepOldest.Font=Theme.Body;
-   dupeKeepNewest.Text="Mới nhất";dupeKeepNewest.Checked=settings.DuplicateKeepNewest;dupeKeepNewest.AutoSize=true;dupeKeepNewest.Margin=new Padding(0,4,0,0);dupeKeepNewest.ForeColor=Theme.Text;dupeKeepNewest.Font=Theme.Body;
+   var keepLabel=new Label{Text=Core.L.T("Giữ lại bản:"),AutoSize=true,Margin=new Padding(0,6,12,0),ForeColor=Theme.Muted,Font=Theme.Small};
+   dupeKeepOldest.Text=Core.L.T("Cũ nhất (bản gốc)");dupeKeepOldest.Checked=!settings.DuplicateKeepNewest;dupeKeepOldest.AutoSize=true;dupeKeepOldest.Margin=new Padding(0,4,16,0);dupeKeepOldest.ForeColor=Theme.Text;dupeKeepOldest.Font=Theme.Body;
+   dupeKeepNewest.Text=Core.L.T("Mới nhất");dupeKeepNewest.Checked=settings.DuplicateKeepNewest;dupeKeepNewest.AutoSize=true;dupeKeepNewest.Margin=new Padding(0,4,0,0);dupeKeepNewest.ForeColor=Theme.Text;dupeKeepNewest.Font=Theme.Body;
    dupeKeepNewest.CheckedChanged+=(s,e)=>{settings.DuplicateKeepNewest=dupeKeepNewest.Checked;RenderDupes(dupeResult.Groups.Count>0);};
    keepPanel.Controls.Add(keepLabel);keepPanel.Controls.Add(dupeKeepOldest);keepPanel.Controls.Add(dupeKeepNewest);
 
    var modePanel=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=true,Padding=new Padding(16,4,16,6),BackColor=Theme.Surface};
    Theme.BorderBottom(modePanel);
-   var modeLabel=new Label{Text="Chế độ dọn:",AutoSize=true,Margin=new Padding(0,6,12,0),ForeColor=Theme.Muted,Font=Theme.Small};
-   dupeVaultMode.Text="Chuyển vào Kho khôi phục (có thể hoàn tác)";dupeVaultMode.Checked=true;dupeVaultMode.AutoSize=true;dupeVaultMode.Margin=new Padding(0,4,24,0);dupeVaultMode.ForeColor=Theme.Text;dupeVaultMode.Font=Theme.Body;
-   dupeDirectMode.Text="Xóa thẳng — KHÔNG thể khôi phục";dupeDirectMode.AutoSize=true;dupeDirectMode.Margin=new Padding(0,4,0,0);dupeDirectMode.ForeColor=Theme.Danger;dupeDirectMode.Font=Theme.Strong;
+   var modeLabel=new Label{Text=Core.L.T("Chế độ dọn:"),AutoSize=true,Margin=new Padding(0,6,12,0),ForeColor=Theme.Muted,Font=Theme.Small};
+   dupeVaultMode.Text=Core.L.T("Chuyển vào Kho khôi phục (có thể hoàn tác)");dupeVaultMode.Checked=true;dupeVaultMode.AutoSize=true;dupeVaultMode.Margin=new Padding(0,4,24,0);dupeVaultMode.ForeColor=Theme.Text;dupeVaultMode.Font=Theme.Body;
+   dupeDirectMode.Text=Core.L.T("Xóa thẳng — KHÔNG thể khôi phục");dupeDirectMode.AutoSize=true;dupeDirectMode.Margin=new Padding(0,4,0,0);dupeDirectMode.ForeColor=Theme.Danger;dupeDirectMode.Font=Theme.Strong;
    dupeVaultMode.CheckedChanged+=(s,e)=>UpdateDupeSummary();dupeDirectMode.CheckedChanged+=(s,e)=>UpdateDupeSummary();
    modePanel.Controls.Add(modeLabel);modePanel.Controls.Add(dupeVaultMode);modePanel.Controls.Add(dupeDirectMode);
 

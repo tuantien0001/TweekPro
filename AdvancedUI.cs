@@ -12,7 +12,7 @@ namespace TweekPro {
   ListView autorunList=new SmoothListView(),toolList=new SmoothListView();ImageList startupIcons=new ImageList();
   Label autorunNote,autorunOverlay;Button cancelScan;TabPage autorunTab,toolsTab;
   void BuildAdvancedTabs(){
-   autorunTab=new TabPage("Khởi động");toolsTab=new TabPage("Công cụ");tabs.TabPages.Add(autorunTab);tabs.TabPages.Add(toolsTab);
+   autorunTab=new TabPage(Core.L.T("Khởi động"));toolsTab=new TabPage(Core.L.T("Công cụ"));tabs.TabPages.Add(autorunTab);tabs.TabPages.Add(toolsTab);
    startupIcons.ColorDepth=ColorDepth.Depth32Bit;startupIcons.ImageSize=new Size(24,24);autorunList.SmallImageList=startupIcons;FormClosed+=(s,e)=>startupIcons.Dispose();
    SetupList(autorunList,new[]{"Tên khởi động","Trạng thái","Lệnh / đích","Vị trí"},new[]{230,180,440,360},false);
    var autorunHost=Theme.ListHost(autorunList,out autorunOverlay);
