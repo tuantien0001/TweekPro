@@ -5,7 +5,8 @@
     TweekPro-<version>-Setup.exe     (normal Windows installer, requires Inno Setup 6.3+)
 
 .DESCRIPTION
-  Run from an elevated PowerShell (the exe manifest requires administrator, so the self-test needs it too).
+  The exe manifest requires administrator, so the self-test does too: when started from a normal PowerShell the script
+  relaunches itself elevated (UAC prompt) and keeps that window open until you press Enter. Pass -SkipTests to stay unelevated.
   Inno Setup is installed automatically via winget when -InstallInno is passed; otherwise it is looked up in the usual locations.
 
 .EXAMPLE
@@ -17,11 +18,25 @@
 param(
   [switch]$SkipTests,
   [switch]$InstallInno,
-  [switch]$NoInstaller
+  [switch]$NoInstaller,
+  [switch]$Child
 )
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
+$elevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $elevated -and -not $SkipTests) {
+  # The exe manifest requires administrator, so the self-test can only run elevated: relaunch this script through UAC and wait for it.
+  Write-Host 'Self-tests need administrator rights; requesting elevation (UAC)...' -ForegroundColor Yellow
+  $forward = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"", '-Child')
+  if ($InstallInno) { $forward += '-InstallInno' }
+  if ($NoInstaller) { $forward += '-NoInstaller' }
+  $child = Start-Process -FilePath 'powershell.exe' -ArgumentList $forward -Verb RunAs -PassThru -Wait
+  exit $child.ExitCode
+}
+
+$failed = $false
+try {
 $version = ([xml](Get-Content .\TweekPro.csproj)).Project.PropertyGroup.TweekVersion | Where-Object { $_ } | Select-Object -First 1
 if (-not $version) { throw 'TweekVersion not found in TweekPro.csproj.' }
 $outDir = Join-Path $PSScriptRoot 'bin\Release\net48'
@@ -34,8 +49,6 @@ dotnet build -c Release -nologo -v q
 if ($LASTEXITCODE -ne 0) { throw "Build failed ($LASTEXITCODE)." }
 
 if (-not $SkipTests) {
-  $elevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-  if (-not $elevated) { throw 'Self-tests need an elevated PowerShell (the exe requires administrator). Re-run as administrator or pass -SkipTests.' }
   Write-Host '== Running self-tests' -ForegroundColor Cyan
   $results = Join-Path $outDir 'test-results.txt'
   if (Test-Path $results) { Remove-Item $results -Force }
@@ -85,3 +98,12 @@ Write-Host '== Compiling installer' -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed ($LASTEXITCODE)." }
 Write-Host "   $(Join-Path $dist "TweekPro-$version-Setup.exe")"
 Write-Host 'Done. Share dist\TweekPro-*-Setup.exe (installer) or dist\TweekPro-*-portable.zip (no install).' -ForegroundColor Green
+}
+catch {
+  Write-Host $_ -ForegroundColor Red
+  $failed = $true
+}
+finally {
+  if ($Child) { Read-Host 'Press Enter to close this window' | Out-Null }
+}
+if ($failed) { exit 1 }
