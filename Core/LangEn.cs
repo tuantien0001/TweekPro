@@ -7,7 +7,7 @@ namespace TweekPro.Core {
   public static readonly Dictionary<string,string> Table=new Dictionary<string,string>(StringComparer.Ordinal){
    // Identity
    {"Trình quản lý Windows","Windows Manager"},
-   {"Kiểm tra sức khỏe một nút  •  Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác, tệp trùng, thư mục rỗng  •  Theo dõi mạng realtime  •  Mọi thao tác xóa đều sao lưu, hoàn tác được","One-click health check  •  Uninstall and clean leftovers  •  Junk, duplicates, empty folders  •  Realtime network view  •  Every deletion is backed up and reversible"},
+   {"Gỡ ứng dụng, dọn rác, theo dõi mạng  •  Mọi thao tác xóa đều được sao lưu và hoàn tác","Uninstall, clean junk, watch the network  •  Every deletion is backed up and reversible"},
    {"Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.","Ready. Tweek Pro only changes data after you confirm."},
    {"Khởi động lại với quyền quản trị","Restart as administrator"},
    {"Quyền quản trị viên","Administrator"},{"Quyền người dùng","Standard user"},

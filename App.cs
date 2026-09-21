@@ -31,7 +31,7 @@ namespace TweekPro {
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleDimensions=new SizeF(96F,96F);AutoScaleMode=AutoScaleMode.Dpi;
    try{Branding.ApplyWindowIcons(this,out brandIconSmall,out brandIcon);}catch(Exception){}
    FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();if(brandIconSmall!=null)brandIconSmall.Dispose();};
-   var header=Theme.HeaderBand(AppTitle+" – "+Core.L.T(Tagline),"Kiểm tra sức khỏe một nút  •  Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác, tệp trùng, thư mục rỗng  •  Theo dõi mạng realtime  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);
+   var header=Theme.HeaderBand(AppTitle+" – "+Core.L.T(Tagline),"Gỡ ứng dụng, dọn rác, theo dõi mạng  •  Mọi thao tác xóa đều được sao lưu và hoàn tác",96);
    BuildHeaderActions(header);
    status.Text=Core.L.T("Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.");
    BuildTabs();
@@ -152,14 +152,14 @@ namespace TweekPro {
   void SaveSettings(){try{settings.Save(Core.Paths.SettingsFile);}catch(Exception e){Core.Log.Warn("Không lưu được settings.json: "+e.Message);}}
   /// <summary>Adds the privilege badge and the compact language toggle to the right side of the header band.</summary>
   void BuildHeaderActions(Panel header){
-   var right=new FlowLayoutPanel{Dock=DockStyle.Right,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,FlowDirection=FlowDirection.RightToLeft,WrapContents=false,Padding=new Padding(0,22,0,0),BackColor=Theme.Header};
+   var right=new FlowLayoutPanel{Dock=DockStyle.Right,FlowDirection=FlowDirection.RightToLeft,WrapContents=false,Padding=new Padding(16,22,0,0),BackColor=Theme.Header};
    bool elevated=Core.Elevation.IsElevated;
    var badge=new Label{Text=Core.Elevation.BadgeText,AutoSize=true,Padding=new Padding(10,6,10,6),Margin=new Padding(8,4,0,0),Font=Theme.Small,ForeColor=Color.White,BackColor=elevated?Theme.Success:Color.FromArgb(51,65,85)};
    right.Controls.Add(badge);
    var language=Branding.LanguageButton(Core.L.English?"EN":"VI",Core.L.T(Core.L.English?"Chuyển sang tiếng Việt":"Switch to English"));language.Margin=new Padding(8,2,0,0);
    language.Click+=async(s,e)=>await Guard(()=>{SwitchLanguage();return Task.FromResult(0);});
    right.Controls.Add(language);
-   header.Controls.Add(right);
+   header.Controls.Add(right);right.Width=right.PreferredSize.Width;
   }
   /// <summary>Toggles between Vietnamese and English, saves the preference and relaunches so every tab is rebuilt in the new language.</summary>
   void SwitchLanguage(){

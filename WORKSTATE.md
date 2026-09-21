@@ -1,8 +1,12 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-21 23:35 (Asia/Bangkok).
-Status: DONE (Cursor). Owner request 23:08: README must include screenshots of every functional tab.
+Updated: 2026-09-22 00:10 (Asia/Bangkok).
+Status: DONE (Cursor). Owner request 00:06: the header line about backed-up deletions is covered by the language/admin buttons and looks bad — shorten it.
 Last editor: Cursor.
+
+## Current task (00:10)
+
+G. DONE Header subtitle shortened to "Gỡ ứng dụng, dọn rác, theo dõi mạng • Mọi thao tác xóa đều được sao lưu và hoàn tác" (EN pair in LangEn). `BuildHeaderActions` no longer AutoSize+Dock (that overlay let the label run under the buttons); the right cluster gets an explicit `PreferredSize` width so the subtitle stops before VI / Quyền quản trị viên. `PreviewHealth` sample update is current patch + 1 (was hardcoded 0.7.2, which rendered "0.7.2 is newer than 0.7.3"). Screenshots regenerated. Verification below.
 
 ## Current task (23:35)
 

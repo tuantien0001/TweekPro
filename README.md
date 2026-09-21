@@ -219,6 +219,10 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 
 ## Lịch sử phiên bản
 
+### 0.7.n (chưa phát hành)
+
+- Dòng mô tả trên thanh tiêu đề rút còn «Gỡ ứng dụng, dọn rác, theo dõi mạng • Mọi thao tác xóa đều được sao lưu và hoàn tác» và dừng trước nút ngôn ngữ / quyền, không còn bị che.
+
 ### 0.7.3 (21/09/2026)
 
 - **Explorer → Duyệt tệp**: trình duyệt thư mục riêng của Tweek Pro hiện **mọi** tệp/thư mục ẩn và hệ thống bất kể thiết lập Explorer, có cột Đuôi, Mô tả (loại theo shell), Dung lượng, Sửa lần cuối, Thuộc tính; mục ẩn in nghiêng, hệ thống màu vàng, tệp giả dạng (`hoadon.pdf.exe`) màu đỏ; bấm một tệp là xem chi tiết ngay (mã băm tính khi bấm «Xem chi tiết + băm»); Lên một cấp / This PC / Thư mục người dùng / lọc «Chỉ hiện mục ẩn / hệ thống» / Mở trong Explorer / Thuộc tính Windows.
