@@ -51,6 +51,11 @@ namespace TweekPro {
    using(var source=new Bitmap(stream))return new Bitmap(source);
   });
 
+  static readonly Lazy<byte[]> AppIconBytes=new Lazy<byte[]>(()=>{
+   using(var stream=typeof(Branding).Assembly.GetManifestResourceStream("TweekPro.Branding.ico"))
+   using(var buffer=new MemoryStream()){stream.CopyTo(buffer);return buffer.ToArray();}
+  });
+
   /// <summary>Draws the approved T + PC artwork from its embedded PNG resource.</summary>
   public static void DrawLogo(Graphics g,Rectangle r){
    var state=g.Save();
@@ -63,18 +68,42 @@ namespace TweekPro {
 
   /// <summary>Exports the approved multi-size icon without regenerating the old code-drawn logo.</summary>
   public static void WriteIconFile(string path){
-   using(var stream=typeof(Branding).Assembly.GetManifestResourceStream("TweekPro.Branding.ico"))
-   using(var file=new FileStream(path,FileMode.Create,FileAccess.Write))stream.CopyTo(file);
+   File.WriteAllBytes(path,AppIconBytes.Value);
   }
 
-  /// <summary>Returns an independently owned icon at the requested Windows display size.</summary>
+  /// <summary>Returns an independently owned icon at the requested Windows display size from the approved ICO frame (PNG entries, via GetHicon — System.Drawing.Icon cannot decode PNG-compressed ICO on .NET Framework).</summary>
   public static Icon AppIcon(int size){
-   using(var bitmap=new Bitmap(size,size)){
-    using(var g=Graphics.FromImage(bitmap)){g.Clear(Color.Transparent);DrawLogo(g,new Rectangle(0,0,size,size));}
+   using(var bitmap=FrameBitmap(size)){
     IntPtr handle=bitmap.GetHicon();
     try{using(var temporary=Icon.FromHandle(handle))return (Icon)temporary.Clone();}
     finally{DestroyIcon(handle);}
    }
+  }
+
+  static Bitmap FrameBitmap(int size){
+   byte[] data=AppIconBytes.Value;
+   if(data.Length>=6&&BitConverter.ToUInt16(data,0)==0&&BitConverter.ToUInt16(data,2)==1){
+    int count=BitConverter.ToUInt16(data,4),best=-1,bestDelta=int.MaxValue;
+    for(int i=0;i<count;i++){
+     int entry=6+16*i;int width=data[entry]==0?256:data[entry];
+     int delta=Math.Abs(width-size);if(delta<bestDelta){bestDelta=delta;best=i;}
+    }
+    if(best>=0){
+     int entry=6+16*best;int length=BitConverter.ToInt32(data,entry+8),offset=BitConverter.ToInt32(data,entry+12);
+     if(offset>=0&&length>8&&offset+length<=data.Length&&data[offset]==0x89){
+      using(var stream=new MemoryStream(data,offset,length,writable:false))
+      using(var source=new Bitmap(stream)){
+       if(source.Width==size&&source.Height==size)return new Bitmap(source);
+       var scaled=new Bitmap(size,size);
+       using(var g=Graphics.FromImage(scaled)){g.Clear(Color.Transparent);g.InterpolationMode=InterpolationMode.HighQualityBicubic;g.DrawImage(source,0,0,size,size);}
+       return scaled;
+      }
+     }
+    }
+   }
+   var bitmap=new Bitmap(size,size);
+   using(var g=Graphics.FromImage(bitmap)){g.Clear(Color.Transparent);DrawLogo(g,new Rectangle(0,0,size,size));}
+   return bitmap;
   }
 
   /// <summary>Draws a small monochrome glyph identifying a tab, chosen from the tab's title.</summary>
