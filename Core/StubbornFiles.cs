@@ -149,6 +149,9 @@ namespace TweekPro.Core {
    }
   }
 
+  /// <summary>SYSTEM also gets Full Control because the delayed delete at boot runs as SYSTEM, which is not a member of Administrators.</summary>
+  static SecurityIdentifier LocalSystem { get { return new SecurityIdentifier(WellKnownSidType.LocalSystemSid,null); } }
+
   /// <summary>Owner is written through a fresh descriptor (no read first) so a DACL that denies READ_CONTROL cannot stop the takeover.</summary>
   static bool OwnDirectory(string path,SecurityIdentifier admins){
    try{
@@ -157,6 +160,7 @@ namespace TweekPro.Core {
     var security=info.GetAccessControl(AccessControlSections.Access);
     if(!RemoveDenies(security)){security=new DirectorySecurity();security.SetAccessRuleProtection(true,false);}
     security.AddAccessRule(new FileSystemAccessRule(admins,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));
+    security.AddAccessRule(new FileSystemAccessRule(LocalSystem,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));
     info.SetAccessControl(security);return true;
    }catch(Exception e){Log.Warn("Không chiếm được quyền thư mục "+path+": "+e.Message);return false;}
   }
@@ -168,6 +172,7 @@ namespace TweekPro.Core {
     var security=info.GetAccessControl(AccessControlSections.Access);
     if(!RemoveDenies(security)){security=new FileSecurity();security.SetAccessRuleProtection(true,false);}
     security.AddAccessRule(new FileSystemAccessRule(admins,FileSystemRights.FullControl,AccessControlType.Allow));
+    security.AddAccessRule(new FileSystemAccessRule(LocalSystem,FileSystemRights.FullControl,AccessControlType.Allow));
     info.SetAccessControl(security);return true;
    }catch(Exception e){Log.Warn("Không chiếm được quyền tệp "+path+": "+e.Message);return false;}
   }

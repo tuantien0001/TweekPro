@@ -109,8 +109,9 @@ namespace TweekPro {
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
    FormClosed+=(s,e)=>SaveSettings();
-   Load+=(s,e)=>{int dpi=ScreenDpi();int w=Logical(settings.WindowWidth)*dpi/96,h=Logical(settings.WindowHeight)*dpi/96;if(w>=MinimumSize.Width&&h>=MinimumSize.Height)Size=new Size(w,h);};
-   Resize+=(s,e)=>{if(WindowState==FormWindowState.Normal&&IsHandleCreated){int dpi=ScreenDpi();settings.WindowWidth=Width*96/dpi;settings.WindowHeight=Height*96/dpi;}};
+   int savedWidth=settings.WindowWidth,savedHeight=settings.WindowHeight;bool sizeRestored=false;
+   Load+=(s,e)=>{int dpi=ScreenDpi();int w=Logical(savedWidth)*dpi/96,h=Logical(savedHeight)*dpi/96;if(w>=MinimumSize.Width&&h>=MinimumSize.Height)Size=new Size(w,h);sizeRestored=true;};
+   Resize+=(s,e)=>{if(sizeRestored&&WindowState==FormWindowState.Normal){int dpi=ScreenDpi();settings.WindowWidth=Width*96/dpi;settings.WindowHeight=Height*96/dpi;}};
    Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nTweek Pro đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
    Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
    Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
