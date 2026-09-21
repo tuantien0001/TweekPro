@@ -48,6 +48,28 @@ namespace TweekPro {
     MustFail(()=>JunkSafety.ValidateRoot(Path.Combine(local,"Google","Chrome","User Data","Default")),"Browser profile without cache leaf refused");
     JunkSafety.ValidateRoot(junkRoot);
 
+    // System junk boundary (explicit lists so it runs off-Windows): elevated rules may reach Windows-owned caches, never the OS image.
+    var winAllowed=new[]{@"C:\Windows\Temp",@"C:\Windows\SoftwareDistribution\Download",@"C:\Windows\Logs\CBS",@"C:\Windows\Minidump"}.Select(Engine.Canon).ToList();
+    var winForbidden=new[]{@"C:\Windows\System32",@"C:\Windows\SysWOW64",@"C:\Windows\WinSxS",@"C:\Program Files"}.Select(Engine.Canon).ToList();
+    var noBrowser=new List<string>();
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\Windows\System32",winAllowed,noBrowser,winForbidden),"System32 refused");
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\Windows\System32\drivers",winAllowed,noBrowser,winForbidden),"System32 subfolder refused");
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\Windows\System32\config",winAllowed,noBrowser,winForbidden),"Registry hives folder refused");
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\Windows\WinSxS\Temp",winAllowed,noBrowser,winForbidden),"WinSxS refused even with a Temp leaf");
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\Windows",winAllowed,noBrowser,winForbidden),"Windows root refused because it contains protected folders");
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\",winAllowed,noBrowser,winForbidden),"Drive root refused");
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\Windows\Prefetch",winAllowed,noBrowser,winForbidden),"Folder outside the allow-list refused");
+    MustFail(()=>JunkSafety.ValidateRoot(@"C:\Program Files\Example",winAllowed,noBrowser,winForbidden),"Program Files refused");
+    JunkSafety.ValidateRoot(@"C:\Windows\SoftwareDistribution\Download",winAllowed,noBrowser,winForbidden);
+    JunkSafety.ValidateRoot(@"C:\Windows\Logs\CBS",winAllowed,noBrowser,winForbidden);
+    JunkSafety.ValidateRoot(@"C:\Windows\Minidump",winAllowed,noBrowser,winForbidden);
+    Assert(new[]{"System32","SysWOW64","WinSxS","servicing","Boot","Fonts","Installer"}.All(JunkSafety.WindowsCoreFolders.Contains),"Core Windows folders are hard-blocked");
+    var embedded=JunkRules.LoadEmbedded();
+    var systemRules=embedded.Rules.Where(r=>r.Paths.Any(p=>p.StartsWith("%WINDIR%",StringComparison.OrdinalIgnoreCase))).ToList();
+    Assert(systemRules.Count>=6&&systemRules.All(r=>r.RequiresAdmin),"Every rule under %WINDIR% requires administrator rights");
+    Assert(embedded.Rules.All(r=>r.Paths.All(p=>!JunkSafety.WindowsCoreFolders.Any(core=>p.IndexOf("\\"+core+"\\",StringComparison.OrdinalIgnoreCase)>=0||p.EndsWith("\\"+core,StringComparison.OrdinalIgnoreCase)))),"No embedded rule names a core Windows folder");
+    Assert(embedded.Rules.Any(r=>r.Id=="windows-update-cache"&&r.MinAgeHours>=168)&&embedded.Rules.Any(r=>r.Id=="cbs-logs")&&embedded.Rules.Any(r=>r.Id=="memory-dumps"),"System junk rules present with a conservative age floor");
+
     var preview=JunkCleaner.Preview(new[]{rule},Elevation.IsElevated,-1,CancellationToken.None);
     Assert(preview.Count==1&&preview[0].Count==1&&preview[0].Items[0].Path.Equals(old,StringComparison.OrdinalIgnoreCase)&&preview[0].Bytes==2048,"Preview finds only the old file: count="+preview[0].Count+" roots="+preview[0].Roots.Count+" note="+preview[0].Note+" locked="+preview[0].Locked+" items="+String.Join(";",preview[0].Items.Select(i=>i.Path+"="+i.Bytes)));
     var report=JunkCleaner.Clean(preview,false,CancellationToken.None);

@@ -135,9 +135,16 @@ namespace TweekPro.Cleaner {
     add(Path.Combine(local,@"Microsoft\Windows\INetCache"));add(Path.Combine(local,"D3DSCache"));add(Path.Combine(local,@"NVIDIA\DXCache"));add(Path.Combine(local,@"NVIDIA\GLCache"));add(Path.Combine(local,@"AMD\DxCache"));
    }
    if(!String.IsNullOrWhiteSpace(programData))add(Path.Combine(programData,@"Microsoft\Windows\WER"));
-   if(!String.IsNullOrWhiteSpace(windows))add(Path.Combine(windows,"Temp"));
+   if(!String.IsNullOrWhiteSpace(windows)){
+    // System junk (elevated rules): only caches, logs and dumps that Windows itself regenerates. Never the OS image.
+    add(Path.Combine(windows,"Temp"));add(Path.Combine(windows,@"SoftwareDistribution\Download"));add(Path.Combine(windows,@"Logs\CBS"));
+    add(Path.Combine(windows,"Minidump"));add(Path.Combine(windows,"LiveKernelReports"));add(Path.Combine(windows,"Panther"));add(Path.Combine(windows,"Downloaded Program Files"));
+   }
    return list.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
   }
+
+  /// <summary>Windows folders that hold the operating system itself; refused even when running elevated and even if a rule file names them.</summary>
+  public static readonly string[] WindowsCoreFolders={"System32","SysWOW64","WinSxS","servicing","Boot","Fonts","Installer","assembly","Microsoft.NET","SystemApps","SystemResources","Prefetch","security","inf","drivers","Globalization","IME","ImmersiveControlPanel","Resources","schemas","PolicyDefinitions","Registration","Speech","Speech_OneCore","Web","WaaS","bcastdvr","diagnostics","Help","Provisioning","Setup","Sysnative"};
 
   /// <summary>Browser profile roots under %LOCALAPPDATA% and %APPDATA%.</summary>
   public static List<string> BrowserProfileRoots(){
@@ -157,6 +164,9 @@ namespace TweekPro.Cleaner {
    string profile=Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
    if(!String.IsNullOrWhiteSpace(profile)){add(Path.Combine(profile,"Downloads"));add(Path.Combine(profile,"OneDrive"));add(Path.Combine(profile,"Dropbox"));add(Path.Combine(profile,"Google Drive"));}
    add(Environment.GetEnvironmentVariable("OneDrive"));add(Environment.GetEnvironmentVariable("OneDriveCommercial"));
+   string windows=Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+   if(!String.IsNullOrWhiteSpace(windows))foreach(string core in WindowsCoreFolders)add(Path.Combine(windows,core));
+   add(Environment.GetEnvironmentVariable("ProgramW6432"));add(Environment.GetEnvironmentVariable("ProgramFiles(x86)"));
    add(Core.Paths.Root);add(Core.Paths.Legacy);add(Engine.Vault);
    // A redirected "Documents" that equals the profile root would otherwise forbid AppData itself; ancestors of the
    // allowed areas are dropped because the allow list already restricts the cleaner to those subfolders.

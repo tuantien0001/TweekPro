@@ -160,6 +160,97 @@
       "requiresAdmin": false,
       "blockedProcesses": ["firefox"],
       "defaultChecked": true
+    },
+    {
+      "id": "inetcache",
+      "group": "Bộ đệm",
+      "name": "Bộ đệm web cũ của Windows (INetCache)",
+      "description": "Cache của Internet Explorer / WebView / Office web content. Không chứa mật khẩu hay lịch sử.",
+      "paths": ["%LOCALAPPDATA%\\Microsoft\\Windows\\INetCache"],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": false,
+      "blockedProcesses": [],
+      "defaultChecked": true
+    },
+    {
+      "id": "gpu-shader-cache",
+      "group": "Bộ đệm",
+      "name": "Bộ đệm shader của card đồ họa (DirectX / NVIDIA / AMD)",
+      "description": "Shader đã biên dịch; trình điều khiển tự tạo lại khi cần. Game có thể giật nhẹ ở lần chạy đầu sau khi dọn.",
+      "paths": ["%LOCALAPPDATA%\\D3DSCache", "%LOCALAPPDATA%\\NVIDIA\\DXCache", "%LOCALAPPDATA%\\NVIDIA\\GLCache", "%LOCALAPPDATA%\\AMD\\DxCache"],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": false,
+      "blockedProcesses": [],
+      "defaultChecked": false
+    },
+    {
+      "id": "windows-update-cache",
+      "group": "Rác hệ thống (cần quyền quản trị)",
+      "name": "Gói Windows Update đã tải (SoftwareDistribution\\Download)",
+      "description": "Bộ cài cập nhật Windows đã tải về và đã áp dụng. Windows tự tải lại nếu cần. Chỉ dọn tệp cũ hơn 7 ngày để không cắt ngang cập nhật đang chạy.",
+      "paths": ["%WINDIR%\\SoftwareDistribution\\Download"],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 168,
+      "requiresAdmin": true,
+      "blockedProcesses": ["TiWorker", "TrustedInstaller", "wuauclt", "UsoClient"],
+      "defaultChecked": true
+    },
+    {
+      "id": "cbs-logs",
+      "group": "Rác hệ thống (cần quyền quản trị)",
+      "name": "Nhật ký bảo trì thành phần Windows (Logs\\CBS)",
+      "description": "Nhật ký của Component Based Servicing, có thể phình tới nhiều GB. Chỉ dọn tệp cũ hơn 7 ngày; nhật ký hiện tại được giữ.",
+      "paths": ["%WINDIR%\\Logs\\CBS"],
+      "patterns": ["*.log", "*.cab", "*.persist"],
+      "recurse": false,
+      "minAgeHours": 168,
+      "requiresAdmin": true,
+      "blockedProcesses": ["TiWorker", "TrustedInstaller"],
+      "defaultChecked": true
+    },
+    {
+      "id": "memory-dumps",
+      "group": "Rác hệ thống (cần quyền quản trị)",
+      "name": "Tệp dump lỗi hệ thống (Minidump, LiveKernelReports)",
+      "description": "Bản ghi bộ nhớ Windows tạo khi màn hình xanh hoặc lỗi kernel; chỉ cần khi đang gỡ lỗi.",
+      "paths": ["%WINDIR%\\Minidump", "%WINDIR%\\LiveKernelReports"],
+      "patterns": ["*.dmp"],
+      "recurse": true,
+      "minAgeHours": 24,
+      "requiresAdmin": true,
+      "blockedProcesses": [],
+      "defaultChecked": true
+    },
+    {
+      "id": "setup-logs",
+      "group": "Rác hệ thống (cần quyền quản trị)",
+      "name": "Nhật ký cài đặt / nâng cấp Windows (Panther)",
+      "description": "Nhật ký do trình cài đặt Windows để lại sau khi nâng cấp phiên bản. Chỉ dọn tệp cũ hơn 7 ngày.",
+      "paths": ["%WINDIR%\\Panther"],
+      "patterns": ["*.log", "*.etl", "*.xml"],
+      "recurse": true,
+      "minAgeHours": 168,
+      "requiresAdmin": true,
+      "blockedProcesses": [],
+      "defaultChecked": false
+    },
+    {
+      "id": "downloaded-program-files",
+      "group": "Rác hệ thống (cần quyền quản trị)",
+      "name": "Thành phần ActiveX/Java cũ (Downloaded Program Files)",
+      "description": "Thư mục kế thừa của Internet Explorer; hầu như luôn trống hoặc chỉ còn tàn dư.",
+      "paths": ["%WINDIR%\\Downloaded Program Files"],
+      "patterns": ["*"],
+      "recurse": true,
+      "minAgeHours": 168,
+      "requiresAdmin": true,
+      "blockedProcesses": [],
+      "defaultChecked": false
     }
   ]
 }
