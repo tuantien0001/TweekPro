@@ -48,6 +48,11 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
+[InstallDelete]
+; Versioned exe names change on every release; drop the previous ones so only the current build stays in {app}.
+Type: files; Name: "{app}\TweekPro-*.exe"
+Type: files; Name: "{app}\TweekPro-*.exe.config"
+
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "test-results.txt,TweekPro-preview.png,preview-error.txt,scan-smoke.txt,mono_crash*,*.pdb,*.xml"
 
