@@ -137,6 +137,47 @@ namespace TweekPro {
   }
  }
  public class SmoothListView:ListView { public SmoothListView(){DoubleBuffered=true;} }
+ /// <summary>
+ /// Fixed-order tab header. Windows' multiline TabControl moves the row that holds the selected tab down next to the page, so with
+ /// three rows the tabs appear to shuffle on every click; this strip paints every tab in a stable left-to-right grid and drives a
+ /// TabControl whose native headers are hidden.
+ /// </summary>
+ public sealed class TabStrip:Control {
+  readonly TabControl tabs;int hover=-1,tabWidth=172,tabHeight=46,edge=8;
+  public TabStrip(TabControl target){
+   tabs=target;DoubleBuffered=true;ResizeRedraw=true;Dock=DockStyle.Top;BackColor=Theme.Canvas;Height=tabHeight+1;
+   tabs.SelectedIndexChanged+=(s,e)=>Invalidate();
+   tabs.ControlAdded+=(s,e)=>{var page=e.Control as TabPage;if(page!=null)page.TextChanged+=(s2,e2)=>Invalidate();Relayout();Invalidate();};
+   tabs.ControlRemoved+=(s,e)=>{Relayout();Invalidate();};
+   foreach(TabPage page in tabs.TabPages)page.TextChanged+=(s,e)=>Invalidate();
+  }
+  /// <summary>Hides the native headers of a TabControl so only the strip is visible; pages keep working with SelectedTab/SelectedIndex.</summary>
+  public static void HideNativeHeaders(TabControl t){t.Appearance=TabAppearance.FlatButtons;t.ItemSize=new Size(0,1);t.SizeMode=TabSizeMode.Fixed;t.Multiline=false;t.DrawMode=TabDrawMode.Normal;t.Padding=new Point(0,0);}
+  int Columns{get{return Math.Max(1,(Width-2*edge)/tabWidth);}}
+  int Rows{get{return Math.Max(1,(tabs.TabCount+Columns-1)/Columns);}}
+  Rectangle CellAt(int index){int c=index%Columns,r=index/Columns;return new Rectangle(edge+c*tabWidth,r*tabHeight,tabWidth,tabHeight);}
+  int IndexAt(Point p){for(int i=0;i<tabs.TabCount;i++)if(CellAt(i).Contains(p))return i;return -1;}
+  void Relayout(){int h=Rows*tabHeight+1;if(Height!=h)Height=h;}
+  protected override void ScaleControl(SizeF factor,BoundsSpecified specified){base.ScaleControl(factor,specified);tabWidth=(int)Math.Round(tabWidth*factor.Width);tabHeight=(int)Math.Round(tabHeight*factor.Height);edge=(int)Math.Round(edge*factor.Width);Relayout();}
+  protected override void OnResize(EventArgs e){base.OnResize(e);Relayout();}
+  protected override void OnMouseMove(MouseEventArgs e){base.OnMouseMove(e);int i=IndexAt(e.Location);if(i!=hover){hover=i;Cursor=i>=0?Cursors.Hand:Cursors.Default;Invalidate();}}
+  protected override void OnMouseLeave(EventArgs e){base.OnMouseLeave(e);hover=-1;Invalidate();}
+  protected override void OnMouseClick(MouseEventArgs e){base.OnMouseClick(e);int i=IndexAt(e.Location);if(i>=0&&i!=tabs.SelectedIndex)tabs.SelectedIndex=i;}
+  protected override void OnPaint(PaintEventArgs e){
+   e.Graphics.Clear(BackColor);int glyph=(int)Math.Round(18*tabHeight/46.0);
+   for(int i=0;i<tabs.TabCount;i++){
+    var b=CellAt(i);bool active=i==tabs.SelectedIndex;string text=tabs.TabPages[i].Text;
+    using(var bg=new SolidBrush(active?Theme.Surface:i==hover?Theme.SoftButton:Theme.Canvas))e.Graphics.FillRectangle(bg,b);
+    using(var sep=new Pen(Theme.Border))e.Graphics.DrawLine(sep,b.Right-1,b.Top+10,b.Right-1,b.Bottom-10);
+    Color accent=active?Theme.Primary:Theme.Muted;var glyphRect=new Rectangle(b.X+16,b.Y+(b.Height-glyph)/2-1,glyph,glyph);
+    Branding.DrawTabGlyph(e.Graphics,text,glyphRect,accent);
+    var textRect=new Rectangle(glyphRect.Right+8,b.Y,b.Right-glyphRect.Right-14,b.Height);
+    TextRenderer.DrawText(e.Graphics,text,active?Theme.Strong:Theme.Body,textRect,accent,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+    if(active)using(var line=new Pen(Theme.Primary,3))e.Graphics.DrawLine(line,b.Left+16,b.Bottom-2,b.Right-16,b.Bottom-2);
+   }
+   using(var border=new Pen(Theme.Border))e.Graphics.DrawLine(border,0,Height-1,Width,Height-1);
+  }
+ }
  public enum ButtonStyle { Secondary, Primary, Danger }
  public enum NoteKind { Info, Warning, Success, Error }
  /// <summary>Shared palette, typography and control factories so every window uses the same visual language.</summary>

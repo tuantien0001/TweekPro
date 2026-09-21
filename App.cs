@@ -13,7 +13,7 @@ namespace TweekPro {
  public partial class MainForm:Form {
   ListView apps=new SmoothListView(),remnants=new SmoothListView(),backups=new SmoothListView();
   TextBox search=new TextBox(),details=new TextBox(),log=new TextBox();
-  Label selectionSummary=new Label(),backupSummary=new Label();Label status=Theme.StatusBar();TabControl tabs=new TabControl();
+  Label selectionSummary=new Label(),backupSummary=new Label();Label status=Theme.StatusBar();TabControl tabs=new TabControl();TabStrip tabStrip;
   Label appsOverlay,remnantsOverlay,backupsOverlay;TabPage remnantsTab;
   List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
@@ -114,7 +114,7 @@ namespace TweekPro {
    var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,staleTab,analyzerTab,vault,autorunTab,explorerTab,netTab,servicesTab,toolsTab,logs,aiTab};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
-   Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
+   Controls.Add(tabs);Controls.Add(tabStrip);Controls.Add(header);Controls.Add(status);
    FormClosed+=(s,e)=>SaveSettings();
    int savedWidth=settings.WindowWidth,savedHeight=settings.WindowHeight;bool sizeRestored=false;
    Load+=(s,e)=>{int dpi=ScreenDpi();int w=Logical(savedWidth)*dpi/96,h=Logical(savedHeight)*dpi/96;if(w>=MinimumSize.Width&&h>=MinimumSize.Height)Size=new Size(w,h);sizeRestored=true;};
@@ -134,21 +134,10 @@ namespace TweekPro {
   static int Logical(int saved){return saved>0&&saved<=4096?saved:0;}
   /// <summary>Current DPI of the window's screen; works on .NET Framework and Mono alike.</summary>
   int ScreenDpi(){try{using(var g=CreateGraphics())return Math.Max(96,(int)Math.Round(g.DpiX));}catch(Exception){return 96;}}
-  /// <summary>Configures the tab strip with flat, owner-drawn headers and an accent underline for the active tab.</summary>
+  /// <summary>Hides the native tab headers and mounts a fixed-order TabStrip above the pages (multiline TabControl reorders its rows on selection).</summary>
   void BuildTabs(){
-   tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(172,46);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;
-   // Twelve tabs exceed the default width, so wrap into rows (6 × 172 px fits the 1120 px minimum) instead of showing scroll arrows.
-   tabs.Multiline=true;
-   tabs.DrawItem+=(s,e)=>{
-    bool active=e.Index==tabs.SelectedIndex;var bounds=e.Bounds;string text=tabs.TabPages[e.Index].Text;
-    using(var bg=new SolidBrush(active?Theme.Surface:Theme.Canvas))e.Graphics.FillRectangle(bg,bounds);
-    Color accent=active?Theme.Primary:Theme.Muted;
-    int glyph=18;var glyphRect=new Rectangle(bounds.X+16,bounds.Y+(bounds.Height-glyph)/2-1,glyph,glyph);
-    Branding.DrawTabGlyph(e.Graphics,text,glyphRect,accent);
-    var textRect=new Rectangle(glyphRect.Right+8,bounds.Y,bounds.Right-glyphRect.Right-14,bounds.Height);
-    TextRenderer.DrawText(e.Graphics,text,active?Theme.Strong:Theme.Body,textRect,accent,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
-    if(active)using(var line=new Pen(Theme.Primary,3))e.Graphics.DrawLine(line,bounds.Left+16,bounds.Bottom-2,bounds.Right-16,bounds.Bottom-2);
-   };
+   tabs.Dock=DockStyle.Fill;tabs.Font=Theme.Body;TabStrip.HideNativeHeaders(tabs);
+   tabStrip=new TabStrip(tabs);
   }
   FlowLayoutPanel Bar(){return Theme.Toolbar();}
   /// <summary>Adds a guarded action button to a toolbar; the style marks the primary or destructive action.</summary>
