@@ -13,6 +13,8 @@ permissions:
 
 jobs:
   windows:
+    # release.ps1 pushes the "Release vX" commit and then the tag; the tag run publishes, so skip the duplicate branch run.
+    if: ${{ !(startsWith(github.ref, 'refs/heads/') && startsWith(github.event.head_commit.message, 'Release v')) }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
