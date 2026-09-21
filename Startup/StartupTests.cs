@@ -15,6 +15,9 @@ namespace TweekPro.Startup {
    var disabled=StartupRating.Decode(bytes);Assert(disabled.Known&&!disabled.Enabled&&disabled.DisabledAt.HasValue&&disabled.DisabledAt.Value.ToUniversalTime().Year==2025,"03 + FILETIME = disabled with date");
    Assert(!StartupRating.Decode(new byte[]{3}).DisabledAt.HasValue&&!StartupRating.Decode(new byte[]{3}).Enabled,"short disabled value has no date");
    var unknown=StartupRating.Decode(null);Assert(!unknown.Known&&unknown.Enabled,"missing value = enabled by default");
+   var encodedOn=StartupRating.Encode(true,null);Assert(encodedOn.Length==12&&encodedOn[0]==2&&StartupRating.Decode(encodedOn).Enabled&&!StartupRating.Decode(encodedOn).DisabledAt.HasValue,"encode enabled");
+   var when=new DateTime(2025,3,1,12,0,0,DateTimeKind.Utc);var encodedOff=StartupRating.Encode(false,when);var decodedOff=StartupRating.Decode(encodedOff);
+   Assert(!decodedOff.Enabled&&decodedOff.DisabledAt.HasValue&&decodedOff.DisabledAt.Value.ToUniversalTime()==when,"encode disabled keeps the filetime");
    Assert(!StartupRating.Decode(new byte[0]).Known,"empty value = unknown");
 
    // Impact rating precedence: broken > disabled > size buckets; no target or size = unknown.

@@ -133,6 +133,21 @@ namespace TweekPro.Network {
    }
   }
 
+  /// <summary>Stops the service from starting at the next boot without killing the running process. The previous start mode is stored in the vault (Purpose=Autorun) so the Startup tab can put it back.</summary>
+  public static Backup DisableAutostart(HostedService s){
+   if(s==null)throw new IOException(L.T("Chọn một dịch vụ."));
+   if(IsCoreService(s.Name))throw new IOException(L.F("{0} là dịch vụ cốt lõi của Windows — không tắt khởi động cùng máy.",String.IsNullOrEmpty(s.DisplayName)?s.Name:s.DisplayName));
+   if(!ValidServiceName(s.Name))throw new IOException(L.T("Tên dịch vụ không hợp lệ."));
+   string mode=(s.StartMode??"").Trim();
+   if(mode.Equals("boot",StringComparison.OrdinalIgnoreCase)||mode.Equals("system",StringComparison.OrdinalIgnoreCase))throw new IOException(L.T("Driver khởi động cùng nhân Windows — không tắt từ đây."));
+   if(mode.Equals("disabled",StringComparison.OrdinalIgnoreCase))throw new IOException(L.T("Dịch vụ đã được tắt khởi động."));
+   if(!IsWindows)throw new IOException(L.T("Chỉ hỗ trợ trên Windows."));
+   var backup=new Backup{Id=Guid.NewGuid().ToString("N"),Created=DateTime.Now.ToString("s"),State="Pending",Original=s.Name,Kind="Service",AppName=String.IsNullOrEmpty(s.DisplayName)?s.Name:s.DisplayName,ValueName=s.StartMode,Purpose="Autorun",Payload=s.PathName};
+   Engine.NoLinks(Engine.Vault,false);Directory.CreateDirectory(Path.Combine(Engine.Vault,backup.Id));Engine.SaveBackup(backup);
+   try{Sc("config",s.Name,"start=","disabled");backup.State="BackedUp";backup.Error=L.F("Đã tắt khởi động cùng máy; dịch vụ đang chạy không bị dừng. Khôi phục = kiểu khởi động {0}.",s.StartMode);Engine.SaveBackup(backup);Log.Info("Đã tắt khởi động cùng máy của dịch vụ "+s.Name+".");return backup;}
+   catch(Exception e){backup.State="NeedsReview";backup.Error=e.Message;Engine.SaveBackup(backup);throw new IOException(L.F("Không tắt được khởi động của dịch vụ {0}: {1}",s.DisplayName,e.Message));}
+  }
+
   /// <summary>Restores a disabled service: puts the previous start mode back and starts it when that mode is not disabled.</summary>
   public static void Restore(Backup b){
    if(b.Kind!="Service")throw new IOException(L.T("Không phải bản sao lưu dịch vụ."));

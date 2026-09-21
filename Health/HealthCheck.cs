@@ -127,7 +127,7 @@ namespace TweekPro.Health {
    f.Severity=i.AutorunEntries<=8?HealthSeverity.Good:i.AutorunEntries<=15?HealthSeverity.Low:i.AutorunEntries<=25?HealthSeverity.Medium:HealthSeverity.High;
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Ít mục khởi động":f.Severity==HealthSeverity.Low?"Khá nhiều mục khởi động":"Quá nhiều mục khởi động");
    if(i.AutorunBroken>0&&f.Severity==HealthSeverity.Good){f.Severity=HealthSeverity.Low;f.Verdict=L.T("Có mục khởi động hỏng");}
-   f.Detail=i.AutorunBroken>0?L.F("{0} mục đang bật (Run/RunOnce/Startup); {1} mục trỏ tới tệp không còn tồn tại. Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries,i.AutorunBroken):L.F("{0} mục đang bật (Run/RunOnce/Startup). Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries);
+   f.Detail=i.AutorunBroken>0?L.F("{0} mục đang bật khi đăng nhập (Run, Startup, ứng dụng Windows); {1} mục trỏ tới tệp không còn tồn tại. Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries,i.AutorunBroken):L.F("{0} mục đang bật khi đăng nhập (Run, Startup, ứng dụng Windows). Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries);
    return f;
   }
 

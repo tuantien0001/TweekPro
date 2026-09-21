@@ -97,7 +97,8 @@ namespace TweekPro {
    }catch(IOException){}catch(UnauthorizedAccessException){}
    // HKCU Software may be shared across registry views; suppress duplicate commands.
    items=items.GroupBy(x=>x.Item.Kind+"|"+x.Item.Hive+"|"+x.Item.Path+"|"+x.Item.ValueName+"|"+x.Command,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).ToList();
-   foreach(var backup in Engine.Backups().Where(b=>b.Purpose=="Autorun"&&b.State!="Restored"))items.Add(new AutorunEntry{Name=backup.AppName,Command=backup.Original+(backup.ValueName==null?"":" :: "+backup.ValueName),Source="Kho Tweek Pro",State=backup.State=="BackedUp"?"Đã tắt bằng Tweek Pro":"Cần kiểm tra",Saved=backup});
+   Startup.StartupSources.Append(items);
+   foreach(var backup in Engine.Backups().Where(b=>b.Purpose=="Autorun"&&b.State!="Restored"&&b.Kind!="StartupTask"))items.Add(new AutorunEntry{Name=backup.AppName,Command=backup.Original+(backup.ValueName==null?"":" :: "+backup.ValueName),Source="Kho Tweek Pro",State=backup.State=="BackedUp"?"Đã tắt bằng Tweek Pro":"Cần kiểm tra",Saved=backup});
    return items.OrderBy(x=>x.Name).ToList();
   }
   public static Backup Store(Candidate c,bool autorun){

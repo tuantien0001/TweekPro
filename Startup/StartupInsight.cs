@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Win32;
+using TweekPro.Core;
 
 namespace TweekPro.Startup {
  public enum StartupImpact { Unknown, Disabled, Broken, Low, Medium, High }
@@ -30,6 +31,13 @@ namespace TweekPro.Startup {
    a.Known=true;a.Enabled=(value[0]&1)==0;
    if(!a.Enabled&&value.Length>=12){long ticks=BitConverter.ToInt64(value,4);if(ticks>0)try{a.DisabledAt=DateTime.FromFileTimeUtc(ticks).ToLocalTime();}catch(ArgumentOutOfRangeException){}}
    return a;
+  }
+
+  /// <summary>12-byte StartupApproved value. Enabled is 0x02 (bit 0 clear). Disabled is 0x03 plus an optional UTC FILETIME at bytes 4..11.</summary>
+  public static byte[] Encode(bool enabled,DateTime? disabledUtc){
+   var bytes=new byte[12];bytes[0]=(byte)(enabled?2:3);
+   if(!enabled&&disabledUtc.HasValue)Array.Copy(BitConverter.GetBytes(disabledUtc.Value.ToUniversalTime().ToFileTimeUtc()),0,bytes,4,8);
+   return bytes;
   }
 
   public static StartupImpact Rate(bool hasTarget,bool targetExists,bool enabled,long bytes){
@@ -70,11 +78,13 @@ namespace TweekPro.Startup {
  /// <summary>Collects StartupInsight for AutorunEntry rows; registry and Authenticode probes are Windows-only and never throw.</summary>
  public static class StartupInspector {
   public const string Approved=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved";
+  public const string ApprovalPurpose="StartupApproved";
   static readonly bool IsWindows=Environment.OSVersion.Platform==PlatformID.Win32NT;
 
   public static void Annotate(IEnumerable<AutorunEntry> entries){
    string temp=SafeFolder(()=>Path.GetTempPath()),appData=SafeFolder(()=>Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)),roaming=SafeFolder(()=>Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)),downloads=SafeFolder(DownloadsFolder);
    foreach(var e in entries){
+    if(e.Item!=null&&(e.Item.Kind=="Service"||e.Item.Kind==StartupSources.BackupKind)){if(e.Insight==null)e.Insight=new StartupInsight();continue;}
     var i=new StartupInsight();e.Insight=i;
     if(e.Item==null){i.Impact=StartupImpact.Disabled;i.Approval=new StartupApproval{Known=true,Enabled=false};continue;}
     string exe=Advanced.CommandExe(e.Command);if(exe==""&&Advanced.LocalPath(e.Command))exe=e.Command;
@@ -96,6 +106,52 @@ namespace TweekPro.Startup {
    if(c.Kind!="RegistryValue"||!String.Equals(c.Path,Advanced.Run,StringComparison.OrdinalIgnoreCase))return null;
    return Approved+(c.View=="32"&&c.Hive=="HKLM"?@"\Run32":@"\Run");
   }
+
+  /// <summary>Turns a Windows-disabled Run value or Startup shortcut back on by writing StartupApproved, after the previous bytes are in the vault. Does not create a missing value and does not touch RunOnce.</summary>
+  public static Backup SetEnabled(Candidate c){
+   string sub=c==null?null:ApprovedSubKey(c);
+   if(sub==null)throw new IOException(L.T("Mục này không có công tắc bật/tắt của Windows. Hãy tắt để đưa vào Kho, rồi bật lại từ Kho."));
+   if(!IsWindows)throw new IOException(L.T("Chỉ hỗ trợ trên Windows."));
+   string hive=c.Kind=="File"?(Under(c.Path,SafeFolder(()=>Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup)))?"HKLM":"HKCU"):(c.Hive=="HKLM"?"HKLM":"HKCU");
+   string name=c.Kind=="File"?Path.GetFileName(c.Path):c.ValueName;
+   if(!SafeValueName(name))throw new IOException(L.T("Tên giá trị không hợp lệ."));
+   using(var root=Engine.Base(hive,"64"))using(var key=root.OpenSubKey(sub,true)){
+    if(key==null)throw new IOException(L.T("Mục khởi động không còn tồn tại."));
+    string match=key.GetValueNames().FirstOrDefault(n=>String.Equals(n,name,StringComparison.OrdinalIgnoreCase));
+    var prior=match==null?null:key.GetValue(match) as byte[];
+    if(prior==null||StartupRating.Decode(prior).Enabled)throw new IOException(L.T("Mục khởi động này đang bật."));
+    var backup=new Backup{Id=Guid.NewGuid().ToString("N"),Created=DateTime.Now.ToString("s"),State="Pending",Original=sub,Kind="RegistryValue",Hive=hive,View="64",AppName=String.IsNullOrEmpty(c.AppName)?match:c.AppName,ValueName=match,Purpose=ApprovalPurpose,Payload="value.xml"};
+    Engine.NoLinks(Engine.Vault,false);Directory.CreateDirectory(Path.Combine(Engine.Vault,backup.Id));Engine.SaveBackup(backup);
+    try{
+     Engine.Save(Path.Combine(Engine.Vault,backup.Id,backup.Payload),new RegValue{Name=match,Kind=RegistryValueKind.Binary,Bytes=prior});
+     key.SetValue(match,StartupRating.Encode(true,null),RegistryValueKind.Binary);
+     backup.State="BackedUp";Engine.SaveBackup(backup);return backup;
+    }catch(Exception e){backup.State="NeedsReview";backup.Error=e.Message;Engine.SaveBackup(backup);throw;}
+   }
+  }
+
+  /// <summary>Writes the saved StartupApproved bytes back. Refuses any key other than Run, Run32 and StartupFolder.</summary>
+  public static void RestoreApproval(Backup b){
+   if(b==null||b.Purpose!=ApprovalPurpose)throw new IOException(L.T("Không phải bản sao lưu cờ khởi động."));
+   if(!IsApprovalKey(b.Original))throw new IOException(L.T("Chỉ khôi phục được cờ StartupApproved."));
+   if(!SafeValueName(b.ValueName))throw new IOException(L.T("Tên giá trị không hợp lệ."));
+   if(!IsWindows)throw new IOException(L.T("Chỉ hỗ trợ trên Windows."));
+   string payload=Path.Combine(Engine.VaultOf(b),b.Id,b.Payload??"value.xml");Engine.NoLinks(payload,false);
+   var value=Engine.Load<RegValue>(payload);
+   if(value==null||value.Kind!=RegistryValueKind.Binary||value.Bytes==null||value.Bytes.Length<1||value.Bytes.Length>16)throw new IOException(L.T("Bản sao lưu trống."));
+   if(!String.Equals(value.Name,b.ValueName,StringComparison.OrdinalIgnoreCase))throw new IOException(L.T("Bản sao lưu không khớp tên giá trị."));
+   using(var root=Engine.Base(b.Hive=="HKLM"?"HKLM":"HKCU","64"))using(var key=root.OpenSubKey(b.Original,true)){
+    if(key==null)throw new IOException(L.T("Mục khởi động không còn tồn tại."));
+    key.SetValue(b.ValueName,value.Bytes,RegistryValueKind.Binary);
+   }
+   b.State="Restored";b.Error="";Engine.SaveBackup(b);
+  }
+
+  static bool IsApprovalKey(string path){
+   return String.Equals(path,Remnants.TraceHunter.StartupApprovedRun,StringComparison.OrdinalIgnoreCase)||String.Equals(path,Remnants.TraceHunter.StartupApprovedRun32,StringComparison.OrdinalIgnoreCase)||String.Equals(path,Remnants.TraceHunter.StartupApprovedFolder,StringComparison.OrdinalIgnoreCase);
+  }
+
+  static bool SafeValueName(string name){return !String.IsNullOrEmpty(name)&&name.Length<=255&&name.IndexOf('\\')<0&&name.IndexOf('/')<0;}
 
   static StartupApproval ReadApproval(AutorunEntry e){
    var c=e.Item;string sub=ApprovedSubKey(c);if(sub==null||!IsWindows)return new StartupApproval();

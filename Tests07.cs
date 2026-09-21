@@ -73,6 +73,7 @@ namespace TweekPro {
     Pup.PupTests.Run();
     Stale.StaleTests.Run();
     Startup.StartupTests.Run();
+    Startup.StartupSourcesTests.Run();
     Update.UpdateTests.Run();
     Explorer.ExplorerTests.Run();
     Remnants.TraceHunterTests.Run();

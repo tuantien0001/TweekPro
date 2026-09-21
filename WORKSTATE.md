@@ -1,10 +1,20 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 00:16 (Asia/Bangkok).
-Status: DONE (Cursor). Owner request 00:12: the VI/EN language control still looks bad — replace it with a colorful flag.
+Updated: 2026-09-22 01:35 (Asia/Bangkok).
+Status: IN PROGRESS (Cursor). Owner: Khởi động should be as complete as Revo Autorun Manager, with checkboxes to turn items off.
 Last editor: Cursor.
 
-## Current task (00:16)
+## Current task (01:35)
+
+Autorun expansion, not released (version stays 0.7.3 until the owner asks to cut 0.7.4).
+- `Startup/StartupSources.cs`: packaged startup tasks (HKCU AppModel SystemAppData State) and automatic Win32 services (no kernel/FS drivers). Core services stay listed and `DisableAutostart` refuses them. Disable does not stop a running service. Vault `Kind=StartupTask` / `Kind=Service` Purpose=Autorun.
+- Checkbox on the Khởi động list. ItemCheck ignores a change that already matches the row, so creating the list handle no longer tries to "enable" every checked item (that produced `LỖI: Mục này không có công tắc…` in the status bar).
+- Groups in order: Run / Startup, Ứng dụng Windows, Dịch vụ tự chạy, Kho Tweek Pro.
+- A Run/Startup entry Windows already disabled is turned back on by rewriting StartupApproved only (`StartupInspector.SetEnabled`, vault Purpose=`StartupApproved`). RunOnce still has no on/off flag.
+- Health count excludes services. README `### 0.7.4 (chưa phát hành)`. `docs/screenshots/` regenerated 01:35 (`autorun.png` shows the checkboxes; Windows-apps group sits under the Run group and is on screen at the owner's taller window).
+- Verification: Release build 0 warnings / 0 errors. Elevated `--self-test` PASS 01:34. `--preview autorun` status bar stays "Sẵn sàng" (the false enable error is gone) and the list shows Run / Startup then Ứng dụng Windows (1Password, Intel Graphics, Claude). Do not move tag v0.7.3. Installed exe is still the previous 0.7.3 until it is copied over `C:\Program Files\Tweek Pro\TweekPro-0.7.3.exe`.
+
+## Previous task (00:16)
 
 H. DONE Language control is a flag (`Branding.DrawLanguageGlyph`): Vietnam (red field, gold star) while the UI is Vietnamese, Union Jack while English. The button background matches the header so only the flag shows; tooltip and accessible name still say which language a click switches to. Verified by drawing both flags and by `--preview health`.
 I. DONE Republished v0.7.3 (owner 00:17, same version). Changelog bullets folded into `### 0.7.3` in `70cf586`; tag `v0.7.3` moved there (annotated object `6579557`). Actions run 35631213030 success; Release assets replaced 00:19 UTC+7: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.3 . In-app update check does not nag machines already on 0.7.3.

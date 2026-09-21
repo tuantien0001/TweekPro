@@ -65,7 +65,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 | **Tệp tải về cũ** | Downloads (và Desktop) — bộ cài, tệp nén, ảnh đĩa, tệp tải dở, tệp lớn cũ hơn N ngày (mặc định 30); vào Kho (`Kind=Stale`) hoặc xóa thẳng | `StaleSafety` chỉ cho Downloads/Desktop của tài khoản hiện tại; bỏ qua thư mục đám mây, shortcut, tệp ẩn/hệ thống, tệp đang mở |
 | **Phân tích ổ đĩa** | Thư mục con nặng nhất, dung lượng theo phần mở rộng, tệp lớn nhất; mở vị trí, CSV | Hoàn toàn chỉ đọc; giới hạn 1.000.000 tệp / 120 giây |
 | **Kho khôi phục** | Khôi phục mục đã chọn; xóa vĩnh viễn mục đánh dấu; **Dọn kho theo tuổi…** có xem trước | Xóa vĩnh viễn không hoàn tác; mặc định chỉ xóa bản đã khôi phục |
-| **Khởi động** | Run/RunOnce/Startup với trạng thái Windows (StartupApproved), **tác động**, chữ ký, kích cỡ, mục hỏng; tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
+| **Khởi động** | Ba nhóm, mỗi dòng một ô tích: **Run / Startup**, **Ứng dụng Windows** (Copilot, Terminal, Teams, Defender…), **Dịch vụ tự chạy** (không gồm driver). Bỏ tích = tắt qua Kho; tích lại = bật. Run mà Windows đã tắt thì chỉ bật cờ StartupApproved | Không dừng tiến trình/dịch vụ đang chạy; dịch vụ cốt lõi không tắt được |
 | **Explorer** | Hai khung chuyển bằng nút ở đầu tab. **Tùy chỉnh File Explorer** (17 công tắc HKCU: hiện đuôi tệp, tệp ẩn, tệp hệ thống được bảo vệ, hộp chọn, thanh trạng thái, chế độ gọn, đường dẫn đầy đủ, mở vào This PC, tệp gần đây / thường dùng, quảng cáo OneDrive, giây trên đồng hồ, căn trái thanh tác vụ, Task View, Widgets) với nút Mặc định Windows / Khuyến nghị an toàn / Khởi động lại Explorer; **Duyệt tệp** hiện mọi tệp ẩn và hệ thống bất kể thiết lập Explorer với cột Đuôi, Mô tả (loại), Dung lượng, Sửa lần cuối, Thuộc tính (ẩn nghiêng, hệ thống vàng, giả dạng đỏ), lọc «Chỉ hiện mục ẩn / hệ thống»; **Xem chi tiết tệp** (bấm một tệp, chọn, kéo thả hoặc dán đường dẫn): loại thật, thuộc tính ẩn/hệ thống, thời gian, chủ sở hữu, chữ ký số, thông tin phiên bản, kiến trúc PE, Mark of the Web, SHA-256/MD5, cảnh báo đuôi kép (`hoadon.pdf.exe`), ký tự đảo chiều Unicode, PE giả tài liệu; mở hộp Thuộc tính Windows | `ExplorerSafety` chỉ cho ghi đúng các giá trị trong danh mục dưới `HKCU\…\Explorer`; giá trị cũ vào Kho (`Kind=Explorer`) và khôi phục bằng một nút; xem chi tiết tệp hoàn toàn chỉ đọc |
 | **Mạng** | Kết nối TCP/UDP theo ứng dụng, icon và hướng gửi/nhận, thanh tốc độ, dải packet realtime; băng thông ETW tự bật khi quản trị; chuột phải kết thúc tiến trình / dừng dịch vụ / **Chặn mạng** (cặp quy tắc Windows Firewall vào + ra cho đúng tệp .exe, cột Chặn mạng đỏ, Bỏ chặn, nút «Đang chặn mạng…» liệt kê và bỏ chặn hàng loạt) | Không driver, không lọc gói; `ProcessControl` khóa tiến trình và dịch vụ cốt lõi; `FirewallBlock` từ chối tiến trình cốt lõi, `System32`, chính Tweek Pro, tệp không phải .exe; mỗi lần chặn vào Kho (`Kind=Firewall`), khôi phục gỡ đúng quy tắc theo tên; phiên ETW luôn dừng khi đóng |
 | **Dịch vụ hệ thống** | Mọi dịch vụ với **giải thích bằng lời thường** (~180 dịch vụ + mẫu tên), huy hiệu an toàn, PID/RAM, nhà phát hành; lọc; Dừng / Khởi động / **Dừng và vô hiệu hóa (lưu Kho)** | Dịch vụ cốt lõi bị khóa; svchost không cho kết thúc; kiểu khởi động cũ lưu `Kind=Service` |
@@ -99,7 +99,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 <td><b>Kho khôi phục</b> — mọi thao tác xóa đều quay lại được<br><a href="docs/screenshots/vault.png"><img src="docs/screenshots/vault.png" alt="Kho khôi phục"></a></td>
 </tr>
 <tr>
-<td><b>Khởi động</b> — tác động, chữ ký, trạng thái Windows<br><a href="docs/screenshots/autorun.png"><img src="docs/screenshots/autorun.png" alt="Khởi động"></a></td>
+<td><b>Khởi động</b> — ô tích, ứng dụng Windows, dịch vụ tự chạy<br><a href="docs/screenshots/autorun.png"><img src="docs/screenshots/autorun.png" alt="Khởi động"></a></td>
 <td><b>Explorer — Duyệt tệp và chi tiết tệp</b> — mọi tệp ẩn / hệ thống, đuôi, mô tả, cảnh báo giả dạng<br><a href="docs/screenshots/explorer.png"><img src="docs/screenshots/explorer.png" alt="Explorer – duyệt tệp"></a></td>
 </tr>
 <tr>
@@ -218,6 +218,10 @@ Tài liệu kèm theo: `AGENTS.md` (quy ước cho agent), `HANDOFF.md` (kiến 
 Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý tiện ích trình duyệt, chặn mạng, hay tự tải và cài bản mới im lặng (Kiểm tra cập nhật chỉ báo và mở trang tải). Không xác định được mọi dấu vết của mọi ứng dụng. Băng thông theo tiến trình chỉ tính từ khi bật ETW. Bản phân phối là một thư mục (exe + DLL). Chuỗi giao diện nằm trong mã (chưa `.resx`); một số thông báo nhật ký còn tiếng Việt khi chọn tiếng Anh.
 
 ## Lịch sử phiên bản
+
+### 0.7.4 (chưa phát hành)
+
+- **Khởi động** liệt kê đủ ba nguồn như Autorun Manager: Run/RunOnce/shortcut Startup, ứng dụng Windows (cờ State của gói Appx), và dịch vụ Win32 tự chạy (không gồm driver). Mỗi dòng có ô tích: bỏ tích thì tắt qua Kho khôi phục, tích lại thì bật. Dịch vụ cốt lõi bị từ chối và dịch vụ đang chạy không bị dừng. Mục Run/Startup mà Windows đã tắt thì tích lại chỉ bật cờ StartupApproved, lệnh gốc giữ nguyên.
 
 ### 0.7.3 (21/09/2026)
 

@@ -61,7 +61,7 @@ namespace TweekPro {
     catch(OperationCanceledException){throw;}
     catch(Exception e){inputs.VaultMeasured=false;Core.Log.Warn("Health: vault probe failed: "+e.Message);}
     stage(Core.L.T("Đang đếm mục khởi động…"));
-    try{var autoruns=Advanced.Autoruns().Where(a=>a.Item!=null).ToList();Startup.StartupInspector.Annotate(autoruns);inputs.AutorunEntries=autoruns.Count(a=>a.Insight!=null&&a.Insight.Approval.Enabled);inputs.AutorunBroken=autoruns.Count(a=>a.Insight!=null&&a.Insight.Broken);}
+    try{var autoruns=Advanced.Autoruns().Where(a=>a.Item!=null&&a.Item.Kind!="Service").ToList();Startup.StartupInspector.Annotate(autoruns);inputs.AutorunEntries=autoruns.Count(a=>a.Insight!=null&&a.Insight.Approval.Enabled);inputs.AutorunBroken=autoruns.Count(a=>a.Insight!=null&&a.Insight.Broken);}
     catch(Exception e){inputs.AutorunMeasured=false;Core.Log.Warn("Health: autorun probe failed: "+e.Message);}
     token.ThrowIfCancellationRequested();
     stage(Core.L.T("Đang tìm thư mục rỗng trong Downloads…"));
