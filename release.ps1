@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Cuts a Tweek Pro release from the terminal: bumps the version everywhere, builds + self-tests, commits, tags v<version>
   and pushes. GitHub Actions (.github/workflows/release.yml) then builds the installer + portable zip on windows-latest
@@ -6,8 +6,11 @@
 
 .DESCRIPTION
   Version is written to TweekPro.csproj (<TweekVersion>), App.cs (MainForm.Version), build.ps1 ($version) and
-  installer\TweekPro.iss (#define AppVersion). Files are rewritten with their original UTF-8/BOM encoding so Vietnamese
-  text is preserved. Nothing is pushed unless the local build and --self-test pass (self-test needs an elevated shell).
+  installer\TweekPro.iss (#define AppVersion). README.md "## Lịch sử phiên bản" is updated too: the pending
+  "### x.y.n (chưa phát hành)" heading becomes "### <version> (dd/MM/yyyy)" with -Notes as the first bullet (a new section is
+  created when none is pending); that section is also the tag annotation and, via release.yml, the GitHub Release body.
+  Files are rewritten with their original UTF-8/BOM encoding so Vietnamese text is preserved. Nothing is pushed unless the
+  local build and --self-test pass (self-test needs an elevated shell).
 
 .EXAMPLE
   .\release.ps1                                 # next patch version automatically (0.7.1 -> 0.7.2 -> 0.7.3 ...)
@@ -43,6 +46,41 @@ function HighestTag([string]$remote) {
   if ($versions) { return ($versions | Sort-Object -Descending | Select-Object -First 1) } else { return $null }
 }
 function PadVersion([string]$v) { $parts = $v.Split('.'); while ($parts.Count -lt 3) { $parts += '0' }; return [version]($parts -join '.') }
+function ReadUtf8([string]$path, [ref]$bom) {
+  $bytes = [IO.File]::ReadAllBytes($path)
+  $bom.Value = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+  $text = [Text.Encoding]::UTF8.GetString($bytes); if ($bom.Value) { $text = $text.Substring(1) }
+  return $text
+}
+function UpdateChangelog([string]$path, [string]$version, [string]$notes) {
+  # README "## Lịch sử phiên bản": the pending "### x.y.n (chưa phát hành)" heading becomes "### <version> (dd/MM/yyyy)";
+  # -Notes is inserted as the first bullet; when no pending section exists one is created from -Notes (or a maintenance line).
+  $bom = $false; $text = ReadUtf8 $path ([ref]$bom)
+  $nl = if ($text -match "`r`n") { "`r`n" } else { "`n" }
+  $today = Get-Date -Format 'dd/MM/yyyy'
+  $heading = "### $version ($today)"
+  $bullet = if ($notes) { $notes.Trim() -split "\r?\n" | Where-Object { $_.Trim() } | ForEach-Object { if ($_ -match '^\s*[-*] ') { $_.Trim() } else { "- $($_.Trim())" } } } else { @() }
+  $pending = [regex]::Match($text, '(?m)^### [^\r\n]*\(chưa phát hành\)[^\r\n]*')
+  if ($pending.Success) {
+    $replacement = $heading; if ($bullet.Count -gt 0) { $replacement += $nl + ($bullet -join $nl) }
+    $text = $text.Substring(0, $pending.Index) + $replacement + $text.Substring($pending.Index + $pending.Length)
+  } else {
+    $anchor = [regex]::Match($text, '(?m)^## Lịch sử phiên bản[^\r\n]*')
+    if (-not $anchor.Success) { throw "README.md has no '## Lịch sử phiên bản' section." }
+    if ($bullet.Count -eq 0) { $bullet = @('- Bản phát hành bảo trì (build, bộ cài, sửa lỗi nhỏ).') }
+    $insert = $nl + $nl + $heading + $nl + $nl + ($bullet -join $nl)
+    $at = $anchor.Index + $anchor.Length
+    $text = $text.Substring(0, $at) + $insert + $text.Substring($at)
+  }
+  if (-not $DryRun) { [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding($bom))) }
+  Write-Host "   $path  ($heading$(if ($pending.Success) { ', from pending section' } else { ', new section' }))"
+}
+function ChangelogSection([string]$path, [string]$version) {
+  # Body of "### <version> ..." up to the next heading; used as the tag annotation so the GitHub Release shows the same text.
+  $bom = $false; $text = ReadUtf8 $path ([ref]$bom)
+  $m = [regex]::Match($text, "(?ms)^### $([regex]::Escape($version))\b[^\r\n]*\r?\n(?<body>.*?)(?=^#{2,3} |\Z)")
+  if ($m.Success) { return $m.Groups['body'].Value.Trim() } else { return '' }
+}
 function ReplaceInFile([string]$path, [string]$pattern, [string]$replacement) {
   $bytes = [IO.File]::ReadAllBytes($path)
   $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
@@ -101,12 +139,15 @@ ReplaceInFile $csproj '<TweekVersion>[^<]+</TweekVersion>' "<TweekVersion>$Versi
 ReplaceInFile (Join-Path $PSScriptRoot 'App.cs') 'public const string Version="[^"]+";' "public const string Version=`"$Version`";"
 ReplaceInFile (Join-Path $PSScriptRoot 'build.ps1') "\`$version = '[^']+'" "`$version = '$Version'"
 ReplaceInFile (Join-Path $PSScriptRoot 'installer\TweekPro.iss') '#define AppVersion "[^"]+"' "#define AppVersion `"$Version`""
+$readme = Join-Path $PSScriptRoot 'README.md'
+UpdateChangelog $readme $Version $Notes
 if ($DryRun) { Write-Host "Dry run complete. Would commit, tag $tag and push to $Remote/$branch." -ForegroundColor Green; exit 0 }
+$changelog = ChangelogSection $readme $Version
 
 # --- build + self-test ------------------------------------------------------------------------------------------------
 $elevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $SkipTests -and -not $elevated) {
-  & git.exe checkout -- $csproj App.cs build.ps1 installer/TweekPro.iss 2>$null
+  & git.exe checkout -- $csproj App.cs build.ps1 installer/TweekPro.iss README.md 2>$null
   Fail 'The self-test needs an elevated PowerShell (the exe manifest requires administrator). Re-run from "Run as administrator", or pass -SkipTests.'
 }
 Step ('Building' + $(if ($SkipTests) { ' (self-test skipped)' } else { ' and running --self-test' }))
@@ -114,16 +155,16 @@ $buildArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $
 if (-not $SkipTests) { $buildArgs += '-SelfTest' }
 & powershell @buildArgs
 if ($LASTEXITCODE -ne 0) {
-  & git.exe checkout -- $csproj App.cs build.ps1 installer/TweekPro.iss 2>$null
+  & git.exe checkout -- $csproj App.cs build.ps1 installer/TweekPro.iss README.md 2>$null
   Fail 'Build or self-test failed; version bump reverted, nothing committed.'
 }
 
 # --- commit, tag, push ------------------------------------------------------------------------------------------------
 Step "Committing and tagging $tag"
-Run-Git @('add', '--', 'TweekPro.csproj', 'App.cs', 'build.ps1', 'installer/TweekPro.iss') | Out-Null
-$message = "Release $tag"; if ($Notes) { $message += "`n`n$Notes" }
+Run-Git @('add', '--', 'TweekPro.csproj', 'App.cs', 'build.ps1', 'installer/TweekPro.iss', 'README.md') | Out-Null
+$message = "Release $tag"; if ($changelog) { $message += "`n`n$changelog" } elseif ($Notes) { $message += "`n`n$Notes" }
 Run-Git ($identity + @('commit', '--quiet', '-m', $message)) | Out-Null
-Run-Git ($identity + @('tag', '-a', $tag, '-m', "Tweek Pro $Version$(if ($Notes) { "`n`n$Notes" })")) | Out-Null
+Run-Git ($identity + @('tag', '-a', $tag, '-m', "Tweek Pro $Version$(if ($changelog) { "`n`n$changelog" } elseif ($Notes) { "`n`n$Notes" })")) | Out-Null
 Step "Pushing $branch and $tag to $Remote"
 Run-Git @('push', $Remote, "HEAD:refs/heads/$branch") | Out-Null
 Run-Git @('push', $Remote, "refs/tags/$tag") | Out-Null

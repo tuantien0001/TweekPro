@@ -21,7 +21,7 @@ Read `WORKSTATE.md` for the latest task checkpoint, then `HANDOFF.md` for archit
 - Never rewrite source files with PowerShell `Set-Content`/`Out-File` (Windows PowerShell 5.1 defaults to ANSI and destroys Vietnamese). Use the editor tools or an explicit UTF-8 read/write; files are UTF-8 (most with BOM) with CRLF. `Theme.Button/Note/HeaderBand/SetOverlay`, `SetupList` columns and `TabPage` titles translate automatically.
 - Comments and documentation in English; only method-level `/// <summary>` docstrings, no comments narrating logic inside methods. Code style is compact (single-line statements, few blank lines) – match the surrounding file.
 - Windows-only APIs (registry HKLM, ACL/ownership, `MoveFileEx`, PowerShell Appx cmdlets, ETW) must be guarded so the Linux self-test still passes (`StubbornFiles.IsWindows`, `PowerShell.Executable == null`, `Environment.OSVersion`).
-- README.md is the user-facing manual (Vietnamese): update the tab table and the "Lịch sử phiên bản" changelog (add bullets under a `### 0.7.n (chưa phát hành)` heading for the next patch version; create it above the latest released version if missing, `release.ps1` does not rename it) for every feature.
+- README.md is the user-facing manual (Vietnamese): update the tab table and the "Lịch sử phiên bản" changelog (add bullets under a `### 0.7.n (chưa phát hành)` heading placed right below the `## Lịch sử phiên bản` line; create it if missing. `release.ps1` renames that heading to the real version + date, prepends `-Notes`, and the section becomes the tag message and GitHub Release body) for every feature.
 
 ## Git
 

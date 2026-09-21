@@ -145,7 +145,7 @@ powershell -ExecutionPolicy Bypass -File .\release.ps1 -Notes "Mô tả ngắn" 
 powershell -ExecutionPolicy Bypass -File .\release.ps1 -Version 0.8 -DryRun  # nhảy minor, chỉ kiểm tra
 ```
 
-Script ghi phiên bản mới vào `TweekPro.csproj`, `App.cs`, `build.ps1`, `installer\TweekPro.iss` (giữ UTF-8/BOM), chạy `build.ps1 -SelfTest`, commit «Release vX.Y.Z», gắn tag và push; nếu build/test lỗi thì hoàn nguyên. GitHub Actions (`.github/workflows/release.yml`) nhận tag, build trên `windows-latest`, đính kèm Setup + zip và xuất bản Release — vài phút sau ứng dụng báo bản mới. Đóng gói thủ công: `publish.ps1` (cần [Inno Setup 6.3+](https://jrsoftware.org/isinfo.php), `-InstallInno` để cài qua winget).
+Script ghi phiên bản mới vào `TweekPro.csproj`, `App.cs`, `build.ps1`, `installer\TweekPro.iss` (giữ UTF-8/BOM), **cập nhật mục Lịch sử phiên bản trong README** (đổi tiêu đề `### 0.7.n (chưa phát hành)` thành số bản + ngày, thêm `-Notes` làm dòng đầu; chưa có mục chờ thì tạo mới), chạy `build.ps1 -SelfTest`, commit «Release vX.Y.Z», gắn tag với nội dung changelog và push; nếu build/test lỗi thì hoàn nguyên. GitHub Actions (`.github/workflows/release.yml`) nhận tag, build trên `windows-latest`, đính kèm Setup + zip và xuất bản Release với phần mô tả lấy từ chính mục changelog đó — vài phút sau ứng dụng báo bản mới. Đóng gói thủ công: `publish.ps1` (cần [Inno Setup 6.3+](https://jrsoftware.org/isinfo.php), `-InstallInno` để cài qua winget).
 
 **Cấu trúc mã** — mỗi tính năng một thư mục: `XyzEngine.cs` (logic thuần, không WinForms) · `XyzSafety` (hàng rào) · `XyzUI.cs` (`partial class MainForm`) · `XyzTests.cs`.
 
@@ -169,13 +169,17 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 
 ## Lịch sử phiên bản
 
-### 0.7.2
+### 0.7.n (chưa phát hành)
+
+- `release.ps1` tự chốt mục changelog này (đổi tiêu đề thành số bản + ngày, thêm `-Notes`) và GitHub Release dùng nó làm mô tả.
+
+### 0.7.2 (21/09/2026)
 
 - Kiểm tra cập nhật tự động khi khởi động; dải thông báo trên Tổng quan với **Tải về** / **Bỏ qua bản này** (`updateAutoCheck`, `updateSkipVersion`).
 - Bộ cài xóa exe phiên bản cũ trong `Program Files\Tweek Pro` trước khi chép bản mới.
 - `release.ps1` tự tăng số bản vá khi không truyền `-Version`; chịu được thông báo tiến trình của git trên stderr.
 
-### 0.7.1
+### 0.7.1 (21/09/2026)
 
 - Phát hành đầu tiên qua `release.ps1` + GitHub Actions; Release có Setup và portable.
 - **Startup Insight:** cột Windows (StartupApproved), Tác động, Chữ ký, Kích cỡ; mục hỏng; khu vực khởi động trong Tổng quan tính `AutorunBroken`.
