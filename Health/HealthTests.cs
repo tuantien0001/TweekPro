@@ -11,11 +11,17 @@ namespace TweekPro.Health {
   public static void Run(){
    var clean=HealthCheck.Evaluate(Clean());
    Assert(clean.Score==100&&clean.Grade=="A","clean machine scores 100/A, got "+clean.Score+"/"+clean.Grade);
-   Assert(clean.Findings.Count==6,"six areas");
+   Assert(clean.Findings.Count==7,"seven areas");
    Assert(clean.Findings.All(f=>f.Measured&&f.Severity==HealthSeverity.Good),"all good");
    Assert(clean.Issues==0&&clean.Reclaimable==0,"no issues, nothing reclaimable");
-   Assert(clean.Findings.Select(f=>f.Area).SequenceEqual(new[]{"Tệp rác","Phần còn sót","Thư mục rỗng","Kho khôi phục","Khởi động cùng Windows","Dung lượng trống"}),"stable area order");
-   Assert(clean.Findings[0].Tab==HealthCheck.TabJunk&&clean.Findings[5].Tab==HealthCheck.TabAnalyzer,"tab hints");
+   Assert(clean.Findings.Select(f=>f.Area).SequenceEqual(new[]{"Tệp rác","Phần còn sót","Thư mục rỗng","Kho khôi phục","Khởi động cùng Windows","Dung lượng trống","Ứng dụng không mong muốn"}),"stable area order");
+   Assert(clean.Findings[0].Tab==HealthCheck.TabJunk&&clean.Findings[5].Tab==HealthCheck.TabAnalyzer&&clean.Findings[6].Tab==HealthCheck.TabApps,"tab hints");
+
+   // PUP: 0 good, 1–2 low, 3+ medium, any high-severity match high; never contributes bytes.
+   var pup=Clean();pup.PupCount=1;Assert(HealthCheck.Evaluate(pup).Findings[6].Severity==HealthSeverity.Low,"1 pup low");
+   pup.PupCount=3;var pm=HealthCheck.Evaluate(pup);Assert(pm.Findings[6].Severity==HealthSeverity.Medium&&pm.Findings[6].Detail.StartsWith("3 mục (0 nên gỡ)")&&pm.Reclaimable==0,"3 pups medium, no bytes");
+   pup.PupHigh=1;Assert(HealthCheck.Evaluate(pup).Findings[6].Severity==HealthSeverity.High&&HealthCheck.Evaluate(pup).Findings[6].Verdict=="Có phần mềm nên gỡ","high pup verdict");
+   pup.PupMeasured=false;Assert(!HealthCheck.Evaluate(pup).Findings[6].Measured&&HealthCheck.Evaluate(pup).Score==100,"unmeasured pup ignored");
 
    // Junk thresholds: 100 MB low, 500 MB medium, 2 GB high; bytes count as reclaimable.
    var junk=Clean();junk.JunkBytes=99*HealthCheck.MB;junk.JunkFiles=10;
@@ -65,11 +71,11 @@ namespace TweekPro.Health {
    Assert(HealthCheck.Summary(pr).Contains("[chưa đo]"),"summary marks unmeasured");
 
    // Penalties accumulate and clamp at zero.
-   var worst=new HealthInputs{JunkBytes=10*HealthCheck.GB,LeftoverCandidates=50,EmptyFolders=10,VaultBackups=3,VaultStale=3,VaultStaleBytes=5*HealthCheck.GB,AutorunEntries=40,DiskFreeBytes=1,DiskTotalBytes=100*HealthCheck.GB};
+   var worst=new HealthInputs{JunkBytes=10*HealthCheck.GB,LeftoverCandidates=50,EmptyFolders=10,VaultBackups=3,VaultStale=3,VaultStaleBytes=5*HealthCheck.GB,AutorunEntries=40,DiskFreeBytes=1,DiskTotalBytes=100*HealthCheck.GB,PupCount=4,PupHigh=2};
    var wr=HealthCheck.Evaluate(worst);
-   int expected=100-HealthCheck.PenaltyHigh-HealthCheck.PenaltyMedium-HealthCheck.PenaltyLow-HealthCheck.PenaltyMedium-HealthCheck.PenaltyHigh-HealthCheck.PenaltyHigh;
+   int expected=100-HealthCheck.PenaltyHigh-HealthCheck.PenaltyMedium-HealthCheck.PenaltyLow-HealthCheck.PenaltyMedium-HealthCheck.PenaltyHigh-HealthCheck.PenaltyHigh-HealthCheck.PenaltyHigh;
    Assert(wr.Score==Math.Max(0,expected),"cumulative penalties: "+wr.Score+" vs "+expected);
-   Assert(wr.Grade=="E"&&wr.Issues==6,"worst case grade E with six issues");
+   Assert(wr.Grade=="E"&&wr.Issues==7,"worst case grade E with seven issues");
    Assert(wr.Reclaimable==15*HealthCheck.GB,"reclaimable sums junk + restored vault");
    var hundredHighs=Enumerable.Range(0,10).Select(_=>new HealthFinding{Severity=HealthSeverity.High}).ToList();
    Assert(HealthCheck.Score(hundredHighs)==0,"score clamps at zero");

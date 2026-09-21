@@ -22,6 +22,7 @@ namespace TweekPro.Health {
   public int EmptyFolders; public string EmptyRoot; public bool EmptyMeasured=true;
   public int LeftoverCandidates; public bool LeftoverMeasured=true;
   public long DiskFreeBytes; public long DiskTotalBytes; public string DiskName; public bool DiskMeasured=true;
+  public int PupCount; public int PupHigh; public bool PupMeasured=true;
  }
 
  /// <summary>Score, grade and the ordered list of findings produced by one health check.</summary>
@@ -39,7 +40,7 @@ namespace TweekPro.Health {
  public static class HealthCheck {
   public const long MB=1024L*1024, GB=1024L*MB;
   public const int PenaltyLow=5, PenaltyMedium=12, PenaltyHigh=25;
-  public const string TabJunk="Dọn rác", TabLeftovers="Phần còn sót", TabEmpty="Thư mục rỗng", TabVault="Kho khôi phục", TabAutorun="Khởi động", TabAnalyzer="Phân tích ổ đĩa";
+  public const string TabJunk="Dọn rác", TabLeftovers="Phần còn sót", TabEmpty="Thư mục rỗng", TabVault="Kho khôi phục", TabAutorun="Khởi động", TabAnalyzer="Phân tích ổ đĩa", TabApps="Ứng dụng";
 
   /// <summary>Builds the full report from raw inputs in a stable area order.</summary>
   public static HealthReport Evaluate(HealthInputs i){
@@ -51,6 +52,7 @@ namespace TweekPro.Health {
    report.Findings.Add(Vault(i));
    report.Findings.Add(Autorun(i));
    report.Findings.Add(Disk(i));
+   report.Findings.Add(Pup(i));
    report.Score=Score(report.Findings);
    report.Grade=Grade(report.Score);report.GradeLabel=GradeLabel(report.Grade);
    report.Reclaimable=report.Findings.Where(f=>f.Measured).Sum(f=>f.Bytes);
@@ -135,6 +137,16 @@ namespace TweekPro.Health {
    f.Severity=ratio>=0.20?HealthSeverity.Good:ratio>=0.10?HealthSeverity.Low:ratio>=0.05?HealthSeverity.Medium:HealthSeverity.High;
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Còn đủ chỗ trống":f.Severity==HealthSeverity.Low?"Chỗ trống bắt đầu ít":f.Severity==HealthSeverity.Medium?"Sắp đầy":"Gần như đầy");
    f.Detail=L.F("{0} còn trống {1} / {2} ({3}%).",String.IsNullOrEmpty(i.DiskName)?L.T("Ổ hệ thống"):i.DiskName,Presentation.BytesLabel(i.DiskFreeBytes),Presentation.BytesLabel(i.DiskTotalBytes),(ratio*100).ToString("N0"));
+   return f;
+  }
+
+  /// <summary>PUP/bloatware: any high-severity match is High; 3+ items Medium; 1–2 Low. Counts only, no bytes (removal goes through the uninstall flows).</summary>
+  static HealthFinding Pup(HealthInputs i){
+   var f=new HealthFinding{Area=L.T("Ứng dụng không mong muốn"),Tab=TabApps,Measured=i.PupMeasured,Count=i.PupCount};
+   if(!i.PupMeasured){Unmeasured(f);return f;}
+   f.Severity=i.PupCount==0?HealthSeverity.Good:i.PupHigh>0?HealthSeverity.High:i.PupCount>=3?HealthSeverity.Medium:HealthSeverity.Low;
+   f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Không có phần mềm không mong muốn":f.Severity==HealthSeverity.High?"Có phần mềm nên gỡ":"Có phần mềm không mong muốn");
+   f.Detail=i.PupCount==0?L.T("Không mục nào khớp quy tắc PUP/bloatware."):L.F("{0} mục ({1} nên gỡ). Xem cột Cảnh báo ở tab Ứng dụng / Ứng dụng Windows.",i.PupCount,i.PupHigh);
    return f;
   }
 

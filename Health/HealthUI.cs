@@ -31,7 +31,7 @@ namespace TweekPro {
 
    healthGauge.Dock=DockStyle.Top;healthGauge.Height=176;
    healthStage=new Label{Dock=DockStyle.Top,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
-   var note=Theme.Note("Kiểm tra sức khỏe chỉ đọc: đo tệp rác theo quy tắc, mục còn sót chờ duyệt, thư mục rỗng trong Downloads, bản sao lưu cũ hơn tuổi dọn kho, số mục khởi động và dung lượng trống ổ hệ thống. Không xóa gì; bấm đúp một dòng để mở tab xử lý tương ứng.",NoteKind.Info);
+   var note=Theme.Note("Kiểm tra sức khỏe chỉ đọc: đo tệp rác theo quy tắc, mục còn sót chờ duyệt, thư mục rỗng trong Downloads, bản sao lưu cũ hơn tuổi dọn kho, số mục khởi động, dung lượng trống ổ hệ thống và phần mềm không mong muốn (PUP/bloatware). Không xóa gì; bấm đúp một dòng để mở tab xử lý tương ứng.",NoteKind.Info);
    tab.Controls.Add(host);tab.Controls.Add(healthStage);tab.Controls.Add(note);tab.Controls.Add(healthGauge);tab.Controls.Add(bar);
    Theme.SetOverlay(healthOverlay,"Chưa kiểm tra.\r\nBấm Kiểm tra ngay để chấm điểm máy. Mỗi dòng kết quả chỉ ra tab có thể dọn an toàn.",NoteKind.Info);
   }
@@ -41,6 +41,8 @@ namespace TweekPro {
    healthStage.Visible=true;healthGauge.Report=null;healthGauge.BusyText=Core.L.T("Đang kiểm tra…");
    var inputs=new HealthInputs{LeftoverCandidates=candidates.Count};
    bool elevated=Core.Elevation.IsElevated;int minAge=settings.JunkMinAgeHours;int purgeDays=settings.PurgeDefaultDays;
+   var desktopSnapshot=inventory.ToList();var storeSnapshot=storeLoaded?storeApps.ToList():null;
+   if(desktopSnapshot.Count==0&&inventoryError==null)inputs.PupMeasured=false;
    Action<string> stage=text=>{try{BeginInvoke((Action)(()=>healthStage.Text=text));}catch(InvalidOperationException){}};
    healthCancellation=new CancellationTokenSource();var token=healthCancellation.Token;healthStop.Visible=true;
    try{
@@ -69,6 +71,11 @@ namespace TweekPro {
     stage(Core.L.T("Đang đọc dung lượng trống…"));
     try{var drive=new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory));inputs.DiskName=Core.L.F("Ổ {0}",drive.Name.TrimEnd('\\','/'));inputs.DiskFreeBytes=drive.AvailableFreeSpace;inputs.DiskTotalBytes=drive.TotalSize;}
     catch(Exception e){inputs.DiskMeasured=false;Core.Log.Warn("Health: disk probe failed: "+e.Message);}
+    token.ThrowIfCancellationRequested();
+    stage(Core.L.T("Đang phân loại phần mềm không mong muốn…"));
+    // Desktop inventory is already in memory; Store packages only count when that tab has loaded them (no PowerShell here).
+    try{var verdicts=Pup.PupDetector.Scan(desktopSnapshot,storeSnapshot);inputs.PupCount=verdicts.Count;inputs.PupHigh=verdicts.Count(v=>v.Severity==Pup.PupSeverity.High);}
+    catch(Exception e){inputs.PupMeasured=false;Core.Log.Warn("Health: pup probe failed: "+e.Message);}
    },token);
    }catch(OperationCanceledException){if(!IsDisposed){healthGauge.Report=healthReport;Log(Core.L.T("Đã dừng kiểm tra sức khỏe."));}return;}
    finally{healthCancellation.Dispose();healthCancellation=null;if(!IsDisposed){healthStage.Visible=false;healthStop.Visible=false;healthGauge.BusyText=null;}}
@@ -108,7 +115,7 @@ namespace TweekPro {
 
   /// <summary>Fills the Overview tab with illustrative numbers for --preview health; no probes run.</summary>
   public void PreviewHealth(){
-   var sample=new HealthInputs{JunkBytes=730L*HealthCheck.MB,JunkFiles=4812,JunkLockedRules=1,LeftoverCandidates=3,EmptyFolders=17,EmptyRoot=@"C:\Users\ADMIN\Downloads",VaultBackups=9,VaultBytes=2200L*HealthCheck.MB,VaultStale=4,VaultStaleBytes=640L*HealthCheck.MB,AutorunEntries=12,DiskName="Ổ C:",DiskFreeBytes=38L*HealthCheck.GB,DiskTotalBytes=476L*HealthCheck.GB};
+   var sample=new HealthInputs{JunkBytes=730L*HealthCheck.MB,JunkFiles=4812,JunkLockedRules=1,LeftoverCandidates=3,EmptyFolders=17,EmptyRoot=@"C:\Users\ADMIN\Downloads",VaultBackups=9,VaultBytes=2200L*HealthCheck.MB,VaultStale=4,VaultStaleBytes=640L*HealthCheck.MB,AutorunEntries=12,DiskName="Ổ C:",DiskFreeBytes=38L*HealthCheck.GB,DiskTotalBytes=476L*HealthCheck.GB,PupCount=3,PupHigh=1};
    healthReport=HealthCheck.Evaluate(sample);healthGauge.Report=healthReport;RenderHealth();tabs.SelectedTab=healthTab;
   }
 

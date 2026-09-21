@@ -1,7 +1,7 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-21 18:10 (Asia/Bangkok).
-Status: IN PROGRESS — Cursor continuing roadmap after taskbar icon fix (owner confirmed OK).
+Updated: 2026-09-21 18:40 (Asia/Bangkok).
+Status: IN PROGRESS — Cursor working through the roadmap (HANDOFF.md §5). Sole writer since the localization session stopped at `e7c842b`.
 Last editor: Cursor.
 
 ## Owner objective (2026-09-21 18:04)
@@ -10,21 +10,20 @@ Last editor: Cursor.
 
 ## Done this session
 
-- Taskbar icon: `30d7a30` (WM_SETICON 256px + AppUserModelID `TweekPro.App.0.7.tpc`); Program Files exe refreshed. Owner confirmed.
-- AI tab moved to the last position (`App.cs` `ordered[]`), README tab table + changelog updated. Build 0/0, `--self-test` PASS.
+- Taskbar icon `30d7a30`; AI tab last `74f2717` (owner confirmed both).
+- **PUP / bloatware detector v1** (this commit): `Pup/PupDetector.cs` (rules, `PupSafety` trusted publishers/names, Appx protected/caution never flagged, rule-file validation refuses broad globs), `Pup/pup-rules.json` (embedded, 11 rules), `Pup/PupLang.cs` (English table merged by `Core.L`, duplicate keys throw), `Pup/PupTests.cs` wired in `Tests07.Run()`. UI: Flag column + «Chỉ hiện mục cảnh báo» filter + note in Applications; Flag column in Windows Apps; 7th Health area "Ứng dụng không mong muốn" (`HealthInputs.PupCount/PupHigh`). `--preview apps`. README + AGENTS updated.
+- Verified: Release build 0/0; `--self-test` PASS (includes PupTests + updated HealthTests); previews `apps`/`health` rendered with correct Vietnamese; live inventory (101 apps) flags 2 (Adobe Genuine Service → bundled).
 
-## Parallel localization pass (other Cursor session) — committed, session stopped
+## Incident (resolved, lesson in AGENTS.md)
 
-`f68eaed` (pushed): Empty folders / Disk analyzer / Duplicates runtime texts wrapped in `L.T/L.F`, English pairs added, no duplicate keys; build 0/0, `--self-test` PASS. Earlier: `36f52c9` (ScanWindow, Startup/Tools, Network), plus App.cs Log/MessageBox/Confirm and `Presentation.KindLabel`.
-Still unwrapped (for roadmap item 1): Health, Junk, Services, Store, AI tabs; engine-produced `ScanProgress.Stage` / `ScanResult.Reason` strings; `LangTests` source scan not yet written. The localization session has stopped writing to this checkout.
+A PowerShell `Set-Content` rename corrupted App.cs Vietnamese to `?`; restored via `git checkout -- App.cs` and re-applied the PUP edits with an explicit UTF-8 script. All edited files scanned: no `?`/mojibake damage.
 
-## Next concrete action (roadmap, HANDOFF.md §5)
+## Next concrete action
 
-1. Localization completion finish + `LangTests` source scan for unwrapped Vietnamese `Log("…")`.
-2. PUP / bloatware detector (read-only classification, Health finding, badge column).
-3. Stale large files (Downloads/Desktop installers, vault `Kind=Stale`).
+3. Stale large files (Downloads/Desktop installers older than N days, vault `Kind=Stale`) — engine + safety + tests + UI + README.
 4. Startup impact + broken shortcuts.
-Each: engine + safety + tests in `Tests07.Run()` + UI + `LangEn` + README, small commits.
+1. Localization completion: Health/Junk/Services/Store/AI runtime strings, `LangTests` source scan for unwrapped `Log("…")`.
+Optional follow-up for PUP: AI tool `list_unwanted`, CSV export of flags, one-click "select all flagged".
 
 ## Git
 

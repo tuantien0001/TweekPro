@@ -41,6 +41,7 @@
     <EmbeddedResource Include="Assets\TweekPro.png" LogicalName="TweekPro.Branding.png" />
     <EmbeddedResource Include="TweekPro.ico" LogicalName="TweekPro.Branding.ico" />
     <EmbeddedResource Include="Cleaner\junk-rules.json" LogicalName="TweekPro.Cleaner.junk-rules.json" />
+    <EmbeddedResource Include="Pup\pup-rules.json" LogicalName="TweekPro.Pup.pup-rules.json" />
     <EmbeddedResource Include="Services\service-knowledge.json" LogicalName="TweekPro.Services.service-knowledge.json" />
   </ItemGroup>
 

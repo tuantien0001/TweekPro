@@ -17,7 +17,7 @@ namespace TweekPro {
   void BuildStoreTab(){
    var tab=storeTab=new TabPage(Core.L.T("Ứng dụng Windows"));
    storeIcons.ColorDepth=ColorDepth.Depth32Bit;storeIcons.ImageSize=new Size(28,28);storeList.SmallImageList=storeIcons;
-   SetupList(storeList,new[]{"Ứng dụng","Gói","Nhà phát hành","Phiên bản","Nguồn","Tình trạng","Vị trí"},new[]{240,300,180,110,80,130,360},true,true);
+   SetupList(storeList,new[]{"Ứng dụng","Gói","Nhà phát hành","Phiên bản","Nguồn","Tình trạng","Cảnh báo","Vị trí"},new[]{230,280,170,100,80,120,190,300},true,true);
    storeList.ItemChecked+=(s,e)=>{var a=e.Item.Tag as WindowsApp;if(a!=null&&a.Status==AppxStatus.Protected&&e.Item.Checked)e.Item.Checked=false;UpdateStoreSummary();};
    storeList.DoubleClick+=async(s,e)=>await Guard(()=>{OpenStoreLocation();return Task.FromResult(0);});
    var host=Theme.ListHost(storeList,out storeOverlay);
@@ -81,8 +81,9 @@ namespace TweekPro {
    foreach(var a in storeApps){
     if(a.Status==AppxStatus.Protected&&!showProtected)continue;
     string status=Core.L.T(a.Status==AppxStatus.Removable?"Gỡ được":a.Status==AppxStatus.Caution?"Cần cân nhắc":"Được bảo vệ");
-    var row=new ListViewItem(new[]{a.DisplayName,a.Name,a.PublisherName,a.Version,Core.L.T(a.Origin=="System"?"Hệ thống":a.Origin=="Store"?"Store":"Khác"),status,Presentation.ShortPath(a.InstallLocation,60)}){Tag=a,ImageKey=a.FullName,ToolTipText=a.FullName+"\r\n"+a.InstallLocation+"\r\n\r\n"+a.StatusReason};
-    if(a.Status==AppxStatus.Protected)row.ForeColor=Theme.Muted;else if(a.Status==AppxStatus.Caution)row.ForeColor=Theme.Warning;
+    var verdict=Pup.PupDetector.Classify(a);string flag=verdict==null?"":verdict.Badge+" • "+Pup.PupDetector.SeverityLabel(verdict.Severity);
+    var row=new ListViewItem(new[]{a.DisplayName,a.Name,a.PublisherName,a.Version,Core.L.T(a.Origin=="System"?"Hệ thống":a.Origin=="Store"?"Store":"Khác"),status,flag,Presentation.ShortPath(a.InstallLocation,60)}){Tag=a,ImageKey=a.FullName,ToolTipText=a.FullName+"\r\n"+a.InstallLocation+"\r\n\r\n"+a.StatusReason+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
+    if(a.Status==AppxStatus.Protected)row.ForeColor=Theme.Muted;else if(a.Status==AppxStatus.Caution||verdict!=null)row.ForeColor=Theme.Warning;
     Theme.AssignGroup(storeList,row,((int)a.Status).ToString(),Core.L.T(a.Status==AppxStatus.Removable?"Gỡ được":a.Status==AppxStatus.Caution?"Cần cân nhắc":"Được bảo vệ (chỉ xem)"));
     Theme.StripeRow(row,storeList.Items.Count);storeList.Items.Add(row);
    }
