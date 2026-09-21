@@ -10,14 +10,15 @@
   text is preserved. Nothing is pushed unless the local build and --self-test pass (self-test needs an elevated shell).
 
 .EXAMPLE
-  .\release.ps1 -Version 0.7.1
-  .\release.ps1 -Version 0.7.1 -Notes "Icon Cong cu, Startup Insight, kiem tra cap nhat"
-  .\release.ps1 -Version 0.7.1 -DryRun          # only validate and show what would change
-  .\release.ps1 -Version 0.7.1 -SkipTests       # not recommended; Actions still runs the self-test
+  .\release.ps1                                 # next patch version automatically (0.7.1 -> 0.7.2 -> 0.7.3 ...)
+  .\release.ps1 -Notes "Icon Cong cu, Startup Insight, kiem tra cap nhat"
+  .\release.ps1 -Version 0.8                    # explicit version (minor/major bump)
+  .\release.ps1 -DryRun                         # only validate and show what would change
+  .\release.ps1 -SkipTests                      # not recommended; Actions still runs the self-test
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)][string]$Version,
+  [string]$Version = '',
   [string]$Notes = '',
   [string]$Remote = 'origin',
   [switch]$SkipTests,
@@ -30,9 +31,16 @@ Set-Location $PSScriptRoot
 function Step($text) { Write-Host "== $text" -ForegroundColor Cyan }
 function Fail($text) { Write-Host $text -ForegroundColor Red; exit 1 }
 function Run-Git([string[]]$arguments) {
-  $output = & git.exe @arguments 2>&1
-  if ($LASTEXITCODE -ne 0) { throw "git $($arguments -join ' ') failed: $output" }
+  # git writes progress (push, fetch) to stderr; only the exit code decides success.
+  $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try { $output = & git.exe @arguments 2>&1 | ForEach-Object { "$_" } } finally { $ErrorActionPreference = $previous }
+  if ($LASTEXITCODE -ne 0) { throw "git $($arguments -join ' ') failed: $($output -join "`n")" }
   return $output
+}
+function HighestTag([string]$remote) {
+  $tags = @(Run-Git @('ls-remote', '--tags', '--refs', $remote, 'refs/tags/v*')) + @(Run-Git @('tag', '--list', 'v*'))
+  $versions = $tags | ForEach-Object { if ($_ -match '(?:refs/tags/)?v(\d+\.\d+(?:\.\d+)?)\s*$') { PadVersion $Matches[1] } } | Where-Object { $_ }
+  if ($versions) { return ($versions | Sort-Object -Descending | Select-Object -First 1) } else { return $null }
 }
 function PadVersion([string]$v) { $parts = $v.Split('.'); while ($parts.Count -lt 3) { $parts += '0' }; return [version]($parts -join '.') }
 function ReplaceInFile([string]$path, [string]$pattern, [string]$replacement) {
@@ -45,17 +53,25 @@ function ReplaceInFile([string]$path, [string]$pattern, [string]$replacement) {
   Write-Host "   $path"
 }
 
-# --- validate version -------------------------------------------------------------------------------------------------
-if ($Version -notmatch '^\d+\.\d+(\.\d+)?$') { Fail "Version must look like 0.7.1 (got '$Version')." }
+# --- pick / validate version --------------------------------------------------------------------------------------------
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Fail 'git is not installed.' }
 $csproj = Join-Path $PSScriptRoot 'TweekPro.csproj'
 $current = ([xml](Get-Content $csproj)).Project.PropertyGroup.TweekVersion | Where-Object { $_ } | Select-Object -First 1
 if (-not $current) { Fail 'TweekVersion not found in TweekPro.csproj.' }
+if (-not $Version) {
+  # Auto-increment: next patch after the highest of the project version and every published v* tag (0.7 -> 0.7.1 -> 0.7.2 ...).
+  $base = PadVersion $current
+  $highest = HighestTag $Remote
+  if ($highest -and $highest -gt $base) { $base = $highest }
+  $Version = '{0}.{1}.{2}' -f $base.Major, $base.Minor, ($base.Build + 1)
+  Write-Host "No -Version given; next version is $Version (project $current, highest tag $(if ($highest) { "v$highest" } else { 'none' }))." -ForegroundColor Yellow
+}
+if ($Version -notmatch '^\d+\.\d+(\.\d+)?$') { Fail "Version must look like 0.7.1 (got '$Version')." }
 if ((PadVersion $Version) -le (PadVersion $current)) { Fail "New version $Version must be greater than current $current." }
 $tag = "v$Version"
 
 # --- validate git state -----------------------------------------------------------------------------------------------
 Step "Checking git state (current $current -> $Version, tag $tag)"
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Fail 'git is not installed.' }
 $branch = (Run-Git @('rev-parse', '--abbrev-ref', 'HEAD')).Trim()
 if ($branch -eq 'HEAD') { Fail 'Detached HEAD; check out a branch first.' }
 $dirty = @(Run-Git @('status', '--porcelain', '--untracked-files=no'))
