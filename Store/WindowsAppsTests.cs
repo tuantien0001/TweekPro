@@ -77,9 +77,7 @@ namespace TweekPro.Store {
     MustFail(()=>WindowsApps.List(false),"listing off Windows");
     int before=Engine.Backups().Count;
     MustFail(()=>WindowsApps.Remove(candy,false,false),"removing off Windows");
-    var failed=Engine.Backups().FirstOrDefault(b=>b.Kind=="Store"&&b.Purpose==candy.FullName);
-    Assert(failed!=null&&failed.State=="NeedsReview"&&Engine.Backups().Count==before+1,"failed removal leaves a NeedsReview record");
-    try{Directory.Delete(Path.Combine(Engine.Vault,failed.Id),true);}catch(Exception){}
+    Assert(Engine.Backups().Count==before,"no vault record when PowerShell is unavailable");
    }
   }
  }

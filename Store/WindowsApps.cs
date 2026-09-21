@@ -158,6 +158,7 @@ namespace TweekPro.Store {
   /// <summary>Removes a package and records a Store entry in the vault so the action is visible and reversible where Windows allows it.</summary>
   public static Backup Remove(WindowsApp a,bool allUsers,bool deprovision){
    string script=RemoveScript(a,allUsers,deprovision);
+   if(PowerShell.Executable==null)throw new IOException(L.T("Không tìm thấy Windows PowerShell; tính năng này chỉ chạy trên Windows."));
    var backup=new Backup{Id=Guid.NewGuid().ToString("N"),Created=DateTime.Now.ToString("s"),State="Pending",Original=a.InstallLocation,Kind="Store",AppName=a.DisplayName,Purpose=a.FullName,ValueName=a.FamilyName,Payload=""};
    Engine.NoLinks(Engine.Vault,false);Directory.CreateDirectory(Path.Combine(Engine.Vault,backup.Id));Engine.SaveBackup(backup);
    try{

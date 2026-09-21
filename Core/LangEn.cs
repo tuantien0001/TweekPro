@@ -123,6 +123,7 @@ namespace TweekPro.Core {
    {"Không tìm thấy Windows PowerShell; tính năng này chỉ chạy trên Windows.","Windows PowerShell not found; this feature runs on Windows only."},{"PowerShell không phản hồi trong thời gian cho phép.","PowerShell did not respond within the allowed time."},
 
    // Vault states and stubborn files
+   {"{0} bản sao lưu ({1} trên đĩa)  •  Đã đánh dấu {2} ({3})  •  Khôi phục dùng dòng đang chọn; xóa vĩnh viễn dùng ô đánh dấu.","{0} backups ({1} on disk)  •  Marked {2} ({3})  •  Restore uses the selected row; permanent delete uses the checkboxes."},
    {"Đã sao lưu","Backed up"},{"Đã khôi phục","Restored"},{"Cần kiểm tra","Needs review"},{"Hẹn xóa khi khởi động lại","Delete at next reboot"},
    {"bỏ thuộc tính chỉ đọc/ẩn/hệ thống của {0} mục","cleared read-only/hidden/system on {0} entries"},{"chiếm quyền sở hữu và cấp toàn quyền cho Administrators","took ownership and granted Administrators full control"},
    {"{0} mục vẫn bị Windows chặn dù đã bỏ thuộc tính và chiếm quyền sở hữu (thường do một tiến trình đang giữ tệp):\r\n\r\n{1}\r\n\r\nHẹn xóa các mục này khi khởi động lại Windows? Chúng sẽ bị xóa thẳng lúc khởi động, KHÔNG có bản sao lưu để khôi phục.","Windows still blocks {0} items after clearing attributes and taking ownership (usually a process is holding the files):\r\n\r\n{1}\r\n\r\nSchedule them for deletion at the next Windows restart? They will be deleted directly at boot, with NO backup to restore."},

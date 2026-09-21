@@ -291,7 +291,7 @@ namespace TweekPro {
   void UpdateBackupSummary(){
    var all=backups.Items.Cast<ListViewItem>().Select(i=>(Backup)i.Tag).ToList();var marked=backups.CheckedItems.Cast<ListViewItem>().Select(i=>(Backup)i.Tag).ToList();
    long total=all.Where(b=>b.Bytes>0).Sum(b=>b.Bytes),markedBytes=marked.Where(b=>b.Bytes>0).Sum(b=>b.Bytes);
-   backupSummary.Text=all.Count+" bản sao lưu ("+Presentation.BytesLabel(total)+" trên đĩa)  •  Đã đánh dấu "+marked.Count+" ("+Presentation.BytesLabel(markedBytes)+")  •  Khôi phục dùng dòng đang chọn; xóa vĩnh viễn dùng ô đánh dấu.";
+   backupSummary.Text=Core.L.F("{0} bản sao lưu ({1} trên đĩa)  •  Đã đánh dấu {2} ({3})  •  Khôi phục dùng dòng đang chọn; xóa vĩnh viễn dùng ô đánh dấu.",all.Count,Presentation.BytesLabel(total),marked.Count,Presentation.BytesLabel(markedBytes));
   }
   async Task Restore(){if(backups.SelectedItems.Count==0)throw new IOException("Chọn một bản sao lưu.");var b=(Backup)backups.SelectedItems[0].Tag;if(b.State=="Restored")throw new IOException("Mục này đã khôi phục.");if(!Confirm("Khôi phục về vị trí gốc?\r\n"+b.Original+"\r\n\r\nKhông ghi đè nếu đích đã tồn tại. Nếu lần dọn trước bị gián đoạn, kiểm tra cả vị trí gốc và kho."))return;await Task.Run(()=>Engine.Restore(b));LoadBackups();Log("Đã khôi phục: "+b.Original);}
   /// <summary>Permanently deletes the checked backups after a size-aware confirmation and reports the outcome.</summary>
