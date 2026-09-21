@@ -185,7 +185,7 @@ namespace TweekPro {
    if(c.Kind=="File"||c.Kind=="RegistryValue")return Advanced.Store(c,false);
    if(Installed(c.AppId))throw new IOException("Ứng dụng vẫn được đăng ký cài đặt. Hãy gỡ chính thức và chờ hoàn tất trước khi dọn.");
    if(c.Kind=="Folder"){
-    ValidateFolder(c.Path);if(!Directory.Exists(c.Path))throw new IOException("Thư mục không còn tồn tại.");
+    ValidateFolder(c.Path,false);if(!Directory.Exists(c.Path))throw new IOException("Thư mục không còn tồn tại.");
     foreach(var a in Inventory())if(!String.IsNullOrWhiteSpace(a.Location)){try{if(Overlap(Canon(c.Path),Canon(a.Location)))throw new IOException("Thư mục giao với ứng dụng còn cài: "+a.Name);}catch(ArgumentException){}}
    }else { ValidateRegistry(c.Path); if(Inventory().Any(a=>String.Equals(a.Name,c.AppName,StringComparison.OrdinalIgnoreCase)))throw new IOException("Một ứng dụng cùng tên vẫn còn cài đặt; giữ lại Registry."); }
    var backup=new Backup{Id=Guid.NewGuid().ToString("N"),Created=DateTime.Now.ToString("s"),State="Pending",Original=c.Kind=="Folder"?Canon(c.Path):c.Path,Kind=c.Kind,Hive=c.Hive,View=c.View,AppName=c.AppName};
@@ -266,11 +266,11 @@ namespace TweekPro {
    return bytes;
   }
   public static void Restore(Backup b){
+   if(b.State=="PendingReboot")throw new IOException("Mục này được hẹn xóa khi khởi động lại và không có bản sao lưu để khôi phục.");
    if(b.Kind=="File"||b.Kind=="RegistryValue"){Advanced.Restore(b);return;}
    if(b.Kind=="Junk"){Cleaner.JunkCleaner.Restore(b);return;}
    if(b.Kind=="Duplicate"){Dupes.DuplicateFinder.Restore(b);return;}
    if(b.Kind=="Store"){Store.WindowsApps.Restore(b);return;}
-   if(b.State=="PendingReboot")throw new IOException("Mục này được hẹn xóa khi khởi động lại và không có bản sao lưu để khôi phục.");
    Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");
    string payload=Path.Combine(VaultOf(b),b.Id,b.Kind=="Folder"?"content":"registry.xml");NoLinks(payload,true);
    if(b.Kind=="Folder"){

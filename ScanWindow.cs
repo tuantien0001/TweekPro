@@ -38,6 +38,7 @@ namespace TweekPro {
   public LeftoverScanForm(IEnumerable<AppEntry> targets,bool deepScan,Action<string> logger){
    apps=targets.ToList();deep=deepScan;log=logger??(s=>{});
    string names=String.Join(", ",apps.Select(a=>a.Name));
+   SuspendLayout();
    Text="Phần còn sót — "+names;Size=new Size(1180,760);MinimumSize=new Size(960,600);StartPosition=FormStartPosition.CenterParent;
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleDimensions=new SizeF(96F,96F);AutoScaleMode=AutoScaleMode.Dpi;ShowIcon=false;
 
@@ -95,6 +96,7 @@ namespace TweekPro {
     Remaining=list.Items.Cast<ListViewItem>().Where(i=>!IsDone(i)).Select(i=>(Candidate)i.Tag).ToList();
    };
    UpdateSummary();
+   ResumeLayout(true);
   }
 
   /// <summary>Runs the scan for every application, then measures footprints and unlocks the review actions.</summary>

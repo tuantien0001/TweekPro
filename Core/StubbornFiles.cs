@@ -155,7 +155,7 @@ namespace TweekPro.Core {
     var info=new DirectoryInfo(path);
     var owner=new DirectorySecurity();owner.SetOwner(admins);info.SetAccessControl(owner);
     var security=info.GetAccessControl(AccessControlSections.Access);
-    RemoveDenies(security);
+    if(!RemoveDenies(security)){security=new DirectorySecurity();security.SetAccessRuleProtection(true,false);}
     security.AddAccessRule(new FileSystemAccessRule(admins,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));
     info.SetAccessControl(security);return true;
    }catch(Exception e){Log.Warn("Không chiếm được quyền thư mục "+path+": "+e.Message);return false;}
@@ -166,17 +166,23 @@ namespace TweekPro.Core {
     var info=new FileInfo(path);
     var owner=new FileSecurity();owner.SetOwner(admins);info.SetAccessControl(owner);
     var security=info.GetAccessControl(AccessControlSections.Access);
-    RemoveDenies(security);
+    if(!RemoveDenies(security)){security=new FileSecurity();security.SetAccessRuleProtection(true,false);}
     security.AddAccessRule(new FileSystemAccessRule(admins,FileSystemRights.FullControl,AccessControlType.Allow));
     info.SetAccessControl(security);return true;
    }catch(Exception e){Log.Warn("Không chiếm được quyền tệp "+path+": "+e.Message);return false;}
   }
 
-  /// <summary>Drops explicit Deny entries; inherited ones are cut by protecting the DACL, since the item is about to be moved or deleted anyway.</summary>
-  static void RemoveDenies(FileSystemSecurity security){
-   var rules=security.GetAccessRules(true,true,typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().ToList();
-   if(rules.Any(r=>r.AccessControlType==AccessControlType.Deny&&r.IsInherited))security.SetAccessRuleProtection(true,true);
-   foreach(var rule in security.GetAccessRules(true,false,typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().Where(r=>r.AccessControlType==AccessControlType.Deny).ToList())security.RemoveAccessRuleAll(rule);
+  /// <summary>
+  /// Drops every Deny entry. Inherited denies cannot be removed in place, so inheritance is cut without preserving them
+  /// (the item is about to be moved or deleted anyway). Returns false when the DACL is non-canonical and must be rebuilt.
+  /// </summary>
+  static bool RemoveDenies(FileSystemSecurity security){
+   try{
+    var rules=security.GetAccessRules(true,true,typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().ToList();
+    if(rules.Any(r=>r.AccessControlType==AccessControlType.Deny&&r.IsInherited))security.SetAccessRuleProtection(true,false);
+    foreach(var rule in security.GetAccessRules(true,false,typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().Where(r=>r.AccessControlType==AccessControlType.Deny).ToList())security.RemoveAccessRuleAll(rule);
+    return true;
+   }catch(InvalidOperationException){return false;}
   }
 
   /// <summary>Enables one privilege on the process token; false when the token does not hold it (AdjustTokenPrivileges reports ERROR_NOT_ALL_ASSIGNED).</summary>

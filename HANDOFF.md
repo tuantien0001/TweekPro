@@ -69,7 +69,7 @@ Run from `C:\Users\ADMIN\TweekPro` after `get-latest.ps1`. Fix anything that fai
    Expect the "hẹn xóa khi khởi động lại" prompt; accept; verify the path in `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\PendingFileRenameOperations`, the `PendingReboot` row in Kho khôi phục, and that the folder is gone after a reboot. Cleanup: `$f.Dispose()`.
 6. Junk cleaner "Rác hệ thống" group is now enabled (admin): Preview then Clean into vault; confirm nothing under `C:\Windows\System32` is listed (the safety test guarantees it, but look).
 7. Network tab: bandwidth (ETW) toggles on without an elevation prompt; packet animation reacts to traffic.
-8. High-DPI: check text is crisp on a 125–150% display (PerMonitorV2 manifest) and no clipped notes/buttons.
+8. High-DPI: on a 125–150% display check text is crisp, controls (toolbar, notes, list icons) are scaled and nothing is clipped; resize the window, close and reopen twice and confirm the window size stays the same (sizes are persisted in logical pixels and restored in `Load`).
 
 ## 5. Roadmap (next features, in priority order)
 

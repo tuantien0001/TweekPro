@@ -26,8 +26,8 @@ namespace TweekPro {
 
   /// <summary>Builds the main window; when preview is true the inventory is not loaded automatically.</summary>
   public MainForm(bool preview=false){
+   SuspendLayout();
    Text=AppTitle+" "+Version+" – "+Core.L.T(Tagline);Size=new Size(1240,820);MinimumSize=new Size(1120,700);StartPosition=FormStartPosition.CenterScreen;
-   if(settings.WindowWidth>=MinimumSize.Width&&settings.WindowHeight>=MinimumSize.Height)Size=new Size(settings.WindowWidth,settings.WindowHeight);
    Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleDimensions=new SizeF(96F,96F);AutoScaleMode=AutoScaleMode.Dpi;
    try{brandIcon=Branding.AppIcon(32);Icon=brandIcon;ShowIcon=true;}catch(Exception){}
    FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();};
@@ -109,14 +109,23 @@ namespace TweekPro {
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
    FormClosed+=(s,e)=>SaveSettings();
-   Resize+=(s,e)=>{if(WindowState==FormWindowState.Normal){settings.WindowWidth=Width;settings.WindowHeight=Height;}};
+   Load+=(s,e)=>{int dpi=ScreenDpi();int w=Logical(settings.WindowWidth)*dpi/96,h=Logical(settings.WindowHeight)*dpi/96;if(w>=MinimumSize.Width&&h>=MinimumSize.Height)Size=new Size(w,h);};
+   Resize+=(s,e)=>{if(WindowState==FormWindowState.Normal&&IsHandleCreated){int dpi=ScreenDpi();settings.WindowWidth=Width*96/dpi;settings.WindowHeight=Height*96/dpi;}};
    Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nTweek Pro đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
    Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
    Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
    if(!preview) Shown+=async(s,e)=>await Guard(async()=>await Reload());
    FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,"Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất.");}};
+   ResumeLayout(true);
    try{if(File.Exists(sessions))history=Engine.Load<List<AppEntry>>(sessions);}catch(Exception e){Log("Không đọc được lịch sử: "+e.Message);}
   }
+  /// <summary>
+  /// Window size is persisted in logical (96-DPI) pixels and restored in the Load event, after auto-scaling, so it never compounds
+  /// across launches on high-DPI screens. Values wider than any plausible logical width (old physical-pixel settings) are treated as unset.
+  /// </summary>
+  static int Logical(int saved){return saved>0&&saved<=4096?saved:0;}
+  /// <summary>Current DPI of the window's screen; works on .NET Framework and Mono alike.</summary>
+  int ScreenDpi(){try{using(var g=CreateGraphics())return Math.Max(96,(int)Math.Round(g.DpiX));}catch(Exception){return 96;}}
   /// <summary>Configures the tab strip with flat, owner-drawn headers and an accent underline for the active tab.</summary>
   void BuildTabs(){
    tabs.Dock=DockStyle.Fill;tabs.Padding=new Point(24,10);tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.ItemSize=new Size(172,46);tabs.SizeMode=TabSizeMode.Fixed;tabs.Font=Theme.Body;

@@ -44,8 +44,9 @@ namespace TweekPro {
   async Task LoadStoreApps(){
    Theme.SetOverlay(storeOverlay,"Đang đọc danh sách gói qua PowerShell…",NoteKind.Info);
    bool allUsers=Core.Elevation.IsElevated;
-   var apps=await Task.Run(()=>WindowsApps.List(allUsers));
-   var logos=await Task.Run(()=>LoadStoreIcons(apps));
+   List<WindowsApp> apps;Dictionary<string,Bitmap> logos;
+   try{apps=await Task.Run(()=>WindowsApps.List(allUsers));logos=await Task.Run(()=>LoadStoreIcons(apps));}
+   catch(Exception e){Theme.SetOverlay(storeOverlay,Core.L.T("Không đọc được danh sách ứng dụng Windows: ")+e.Message,NoteKind.Error);throw;}
    SwapStoreData(apps,logos);
    RenderStoreApps();
    Log(Core.L.F("Ứng dụng Windows: {0} gói, {1} gỡ được, {2} được bảo vệ.",storeApps.Count,storeApps.Count(a=>a.Status!=AppxStatus.Protected),storeApps.Count(a=>a.Status==AppxStatus.Protected)));
