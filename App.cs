@@ -210,8 +210,8 @@ namespace TweekPro {
     return;
    }
    var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();foreach(var a in inventory.Where(a=>(a.Name+" "+a.Publisher).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0)){
-   string location=String.IsNullOrWhiteSpace(a.Location)?"Chưa được ứng dụng khai báo thư mục cài":a.Location;
-   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate)}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+"\r\nNgày bộ cài khai báo: "+(String.IsNullOrWhiteSpace(a.InstallDate)?"Không có":a.InstallDate)};Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
+   string location=String.IsNullOrWhiteSpace(a.Location)?Core.L.T("Chưa được ứng dụng khai báo thư mục cài"):a.Location;
+   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate)}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+"\r\n"+Core.L.T("Ngày bộ cài khai báo: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("Không có"):a.InstallDate)};Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
   }apps.EndUpdate();appCount.Text=Core.L.F("{0} ứng dụng hiển thị  /  {1} ứng dụng trên máy",apps.Items.Count,inventory.Count);
    if(inventory.Count==0)Theme.SetOverlay(appsOverlay,"Không tìm thấy ứng dụng desktop nào.\r\nTweek Pro đọc các khóa Uninstall của HKLM/HKCU; chưa gồm toàn bộ ứng dụng Microsoft Store.",NoteKind.Info);
    else if(apps.Items.Count==0)Theme.SetOverlay(appsOverlay,"Không có ứng dụng khớp với «"+q+"».\r\nThử từ khóa khác hoặc xóa ô tìm kiếm.",NoteKind.Info);

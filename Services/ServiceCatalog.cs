@@ -53,7 +53,7 @@ namespace TweekPro.Services {
  public static class ServiceCatalog {
   public const string ResourceName="TweekPro.Services.service-knowledge.json";
   /// <summary>Per-user services carry a random 5-hex suffix (e.g. cbdhsvc_4a2b1).</summary>
-  public static readonly Regex PerUserSuffix=new Regex(@"_[0-9a-f]{4,6}$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
+  public static readonly Regex PerUserSuffix=new Regex(@"_[0-9a-f]{4,8}$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
   static ServiceKnowledge knowledge;
 
   /// <summary>Knowledge base compiled into the executable (loaded once).</summary>
@@ -72,10 +72,17 @@ namespace TweekPro.Services {
   /// <summary>Path of the executable inside a service command line (handles quotes and svchost -k groups).</summary>
   public static string ExecutableOf(string pathName){
    if(String.IsNullOrWhiteSpace(pathName))return "";
-   string p=pathName.Trim();
+   string p=Environment.ExpandEnvironmentVariables(pathName.Trim());
+   if(p.StartsWith(@"\??\",StringComparison.Ordinal))p=p.Substring(4);
    if(p.StartsWith("\"")){int end=p.IndexOf('"',1);return end>0?p.Substring(1,end-1):p.Trim('"');}
    int exe=p.IndexOf(".exe",StringComparison.OrdinalIgnoreCase);
    return exe>0?p.Substring(0,exe+4):p.Split(' ')[0];
+  }
+
+  /// <summary>Microsoft's own signing names: such binaries count as Windows components even outside the Windows folder (Defender platform, Edge WebView…).</summary>
+  public static bool IsMicrosoftSigner(string publisher){
+   if(String.IsNullOrEmpty(publisher))return false;
+   return publisher.StartsWith("Microsoft Windows",StringComparison.OrdinalIgnoreCase)||String.Equals(publisher,"Microsoft Corporation",StringComparison.OrdinalIgnoreCase);
   }
 
   static ServiceSafety ParseSafety(string s){
@@ -96,8 +103,11 @@ namespace TweekPro.Services {
    string baseName=e.BaseName;
    var known=Knowledge.Services.FirstOrDefault(k=>String.Equals(k.Name,baseName,StringComparison.OrdinalIgnoreCase))??Knowledge.Services.FirstOrDefault(k=>String.Equals(k.Name,e.Name,StringComparison.OrdinalIgnoreCase));
    e.Executable=ExecutableOf(e.PathName);
+   if(e.Publisher=="Không ký"||e.Publisher=="Đã ký"||e.Publisher==null)e.Publisher="";
    string windir=Environment.GetFolderPath(Environment.SpecialFolder.Windows);
    bool inWindows=windir!=""&&e.Executable.StartsWith(windir,StringComparison.OrdinalIgnoreCase);
+   if(!inWindows&&IsMicrosoftSigner(e.Publisher))inWindows=true;
+   if(inWindows&&e.Publisher=="")e.Publisher="Microsoft Windows";
    if(known!=null){
     e.Friendly=known.Friendly;e.Category=known.Category;e.Safety=ParseSafety(known.Safety);
     e.Explanation=L.English&&!String.IsNullOrEmpty(known.En)?known.En:known.Vi;
@@ -105,9 +115,9 @@ namespace TweekPro.Services {
    }else{
     e.Friendly=String.IsNullOrWhiteSpace(e.DisplayName)?e.Name:e.DisplayName;
     string hay=(e.Name+" "+e.DisplayName).ToLowerInvariant();
-    var pattern=Knowledge.Patterns.FirstOrDefault(p=>hay.Contains(p.Contains.ToLowerInvariant()));
+    var pattern=inWindows?null:Knowledge.Patterns.FirstOrDefault(p=>hay.Contains(p.Contains.ToLowerInvariant()));
     if(pattern!=null){
-     e.Category=pattern.Category;e.Safety=inWindows?ServiceSafety.Windows:ParseSafety(pattern.Safety);
+     e.Category=pattern.Category;e.Safety=ParseSafety(pattern.Safety);
      e.Explanation=(L.English?pattern.En:pattern.Vi).Replace("{app}",AppNameOf(e.DisplayName,e.Name));
     }else if(inWindows){
      e.Category="windows";e.Safety=ServiceSafety.Windows;
@@ -163,9 +173,11 @@ namespace TweekPro.Services {
      list.Add(e);
     }
    }
+   string windir=Environment.GetFolderPath(Environment.SpecialFolder.Windows);
    foreach(var e in list){
     e.Executable=ExecutableOf(e.PathName);
-    if(e.Executable!=""&&!e.Executable.EndsWith("svchost.exe",StringComparison.OrdinalIgnoreCase))try{e.Publisher=ProcessResolver.PublisherOf(e.Executable);}catch(Exception){e.Publisher="";}
+    bool inWindows=windir!=""&&e.Executable.StartsWith(windir,StringComparison.OrdinalIgnoreCase);
+    if(e.Executable!=""&&!inWindows)try{e.Publisher=ProcessResolver.PublisherOf(e.Executable);}catch(Exception){e.Publisher="";}
     if(e.Pid>4){try{using(var p=Process.GetProcessById(e.Pid))e.Memory=p.WorkingSet64;}catch(Exception){e.Memory=-1;}}
     Explain(e);
    }

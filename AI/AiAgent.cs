@@ -94,8 +94,12 @@ namespace TweekPro.AI {
    History.Add(AiMessage.User(question));
    string system=AiTools.SystemPrompt(L.Lang,Elevation.IsElevated);
    for(int round=0;round<MaxRounds;round++){
-    var reply=await Client.Send(system,History,Tools).ConfigureAwait(false);
+    var reply=await Client.Send(system,History.ToList(),Tools).ConfigureAwait(false);
     TotalInputTokens+=reply.InputTokens;TotalOutputTokens+=reply.OutputTokens;
+    if(String.IsNullOrEmpty(reply.Text)&&reply.ToolCalls.Count==0){
+     string empty=L.T("Model không trả lời nội dung nào")+(String.IsNullOrEmpty(reply.StopReason)?"":" ("+reply.StopReason+")")+".";
+     History.Add(new AiMessage{Role="assistant",Text=empty});return empty;
+    }
     History.Add(new AiMessage{Role="assistant",Text=reply.Text??"",ToolCalls=reply.ToolCalls});
     if(reply.ToolCalls.Count==0)return reply.Text??"";
     foreach(var call in reply.ToolCalls){

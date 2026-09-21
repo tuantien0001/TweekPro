@@ -65,10 +65,16 @@ namespace TweekPro.AI {
     Assert(msgs.GetArrayLength()==6,"openai message count "+msgs.GetArrayLength());
     Assert(msgs[2].GetProperty("tool_calls")[0].GetProperty("function").GetProperty("arguments").GetString()=="{\"name\":\"Spooler\"}","openai tool_calls kept as string arguments");
     Assert(msgs[3].GetProperty("role").GetString()=="tool"&&msgs[3].GetProperty("tool_call_id").GetString()=="toolu_1","openai tool message");
-    Assert(root.GetProperty("tools")[0].GetProperty("type").GetString()=="function"&&root.TryGetProperty("max_tokens",out _),"openai tools/function and max_tokens");
+    Assert(root.GetProperty("tools")[0].GetProperty("type").GetString()=="function"&&root.TryGetProperty("max_completion_tokens",out _)&&!root.TryGetProperty("max_tokens",out _),"openai tools/function and max_completion_tokens on the official endpoint");
    }
    Assert(openai.Headers()["Authorization"]=="Bearer sk-x","openai bearer header");
-   using(var doc=JsonDocument.Parse(new AiClient{Provider=AiClient.OpenAI,Model="gpt-5"}.BuildOpenAIRequest("s",new List<AiMessage>(),null)))Assert(doc.RootElement.TryGetProperty("max_completion_tokens",out _),"gpt-5 family uses max_completion_tokens");
+   using(var doc=JsonDocument.Parse(new AiClient{Provider=AiClient.OpenAI,Model="llama3",Endpoint="http://localhost:11434/v1/chat/completions"}.BuildOpenAIRequest("s",new List<AiMessage>(),null)))Assert(doc.RootElement.TryGetProperty("max_tokens",out _),"compatible servers get max_tokens");
+   var emptyTurn=new List<AiMessage>{AiMessage.User("a"),new AiMessage{Role="assistant",Text=""},AiMessage.User("b")};
+   using(var doc=JsonDocument.Parse(openai.BuildOpenAIRequest("s",emptyTurn,null)))Assert(doc.RootElement.GetProperty("messages").GetArrayLength()==3,"empty assistant turn skipped for OpenAI");
+   Assert(AiClient.ValidateKey(AiClient.OpenAI,"my-local-token",false)==null&&AiClient.ValidateKey(AiClient.OpenAI,"my-local-token",true)!=null,"custom endpoints accept any key format");
+   Assert(AiClient.ValidateEndpoint("")==null&&AiClient.ValidateEndpoint("https://api.example.com/v1")==null&&AiClient.ValidateEndpoint("http://127.0.0.1:8787/v1/messages")==null,"https and loopback endpoints accepted");
+   Assert(AiClient.ValidateEndpoint("http://api.example.com/v1")!=null&&AiClient.ValidateEndpoint("not a url")!=null,"clear-text remote endpoint rejected");
+   Assert(AiClient.ErrorText(400,"{\"error\":{\"message\":null}}").StartsWith("HTTP 400"),"null error message tolerated");
 
    // Reply parsing.
    var a=AiClient.ParseAnthropicReply("{\"content\":[{\"type\":\"text\",\"text\":\"Let me check.\"},{\"type\":\"tool_use\",\"id\":\"toolu_9\",\"name\":\"list_services\",\"input\":{\"filter\":\"thirdparty\"}}],\"stop_reason\":\"tool_use\",\"usage\":{\"input_tokens\":12,\"output_tokens\":7}}");
@@ -128,6 +134,12 @@ namespace TweekPro.AI {
    agent=new AiAgent(client,new FakeHost());
    string stopped=await agent.Ask("loop");
    Assert(stopped==L.T("Trợ lý đã gọi công cụ quá nhiều vòng và dừng lại. Hãy hỏi cụ thể hơn.")&&agent.History.Count==1+AiAgent.MaxRounds*2+1,"loop bounded");
+
+   // An empty reply becomes a visible sentence and does not poison the history.
+   client.Transport=(url,headers,body)=>Task.FromResult("{\"content\":[],\"stop_reason\":\"max_tokens\"}");
+   agent=new AiAgent(client,new FakeHost());
+   string emptyAnswer=await agent.Ask("hi");
+   Assert(emptyAnswer.Contains("max_tokens")&&agent.History.Count==2&&agent.History[1].Text==emptyAnswer,"empty reply reported");
 
    // Transport errors surface as exceptions to the UI.
    client.Transport=(url,headers,body)=>{throw new System.IO.IOException("HTTP 401: invalid key");};

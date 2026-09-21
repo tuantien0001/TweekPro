@@ -12,14 +12,11 @@ namespace TweekPro.AI {
   static readonly byte[] Entropy=Encoding.UTF8.GetBytes("TweekPro.AI.ApiKey.v1");
   static readonly bool IsWindows=Environment.OSVersion.Platform==PlatformID.Win32NT;
 
-  /// <summary>Encrypts a secret for persistence; empty input yields an empty string.</summary>
+  /// <summary>Encrypts a secret for persistence; empty input yields an empty string. On Windows a DPAPI failure throws rather than falling back to clear text.</summary>
   public static string Protect(string secret){
    if(String.IsNullOrEmpty(secret))return "";
    var bytes=Encoding.UTF8.GetBytes(secret);
-   if(IsWindows){
-    try{return DpapiPrefix+Convert.ToBase64String(ProtectedData.Protect(bytes,Entropy,DataProtectionScope.CurrentUser));}
-    catch(CryptographicException){}
-   }
+   if(IsWindows)return DpapiPrefix+Convert.ToBase64String(ProtectedData.Protect(bytes,Entropy,DataProtectionScope.CurrentUser));
    return PlainPrefix+Convert.ToBase64String(bytes);
   }
 

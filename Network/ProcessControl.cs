@@ -23,7 +23,7 @@ namespace TweekPro.Network {
   public static readonly string[] CoreProcesses={"system","system idle process","registry","memory compression","secure system","smss.exe","csrss.exe","wininit.exe","winlogon.exe","services.exe","lsass.exe","svchost.exe","dwm.exe","fontdrvhost.exe","msmpeng.exe","logonui.exe","sihost.exe","ctfmon.exe","conhost.exe"};
 
   /// <summary>Services whose stop breaks networking, logon, security or the shell; never offered.</summary>
-  public static readonly string[] CoreServices={"RpcSs","RpcEptMapper","DcomLaunch","LSM","PlugPlay","Power","BrokerInfrastructure","SystemEventsBroker","Winmgmt","EventLog","ProfSvc","UserManager","CoreMessagingRegistrar","Dhcp","Dnscache","nsi","NlaSvc","Wcmsvc","WinDefend","SecurityHealthService","CryptSvc","TrustedInstaller","gpsvc","SamSs","KeyIso","Netman","netprofm","LanmanWorkstation","Schedule","StateRepository","TimeBrokerSvc","Appinfo","Themes","AudioSrv","AudioEndpointBuilder","EventSystem","FontCache","BFE","mpssvc","VaultSvc","TokenBroker","LicenseManager","sppsvc","SENS","ShellHWDetection","DispBrokerDesktopSvc","WlanSvc","WWANSvc","Wlansvc","DeviceInstall","SgrmBroker","WdNisSvc","Sense","webthreatdefsvc","webthreatdefusersvc"};
+  public static readonly string[] CoreServices={"MDCoreSvc","WdNisSvc","wscsvc","camsvc","DPS","RpcSs","RpcEptMapper","DcomLaunch","LSM","PlugPlay","Power","BrokerInfrastructure","SystemEventsBroker","Winmgmt","EventLog","ProfSvc","UserManager","CoreMessagingRegistrar","Dhcp","Dnscache","nsi","NlaSvc","Wcmsvc","WinDefend","SecurityHealthService","CryptSvc","TrustedInstaller","gpsvc","SamSs","KeyIso","Netman","netprofm","LanmanWorkstation","Schedule","StateRepository","TimeBrokerSvc","Appinfo","Themes","AudioSrv","AudioEndpointBuilder","EventSystem","FontCache","BFE","mpssvc","VaultSvc","TokenBroker","LicenseManager","sppsvc","SENS","ShellHWDetection","DispBrokerDesktopSvc","WlanSvc","WWANSvc","Wlansvc","DeviceInstall","SgrmBroker","WdNisSvc","Sense","webthreatdefsvc","webthreatdefusersvc"};
 
   [DllImport("kernel32.dll",SetLastError=true)] static extern IntPtr OpenProcess(int access,bool inherit,int pid);
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool TerminateProcess(IntPtr process,uint exitCode);
@@ -36,7 +36,8 @@ namespace TweekPro.Network {
    if(pid==Process.GetCurrentProcess().Id)return L.T("Đây là Tweek Pro.");
    string n=(name??"").Trim().ToLowerInvariant();
    if(n=="")return null;
-   if(CoreProcesses.Contains(n))return n=="svchost.exe"?L.T("svchost.exe chứa nhiều dịch vụ Windows — hãy dừng từng dịch vụ bên trong thay vì kết thúc tiến trình."):L.T("Tiến trình cốt lõi của Windows — không thể kết thúc.");
+   string bare=n.EndsWith(".exe",StringComparison.Ordinal)?n.Substring(0,n.Length-4):n;
+   if(CoreProcesses.Contains(n)||CoreProcesses.Contains(bare)||CoreProcesses.Contains(bare+".exe"))return n=="svchost.exe"?L.T("svchost.exe chứa nhiều dịch vụ Windows — hãy dừng từng dịch vụ bên trong thay vì kết thúc tiến trình."):L.T("Tiến trình cốt lõi của Windows — không thể kết thúc.");
    return null;
   }
 

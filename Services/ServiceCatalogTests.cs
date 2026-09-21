@@ -48,6 +48,19 @@ namespace TweekPro.Services {
     ServiceCatalog.Explain(updater);
     Assert(updater.Safety==ServiceSafety.ThirdParty&&updater.Category=="updater"&&updater.Explanation.Contains("Zoom")&&!updater.Explanation.Contains("{app}"),"updater pattern with app name");
 
+    var defenderCore=new ServiceEntry{Name="MDCoreSvc",DisplayName="Microsoft Defender Core Service",PathName="\"C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18\\MpDefenderCoreService.exe\"",Publisher="Microsoft Windows Publisher"};
+    ServiceCatalog.Explain(defenderCore);
+    Assert(defenderCore.Safety==ServiceSafety.Core,"Defender core locked");
+    var msSigned=new ServiceEntry{Name="edgeupdatemx",DisplayName="Microsoft Edge Elevation Helper",PathName="C:\\Program Files (x86)\\Microsoft\\EdgeUpdate\\helper.exe",Publisher="Microsoft Corporation"};
+    ServiceCatalog.Explain(msSigned);
+    Assert(msSigned.Safety==ServiceSafety.Windows&&msSigned.Publisher=="Microsoft Corporation","Microsoft-signed binary outside the Windows folder is treated as Windows, not third-party");
+    var sentinel=new ServiceEntry{Name="BarSvc",DisplayName="Bar",PathName="C:\\Program Files\\Bar\\bar.exe",Publisher="Không ký"};
+    ServiceCatalog.Explain(sentinel);
+    Assert(sentinel.Publisher==""&&!sentinel.Explanation.Contains("Không ký")&&sentinel.Explanation.Contains("Bar"),"signer sentinel never reaches the explanation");
+    Assert(ServiceCatalog.ExecutableOf("\\??\\C:\\Windows\\system32\\foo.exe")=="C:\\Windows\\system32\\foo.exe","NT path prefix stripped");
+    Assert(ServiceCatalog.BaseNameOf("cbdhsvc_11c8a4f")=="cbdhsvc","long per-user suffix stripped");
+    Assert(ServiceCatalog.BaseNameOf("MSSQL$SQLEXPRESS")=="MSSQL$SQLEXPRESS","instance names untouched");
+
     var unknownThird=new ServiceEntry{Name="FooSvc",DisplayName="Foo Background",PathName="C:\\Program Files\\Foo\\foo.exe",Publisher="Foo Inc.",Description="Foo background worker."};
     ServiceCatalog.Explain(unknownThird);
     Assert(unknownThird.Safety==ServiceSafety.ThirdParty&&unknownThird.Explanation.Contains("Foo Inc.")&&unknownThird.Explanation.Contains("Foo background worker."),"unknown third-party explained with publisher and description");
@@ -57,6 +70,9 @@ namespace TweekPro.Services {
      var unknownWin=new ServiceEntry{Name="MysterySvc",DisplayName="Mystery",PathName=windir+"\\System32\\svchost.exe -k foo",Description="Does things."};
      ServiceCatalog.Explain(unknownWin);
      Assert(unknownWin.Safety==ServiceSafety.Windows&&unknownWin.Explanation=="Does things.","unknown Windows service uses description");
+     var tz=new ServiceEntry{Name="tzautoupdate",DisplayName="Auto Time Zone Updater",PathName=windir+"\\System32\\svchost.exe -k LocalService",Description="Automatically sets the time zone."};
+     ServiceCatalog.Explain(tz);
+     Assert(tz.Explanation=="Automatically sets the time zone.","name patterns are not applied to Windows-folder services");
     }
 
     L.Lang=L.EnglishCode;

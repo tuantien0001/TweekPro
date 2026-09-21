@@ -32,7 +32,7 @@ namespace TweekPro {
    var bar=Bar();
    Add(bar,"Tải danh sách",async()=>await LoadServices(),ButtonStyle.Primary);
    Add(bar,"Dừng",async()=>await StopSelectedService(false));
-   Add(bar,"Khởi động",async()=>await StartSelectedService());
+   Add(bar,"Khởi động dịch vụ",async()=>await StartSelectedService());
    Add(bar,"Dừng và vô hiệu hóa",async()=>await StopSelectedService(true),ButtonStyle.Danger);
    Add(bar,"Services của Windows",()=>{Process.Start(new ProcessStartInfo("services.msc"){UseShellExecute=true});return Task.FromResult(0);});
    var filterLabel=new Label{Text=Core.L.T("Hiện"),AutoSize=true,Margin=new Padding(12,9,4,0),ForeColor=Theme.Muted};
@@ -118,7 +118,7 @@ namespace TweekPro {
     item.SubItems.Add(s.Memory>=0?Presentation.BytesLabel(s.Memory):"");
     item.SubItems.Add(ServiceCatalog.SafetyLabel(s.Safety)).ForeColor=SafetyColor(s.Safety);
     item.SubItems.Add(ServiceCatalog.CategoryLabel(s.Category));
-    item.SubItems.Add(s.Publisher==""?(s.Safety==ServiceSafety.ThirdParty?"":"Microsoft Windows"):s.Publisher);
+    item.SubItems.Add(s.Publisher==""?(s.Safety==ServiceSafety.ThirdParty?Core.L.T("không rõ"):"Microsoft Windows"):s.Publisher);
     item.SubItems.Add(s.Explanation.Replace("\r\n"," ")).ForeColor=Theme.Muted;
     if(!s.Running)item.ForeColor=Theme.Muted;
     svcList.Items.Add(item);
@@ -135,7 +135,7 @@ namespace TweekPro {
   /// <summary>Plain-language summary of one service for the details pane and the details dialog.</summary>
   static string DescribeService(ServiceEntry s){
    var lines=new List<string>();
-   lines.Add(s.Friendly+"  ("+s.Name+")"+(s.Running?"  •  "+Core.L.T("Đang chạy")+(s.Pid>0?"  PID "+s.Pid:""):"  •  "+StateLabel(s.State))+"  •  "+Core.L.T("Khởi động: ")+StartModeLabel(s.StartMode));
+   lines.Add(ServiceLabel(s)+(s.Running?"  •  "+Core.L.T("Đang chạy")+(s.Pid>0?"  PID "+s.Pid:""):"  •  "+StateLabel(s.State))+"  •  "+Core.L.T("Khởi động: ")+StartModeLabel(s.StartMode));
    lines.Add(Core.L.T("Nó làm gì: ")+s.Explanation);
    lines.Add(Core.L.T("Có dừng được không? ")+ServiceCatalog.SafetyLabel(s.Safety)+". "+ServiceCatalog.SafetyAdvice(s.Safety));
    string owner=s.Publisher!=""?s.Publisher:(s.Safety==ServiceSafety.ThirdParty?Core.L.T("không rõ"):"Microsoft Windows");
@@ -151,7 +151,7 @@ namespace TweekPro {
   /// <summary>File name of a Windows path regardless of the host platform's separator.</summary>
   static string FileNameOf(string path){return String.IsNullOrEmpty(path)?"":path.Substring(path.LastIndexOfAny(new[]{'\\','/'})+1);}
 
-  string ServiceLabel(ServiceEntry s){return s.Friendly==s.Name?s.Name:s.Friendly+" ("+s.Name+")";}
+  static string ServiceLabel(ServiceEntry s){return s.Friendly==s.Name?s.Name:s.Friendly+" ("+s.Name+")";}
 
   async Task StopSelectedService(bool disable){
    var s=SelectedService();if(s==null)throw new IOException(Core.L.T("Chọn một dịch vụ."));
@@ -197,16 +197,17 @@ namespace TweekPro {
     MenuItem(menu,"Khởi động lại dịch vụ",async()=>await RestartService(s),s.Running&&!core,core?"dịch vụ cốt lõi":"đã dừng");
     MenuItem(menu,"Dừng và vô hiệu hóa (lưu vào Kho)",async()=>await StopService(s,true),!core&&!String.Equals(s.StartMode,"Disabled",StringComparison.OrdinalIgnoreCase),core?"dịch vụ cốt lõi":"đã vô hiệu",danger:true);
     menu.Items.Add(new ToolStripSeparator());
-    string blocked=s.Pid>0?ProcessControl.TerminateBlockReason(s.Pid,FileNameOf(s.Executable)):Core.L.T("không có tiến trình");
+    string processName=s.Pid>0?(ProcessResolver.Resolve(s.Pid).Name!=""?ProcessResolver.Resolve(s.Pid).Name:FileNameOf(s.Executable)):"";
+    string blocked=s.Pid<=0?Core.L.T("không có tiến trình"):processName==""?Core.L.T("không xác định được tiến trình"):ProcessControl.TerminateBlockReason(s.Pid,processName);
     MenuItem(menu,Core.L.F("Kết thúc tiến trình (PID {0})",s.Pid>0?s.Pid.ToString():"—"),async()=>{
-     if(!Confirm(Core.L.F("Kết thúc tiến trình {0} (PID {1})?\r\nỨng dụng sẽ đóng ngay và dữ liệu chưa lưu có thể mất. Nếu đây là dịch vụ, Windows có thể tự chạy lại nó — dùng \"Dừng và vô hiệu hóa\" để ngăn.",FileNameOf(s.Executable),s.Pid)))return;
-     await Task.Run(()=>ProcessControl.Terminate(s.Pid,FileNameOf(s.Executable)));
+     if(!Confirm(Core.L.F("Kết thúc tiến trình {0} (PID {1})?\r\nỨng dụng sẽ đóng ngay và dữ liệu chưa lưu có thể mất. Nếu đây là dịch vụ, Windows có thể tự chạy lại nó — dùng \"Dừng và vô hiệu hóa\" để ngăn.",processName,s.Pid)))return;
+     await Task.Run(()=>ProcessControl.Terminate(s.Pid,processName));
      Log(Core.L.F("Dịch vụ: đã kết thúc tiến trình PID {0} của {1}.",s.Pid,ServiceLabel(s)));await LoadServices();
     },blocked==null,blocked,danger:true);
     menu.Items.Add(new ToolStripSeparator());
     MenuItem(menu,"Mở thư mục chứa tệp",()=>{OpenInExplorer(s.Executable);return Task.FromResult(0);},s.Executable!=""&&File.Exists(s.Executable));
-    MenuItem(menu,"Sao chép tên dịch vụ",()=>{Clipboard.SetText(s.Name);return Task.FromResult(0);});
-    MenuItem(menu,"Sao chép đường dẫn",()=>{Clipboard.SetText(s.PathName??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(s.PathName));
+    MenuItem(menu,"Sao chép tên dịch vụ",()=>{CopyText(s.Name);return Task.FromResult(0);});
+    MenuItem(menu,"Sao chép đường dẫn",()=>{CopyText(s.PathName??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(s.PathName));
     MenuItem(menu,"Chi tiết dịch vụ",()=>{ShowServiceDialog(s);return Task.FromResult(0);});
    });
   }

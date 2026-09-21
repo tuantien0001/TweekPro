@@ -83,12 +83,15 @@ namespace TweekPro {
 
   /// <summary>Validates and persists provider, model, endpoint and the DPAPI-protected key; rebuilds the agent so the next question uses them.</summary>
   void SaveAiSettings(bool announce){
-   string provider=AiProviderKey();string key=aiKey.Text.Trim();
-   string problem=key==""?null:AiClient.ValidateKey(provider,key);
-   if(problem!=null&&announce){MessageBox.Show(this,problem,Core.L.T("API key"),MessageBoxButtons.OK,MessageBoxIcon.Warning);return;}
+   string provider=AiProviderKey();string key=aiKey.Text.Trim();string endpoint=aiEndpoint.Text.Trim();
+   bool official=endpoint==""||endpoint==AiClient.DefaultEndpoint(provider);
+   string problem=AiClient.ValidateEndpoint(endpoint)??(key==""?null:AiClient.ValidateKey(provider,key,official));
+   if(problem!=null){if(announce)MessageBox.Show(this,problem,Core.L.T("API key"),MessageBoxButtons.OK,MessageBoxIcon.Warning);else{aiStatus.Text=problem;aiStatus.ForeColor=Theme.Danger;}return;}
    settings.AiProvider=provider;settings.AiModel=aiModel.Text.Trim()==AiClient.DefaultModel(provider)?"":aiModel.Text.Trim();
-   settings.AiEndpoint=aiEndpoint.Text.Trim()==AiClient.DefaultEndpoint(provider)?"":aiEndpoint.Text.Trim();
-   settings.AiKeyProtected=SecretStore.Protect(key);settings.AiAllowActions=aiAllow.Checked;
+   settings.AiEndpoint=official?"":endpoint;
+   try{settings.AiKeyProtected=SecretStore.Protect(key);}
+   catch(System.Security.Cryptography.CryptographicException e){Log(Core.L.T("Trợ lý AI: không mã hóa được khóa bằng DPAPI — ")+e.Message);if(announce)MessageBox.Show(this,Core.L.T("Windows không mã hóa được khóa (DPAPI). Khóa chưa được lưu.")+"\r\n"+e.Message,Core.L.T("API key"),MessageBoxButtons.OK,MessageBoxIcon.Error);return;}
+   settings.AiAllowActions=aiAllow.Checked;
    SaveSettings();aiAgent=null;UpdateAiKeyState();
    if(announce)Log(key==""?Core.L.T("Trợ lý AI: đã xóa API key."):Core.L.F("Trợ lý AI: đã lưu khóa cho {0} ({1}).",AiClient.ProviderLabel(provider),SecretStore.IsEncrypted(settings.AiKeyProtected)?"DPAPI":"base64"));
   }
@@ -116,7 +119,7 @@ namespace TweekPro {
   }
 
   void SetAiBusy(bool busy,string status){
-   aiBusy=busy;aiSend.Enabled=!busy;aiTest.Enabled=!busy;aiSave.Enabled=!busy;aiInput.Enabled=!busy;
+   aiBusy=busy;aiSend.Enabled=!busy;aiTest.Enabled=!busy;aiSave.Enabled=!busy;aiClear.Enabled=!busy;aiInput.Enabled=!busy;
    if(status!=null){aiStatus.Text=status;aiStatus.ForeColor=Theme.Muted;}
    Cursor=busy?Cursors.AppStarting:Cursors.Default;
   }
@@ -155,8 +158,9 @@ namespace TweekPro {
 
   /// <summary>Runs an async UI-thread function from a worker continuation and awaits its result.</summary>
   Task<T> OnUi<T>(Func<Task<T>> func){
-   var tcs=new TaskCompletionSource<T>();
-   RunOnUi(async()=>{try{tcs.SetResult(await func());}catch(Exception e){tcs.SetException(e);}});
+   var tcs=new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+   if(IsDisposed){tcs.TrySetCanceled();return tcs.Task;}
+   RunOnUi(async()=>{try{tcs.TrySetResult(await func());}catch(Exception e){tcs.TrySetException(e);}});
    return tcs.Task;
   }
 
@@ -308,6 +312,7 @@ namespace TweekPro {
   async Task<string> AiEndProcess(int pid){
    if(pid<=0)return "Error: pid is required.";
    var id=ProcessResolver.Resolve(pid);
+   if(id.Exited||String.IsNullOrEmpty(id.Name))return "Refused: process "+pid+" is not running or its name cannot be read; only processes visible in list_network_activity or list_services can be ended.";
    string blocked=ProcessControl.TerminateBlockReason(pid,id.Name);
    if(blocked!=null)return "Refused: "+blocked;
    await Task.Run(()=>ProcessControl.Terminate(pid,id.Name));
@@ -336,8 +341,12 @@ namespace TweekPro {
    tabs.SelectedTab=tabs.TabPages.Cast<TabPage>().FirstOrDefault(t=>t.Controls.Contains(apps)||t.Controls.Cast<Control>().Any(c=>c.Controls.Contains(apps)))??tabs.SelectedTab;
    foreach(ListViewItem i in apps.Items)i.Checked=i.Tag==target;
    if(apps.CheckedItems.Count==0)return "Error: "+target.Name+" is hidden by the current search filter; clear the search box in the Applications tab.";
-   await Guard(Uninstall);
-   return "Uninstaller flow finished for "+target.Name+". Leftover scan results, if any, are in the Leftovers tab ("+candidates.Count+" candidates).";
+   if(busy)return "Error: Tweek Pro is busy with another operation; try again later.";
+   bool stillInstalled;
+   try{await Uninstall();}
+   catch(Exception e){return "Error: "+e.Message;}
+   stillInstalled=Engine.Installed(target.Id);
+   return (stillInstalled?"The uninstaller for "+target.Name+" was opened or the user cancelled; the application is still registered.":"Done: "+target.Name+" is no longer registered.")+" Leftover candidates in the Leftovers tab: "+candidates.Count+".";
   }
 
   string AiOpenTab(string key){

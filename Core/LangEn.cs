@@ -245,7 +245,7 @@ namespace TweekPro.Core {
    {"Thuộc Windows nhưng không thiết yếu. Dừng có thể làm mất một tính năng; vô hiệu hóa được lưu vào Kho để bật lại.","Part of Windows but not essential. Stopping may lose a feature; disabling is saved to the Vault so you can re-enable it."},
    {"Tính năng tùy chọn của Windows. Nếu bạn không dùng, tắt an toàn để tiết kiệm RAM và thời gian khởi động.","Optional Windows feature. If you do not use it, disabling is safe and saves RAM and boot time."},
    {"Do ứng dụng bên thứ ba cài. Dừng an toàn; nếu vô hiệu hóa, ứng dụng đó có thể mất cập nhật tự động.","Installed by a third-party app. Safe to stop; if disabled, that app may lose automatic updates."},
-   {"Bảo mật","Security"},{"Cập nhật","Updates"},{"Màn hình & âm thanh","Display && audio"},{"Tùy chọn","Optional"},{"Quyền riêng tư","Privacy"},{"Game","Games"},{"Máy chủ","Server"},{"Điều khiển từ xa","Remote control"},{"Thiết bị ngoại vi","Peripherals"},{"Bản quyền","Licensing"},{"Phụ trợ","Helper"},
+   {"Bảo mật","Security"},{"Cập nhật","Updates"},{"Màn hình & âm thanh","Display & audio"},{"Tùy chọn","Optional"},{"Quyền riêng tư","Privacy"},{"Game","Games"},{"Máy chủ","Server"},{"Điều khiển từ xa","Remote control"},{"Thiết bị ngoại vi","Peripherals"},{"Bản quyền","Licensing"},{"Phụ trợ","Helper"},
    // AI assistant tab
    {"Trợ lý AI","AI Assistant"},{"Nhà cung cấp","Provider"},{"Lưu khóa","Save key"},{"Kiểm tra kết nối","Test connection"},
    {"Điểm cuối API (tùy chọn, cho máy chủ tương thích)","API endpoint (optional, for compatible servers)"},
@@ -279,6 +279,12 @@ namespace TweekPro.Core {
    {"Thư mục: ","Folder: "},{"Chưa được ứng dụng khai báo","Not declared by the application"},{"Ngày do bộ cài cung cấp, có thể là ngày cập nhật. Giá trị gốc: ","Date reported by the installer; may be the last update. Raw value: "},{"không có","none"},
    {"Mở trình gỡ chính thức lần lượt cho {0} ứng dụng?\r\n\r\n{1}\r\n\r\nTrình gỡ có thể xóa dữ liệu và yêu cầu quyền quản trị. Kho Tweek Pro chỉ khôi phục phần dọn sau đó, không hoàn tác trình gỡ.","Open the official uninstaller for {0} application(s), one after another?\r\n\r\n{1}\r\n\r\nThe uninstaller may delete data and ask for administrator rights. Tweek Pro's vault only restores the cleanup done afterwards; it cannot undo the uninstaller."},
    {"Tiếp tục gỡ {0}?\r\nChọn No để dừng hàng đợi.","Continue uninstalling {0}?\r\nChoose No to stop the queue."},
+   // Review fixes
+   {"Không kết nối được tới máy chủ API: ","Could not reach the API server: "},{"Máy chủ API không trả lời trong 120 giây.","The API server did not answer within 120 seconds."},
+   {"Điểm cuối API không phải URL hợp lệ.","The API endpoint is not a valid URL."},{"Điểm cuối API phải dùng https:// (http:// chỉ cho localhost) để không lộ khóa.","The API endpoint must use https:// (http:// only for localhost) so the key is not exposed."},
+   {"Model không trả lời nội dung nào","The model returned no content"},{"Trợ lý AI: không mã hóa được khóa bằng DPAPI — ","AI assistant: could not encrypt the key with DPAPI — "},
+   {"Windows không mã hóa được khóa (DPAPI). Khóa chưa được lưu.","Windows could not encrypt the key (DPAPI). The key was not saved."},{"không xác định được tiến trình","process name unknown"},
+   {"Chưa được ứng dụng khai báo thư mục cài","Install folder not declared by the application"},{"Ngày bộ cài khai báo: ","Date reported by the installer: "},{"Không có","None"},{"không phải đường dẫn tệp","not a file path"},
   };
  }
 }

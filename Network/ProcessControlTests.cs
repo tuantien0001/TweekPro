@@ -12,6 +12,8 @@ namespace TweekPro.Network {
   public static void Run(){
    Assert(ProcessControl.TerminateBlockReason(0,"System Idle Process")!=null&&ProcessControl.TerminateBlockReason(4,"System")!=null,"PID 0/4 refused");
    Assert(ProcessControl.TerminateBlockReason(Process.GetCurrentProcess().Id,"TweekPro-0.7.exe")!=null,"Own process refused");
+   foreach(string bare in new[]{"csrss","lsass","svchost","MsMpEng"})Assert(ProcessControl.TerminateBlockReason(1234,bare)!=null,"Core process without .exe suffix refused: "+bare);
+   foreach(string svc in new[]{"MDCoreSvc","wscsvc","DPS","WdNisSvc"})Assert(ProcessControl.IsCoreService(svc),"knowledge-base core service also locked in ProcessControl: "+svc);
    foreach(string core in new[]{"csrss.exe","WININIT.EXE","lsass.exe","services.exe","svchost.exe","dwm.exe","MsMpEng.exe"})Assert(ProcessControl.TerminateBlockReason(1234,core)!=null,"Core process refused: "+core);
    Assert(ProcessControl.TerminateBlockReason(1234,"svchost.exe").Contains("svchost")||ProcessControl.TerminateBlockReason(1234,"svchost.exe").Length>0,"svchost has a specific reason");
    foreach(string ok in new[]{"chrome.exe","Spotify.exe","iGameCenter.Service.exe","OneDrive.exe",""})Assert(ProcessControl.TerminateBlockReason(1234,ok)==null,"Ordinary process allowed: "+ok);

@@ -61,25 +61,38 @@ namespace TweekPro.AI {
   string EffectiveEndpoint { get { return String.IsNullOrWhiteSpace(Endpoint)?DefaultEndpoint(Provider):Endpoint.Trim(); } }
 
   /// <summary>Checks the key format so obvious paste mistakes are caught before a network call.</summary>
-  public static string ValidateKey(string provider,string key){
+  public static string ValidateKey(string provider,string key,bool officialEndpoint=true){
    key=(key??"").Trim();
    if(key=="")return Core.L.T("Chưa nhập API key.");
    if(key.Any(ch=>Char.IsWhiteSpace(ch)||ch>126))return Core.L.T("API key chứa khoảng trắng hoặc ký tự lạ — hãy dán lại.");
+   if(!officialEndpoint)return null;
    if(provider==Anthropic&&!key.StartsWith("sk-ant-",StringComparison.Ordinal))return Core.L.T("Key của Anthropic bắt đầu bằng sk-ant-.");
    if(provider==OpenAI&&!key.StartsWith("sk-",StringComparison.Ordinal))return Core.L.T("Key của OpenAI bắt đầu bằng sk-.");
    return null;
   }
 
   static async Task<string> HttpTransport(string url,Dictionary<string,string> headers,string body){
-   using(var request=new HttpRequestMessage(HttpMethod.Post,url)){
-    request.Content=new StringContent(body,Encoding.UTF8,"application/json");
-    foreach(var h in headers)request.Headers.TryAddWithoutValidation(h.Key,h.Value);
-    using(var response=await Http.SendAsync(request).ConfigureAwait(false)){
-     string text=await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-     if(!response.IsSuccessStatusCode)throw new IOException(ErrorText((int)response.StatusCode,text));
-     return text;
+   try{
+    using(var request=new HttpRequestMessage(HttpMethod.Post,url)){
+     request.Content=new StringContent(body,Encoding.UTF8,"application/json");
+     foreach(var h in headers)request.Headers.TryAddWithoutValidation(h.Key,h.Value);
+     using(var response=await Http.SendAsync(request).ConfigureAwait(false)){
+      string text=await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+      if(!response.IsSuccessStatusCode)throw new IOException(ErrorText((int)response.StatusCode,text));
+      return text;
+     }
     }
-   }
+   }catch(HttpRequestException e){throw new IOException(Core.L.T("Không kết nối được tới máy chủ API: ")+(e.InnerException??e).Message,e);}
+   catch(TaskCanceledException e){throw new IOException(Core.L.T("Máy chủ API không trả lời trong 120 giây."),e);}
+  }
+
+  /// <summary>Rejects endpoints that would send the key in clear text; localhost is allowed for compatible local servers.</summary>
+  public static string ValidateEndpoint(string endpoint){
+   endpoint=(endpoint??"").Trim();if(endpoint=="")return null;
+   Uri uri;if(!Uri.TryCreate(endpoint,UriKind.Absolute,out uri))return Core.L.T("Điểm cuối API không phải URL hợp lệ.");
+   if(uri.Scheme==Uri.UriSchemeHttps)return null;
+   if(uri.Scheme==Uri.UriSchemeHttp&&(uri.IsLoopback))return null;
+   return Core.L.T("Điểm cuối API phải dùng https:// (http:// chỉ cho localhost) để không lộ khóa.");
   }
 
   /// <summary>Extracts the human-readable message from an API error body.</summary>
@@ -90,8 +103,8 @@ namespace TweekPro.AI {
      JsonElement error;
      if(doc.RootElement.TryGetProperty("error",out error)){
       JsonElement message;
-      if(error.ValueKind==JsonValueKind.Object&&error.TryGetProperty("message",out message))detail=message.GetString();
-      else if(error.ValueKind==JsonValueKind.String)detail=error.GetString();
+      if(error.ValueKind==JsonValueKind.Object&&error.TryGetProperty("message",out message)&&message.ValueKind==JsonValueKind.String)detail=message.GetString()??"";
+      else if(error.ValueKind==JsonValueKind.String)detail=error.GetString()??"";
      }
     }
    }catch(JsonException){}
@@ -163,13 +176,14 @@ namespace TweekPro.AI {
    foreach(var m in history){
     if(m.Role=="tool")messages.Add(new Dictionary<string,object>{{"role","tool"},{"tool_call_id",m.ToolCallId},{"content",m.Text}});
     else if(m.Role=="assistant"){
+     if(String.IsNullOrEmpty(m.Text)&&m.ToolCalls.Count==0)continue;
      var d=new Dictionary<string,object>{{"role","assistant"},{"content",String.IsNullOrEmpty(m.Text)?null:m.Text}};
      if(m.ToolCalls.Count>0)d["tool_calls"]=m.ToolCalls.Select(c=>(object)new Dictionary<string,object>{{"id",c.Id},{"type","function"},{"function",new Dictionary<string,object>{{"name",c.Name},{"arguments",c.ArgumentsJson}}}}).ToList();
      messages.Add(d);
     }else messages.Add(new Dictionary<string,object>{{"role","user"},{"content",m.Text}});
    }
    var body=new Dictionary<string,object>{{"model",EffectiveModel},{"messages",messages}};
-   if(!EffectiveModel.StartsWith("o",StringComparison.Ordinal)&&!EffectiveModel.StartsWith("gpt-5",StringComparison.Ordinal))body["max_tokens"]=MaxTokens;else body["max_completion_tokens"]=MaxTokens;
+   if(EffectiveEndpoint==OpenAIEndpoint)body["max_completion_tokens"]=MaxTokens;else body["max_tokens"]=MaxTokens;
    if(tools!=null&&tools.Count>0)body["tools"]=tools.Select(t=>(object)new Dictionary<string,object>{{"type","function"},{"function",new Dictionary<string,object>{{"name",t.Name},{"description",t.Description},{"parameters",t.Parameters}}}}).ToList();
    return JsonSerializer.Serialize(body,JsonOptions);
   }

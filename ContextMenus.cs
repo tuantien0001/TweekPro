@@ -25,6 +25,12 @@ namespace TweekPro {
    return item;
   }
 
+  /// <summary>Clipboard copy that ignores empty text and a busy clipboard instead of throwing.</summary>
+  static void CopyText(string text){
+   if(String.IsNullOrEmpty(text))return;
+   try{Clipboard.SetText(text);}catch(System.Runtime.InteropServices.ExternalException){}
+  }
+
   static void OpenInExplorer(string path){
    if(String.IsNullOrWhiteSpace(path))return;
    if(File.Exists(path))Process.Start(new ProcessStartInfo("explorer.exe","/select,\""+path+"\""){UseShellExecute=true});
@@ -41,8 +47,8 @@ namespace TweekPro {
     menu.Items.Add(new ToolStripSeparator());
     bool hasFolder=!String.IsNullOrWhiteSpace(a.Location)&&Directory.Exists(a.Location);
     MenuItem(menu,"Mở thư mục cài",()=>{OpenInExplorer(a.Location);return Task.FromResult(0);},hasFolder,"chưa khai báo thư mục cài");
-    MenuItem(menu,"Sao chép thư mục cài",()=>{Clipboard.SetText(a.Location);return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Location));
-    MenuItem(menu,"Sao chép lệnh gỡ",()=>{Clipboard.SetText(a.Command??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Command));
+    MenuItem(menu,"Sao chép thư mục cài",()=>{CopyText(a.Location);return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Location));
+    MenuItem(menu,"Sao chép lệnh gỡ",()=>{CopyText(a.Command??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Command));
     menu.Items.Add(new ToolStripSeparator());
     int checkedCount=apps.CheckedItems.Count;
     MenuItem(menu,"Bỏ đánh dấu tất cả",()=>{foreach(ListViewItem i in apps.Items)i.Checked=false;return Task.FromResult(0);},checkedCount>0);
@@ -55,7 +61,7 @@ namespace TweekPro {
     menu.Items.Add(new ToolStripSeparator());
     MenuItem(menu,"Mở trong Microsoft Store",()=>{OpenStorePage();return Task.FromResult(0);});
     MenuItem(menu,"Mở thư mục gói",()=>{OpenStoreLocation();return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.InstallLocation));
-    MenuItem(menu,"Sao chép tên gói",()=>{Clipboard.SetText(a.FullName??"");return Task.FromResult(0);});
+    MenuItem(menu,"Sao chép tên gói",()=>{CopyText(a.FullName??"");return Task.FromResult(0);});
    });
 
    AttachMenu(autorunList,menu=>{
@@ -66,8 +72,8 @@ namespace TweekPro {
     menu.Items.Add(new ToolStripSeparator());
     string target=Advanced.CommandExe(a.Command);if(target==""&&Advanced.LocalPath(a.Command))target=a.Command;
     MenuItem(menu,"Mở thư mục chứa tệp",()=>{OpenInExplorer(target);return Task.FromResult(0);},target!=""&&File.Exists(target));
-    MenuItem(menu,"Sao chép vị trí",()=>{Clipboard.SetText(a.Item!=null?Presentation.CandidatePath(a.Item):a.Saved.Original);return Task.FromResult(0);});
-    MenuItem(menu,"Sao chép lệnh",()=>{Clipboard.SetText(a.Command??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Command));
+    MenuItem(menu,"Sao chép vị trí",()=>{CopyText(a.Item!=null?Presentation.CandidatePath(a.Item):a.Saved.Original);return Task.FromResult(0);});
+    MenuItem(menu,"Sao chép lệnh",()=>{CopyText(a.Command??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Command));
    });
 
    AttachMenu(backups,menu=>{
@@ -77,8 +83,9 @@ namespace TweekPro {
     MenuItem(menu,"Xóa vĩnh viễn mục này",async()=>await PurgeBackups(new List<Backup>{b},b.AppName??b.Original),danger:true);
     menu.Items.Add(new ToolStripSeparator());
     MenuItem(menu,"Mở thư mục sao lưu",()=>{OpenInExplorer(Path.Combine(Engine.VaultOf(b),b.Id));return Task.FromResult(0);},Directory.Exists(Path.Combine(Engine.VaultOf(b),b.Id)));
-    MenuItem(menu,"Mở vị trí gốc",()=>{OpenInExplorer(Directory.Exists(b.Original)?b.Original:Path.GetDirectoryName(b.Original));return Task.FromResult(0);},!String.IsNullOrWhiteSpace(b.Original)&&b.Original.Contains("\\"));
-    MenuItem(menu,"Sao chép đường dẫn gốc",()=>{Clipboard.SetText(b.Original??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(b.Original));
+    bool localOriginal=!String.IsNullOrWhiteSpace(b.Original)&&Advanced.LocalPath(b.Original);
+    MenuItem(menu,"Mở vị trí gốc",()=>{OpenInExplorer(Directory.Exists(b.Original)?b.Original:Path.GetDirectoryName(b.Original));return Task.FromResult(0);},localOriginal,"không phải đường dẫn tệp");
+    MenuItem(menu,"Sao chép đường dẫn gốc",()=>{CopyText(b.Original??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(b.Original));
    });
   }
  }
