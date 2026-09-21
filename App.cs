@@ -346,6 +346,7 @@ namespace TweekPro {
   }
   [STAThread]public static void Main(string[] args){
    // Handle the headless self-test before any WinForms initialization so it needs no X display / desktop session.
+   if(args.Length>1&&args[0]=="--export-icon"){try{Branding.WriteIconFile(args[1]);}catch(Exception error){Console.Error.WriteLine(error.Message);Environment.ExitCode=1;}return;}
    if(args.Length>0&&args[0]=="--self-test"){
     bool coreOnly=args.Length>1&&(args[1]=="core"||args[1]=="junk");string results=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"test-results.txt");
     try{

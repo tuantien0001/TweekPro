@@ -1,6 +1,9 @@
 using System;
 using System.Drawing;
+using System.Collections.Generic;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -68,6 +71,31 @@ namespace TweekPro {
   }
 
   /// <summary>Renders the logo into a managed icon of the requested square size for the window and taskbar.</summary>
+  /// <summary>
+  /// Writes a multi-size .ico (16–256 px, PNG-compressed entries as Windows Vista+ expects) drawn from the same logo, for the exe
+  /// resource and the installer. Pure managed code so it runs on every platform.
+  /// </summary>
+  public static void WriteIconFile(string path){
+   int[] sizes={16,24,32,48,64,128,256};
+   var pngs=new List<byte[]>();
+   foreach(int size in sizes){
+    using(var bitmap=new Bitmap(size,size))using(var stream=new MemoryStream()){
+     using(var g=Graphics.FromImage(bitmap)){g.Clear(Color.Transparent);DrawLogo(g,new Rectangle(0,0,size,size));}
+     bitmap.Save(stream,ImageFormat.Png);pngs.Add(stream.ToArray());
+    }
+   }
+   using(var file=new FileStream(path,FileMode.Create,FileAccess.Write))using(var w=new BinaryWriter(file)){
+    w.Write((ushort)0);w.Write((ushort)1);w.Write((ushort)sizes.Length);
+    int offset=6+16*sizes.Length;
+    for(int i=0;i<sizes.Length;i++){
+     byte dim=(byte)(sizes[i]>=256?0:sizes[i]);
+     w.Write(dim);w.Write(dim);w.Write((byte)0);w.Write((byte)0);w.Write((ushort)1);w.Write((ushort)32);w.Write(pngs[i].Length);w.Write(offset);
+     offset+=pngs[i].Length;
+    }
+    foreach(var png in pngs)w.Write(png);
+   }
+  }
+
   public static Icon AppIcon(int size){
    using(var bitmap=new Bitmap(size,size)){
     using(var g=Graphics.FromImage(bitmap)){g.Clear(Color.Transparent);DrawLogo(g,new Rectangle(0,0,size,size));}

@@ -82,7 +82,7 @@ Each item follows the standard pattern (engine + safety + tests + tab/finding + 
 5. **Browser extension hygiene** – read-only listing of Chrome/Edge/Brave/Firefox extensions with publisher/permissions; flag known-bad IDs; no removal in v1.
 6. **Registry cleaner (conservative)** – only orphaned uninstall keys, missing MUI cache and invalid `App Paths`; always through vault `Kind=Registry`; heavy tests.
 7. **Scheduler / one-click maintenance** – run Health → Junk preview → apply selected groups from a single "Dọn nhanh" button with a summary dialog.
-8. **Installer / distribution** – `publish.ps1` producing a zip of `bin\Release\net48` and an optional Inno Setup script; version bump to 0.8 in `TweekPro.csproj`, `MainForm.Version`, `build.ps1`, `app.manifest`.
+8. ~~Installer / distribution~~ – **done**: `publish.ps1` (zip + Inno Setup via `installer\TweekPro.iss`), `TweekPro.ico` embedded in the exe (`--export-icon`), GitHub Actions `release.yml` builds on `windows-latest` and attaches both files to a Release on `v*` tags. Still open: version bump to 0.8 in `TweekPro.csproj`, `MainForm.Version`, `build.ps1`, `app.manifest`, `installer\TweekPro.iss` default.
 
 ## 6. Known limitations / gotchas
 

@@ -93,6 +93,19 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 - `HANDOFF.md`: hiện trạng, quy tắc sản phẩm bất biến, checklist kiểm chứng trên Windows thật, lộ trình tính năng tiếp theo.
 - `AGENTS.md`: lệnh build/test và quy ước mã cho agent (Codex, Cursor…) đọc tự động.
 
+## Cài đặt và phân phối
+
+Có hai dạng phát hành, đều do `publish.ps1` tạo ra trong thư mục `dist\`:
+
+- `TweekPro-0.7-Setup.exe` — trình cài đặt Windows chuẩn (Next → Install → Finish): cài vào `Program Files\Tweek Pro`, tạo lối tắt Start Menu và (tùy chọn) Desktop, hiện trong *Ứng dụng đã cài* để gỡ. Trình cài kiểm tra .NET Framework 4.8 (có sẵn trên Windows 10 1903+/11; máy cũ hơn được đưa tới trang tải của Microsoft). Gỡ cài đặt **không** xóa dữ liệu người dùng và Kho khôi phục trong `%LOCALAPPDATA%\TweekPro`.
+- `TweekPro-0.7-portable.zip` — giải nén và chạy, không cần cài.
+
+Tạo bản phát hành trên máy Windows (PowerShell chạy quản trị): `.\publish.ps1` (build → self-test → icon → zip → installer). Trình cài dùng [Inno Setup 6.3+](https://jrsoftware.org/isinfo.php); nếu chưa có: `.\publish.ps1 -InstallInno` (cài qua winget) hoặc `winget install JRSoftware.InnoSetup`. Kịch bản cài đặt nằm ở `installer\TweekPro.iss`; các tham số `-SkipTests`, `-NoInstaller` để rút gọn.
+
+Không cần máy Windows: GitHub Actions (`.github/workflows/release.yml`) tự build trên `windows-latest` ở mỗi lần push — vào tab **Actions** → lần chạy mới nhất → artifact `TweekPro-dist` để tải cả hai tệp. Gắn tag `v0.7` (`git tag v0.7 && git push origin v0.7`) sẽ tạo thêm **Release** trên GitHub với installer và zip đính kèm để chia sẻ bằng đường dẫn cố định.
+
+Icon exe/installer (`TweekPro.ico`, 16–256 px) được kết xuất từ chính logo vẽ bằng mã: `TweekPro-0.7.exe --export-icon TweekPro.ico`.
+
 ## Mã nguồn và biên dịch
 
 | Tệp/thư mục | Nội dung |
@@ -106,13 +119,14 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 | `Analyzer/` | `DiskAnalyzer` (quét chỉ đọc: tổng dung lượng, thư mục con, theo phần mở rộng, tệp lớn nhất), `DiskAnalyzerUI`, `AnalyzerTests` |
 | `Network/` | `ConnectionTable` (iphlpapi), `ProcessResolver`, `EtwNetworkSession` (TraceEvent), `NetworkStats` (gộp theo tiến trình + phân loại hướng), `NetworkGlyphs` (icon packet ra/vào), `PacketAnimator`/`PacketFlow` (animation luồng packet realtime), `NetworkUI`, `NetworkStatsTests`, `PacketAnimatorTests` |
 | `Health/` | `HealthCheck` (ngưỡng, điểm, hạng — thuần logic), `HealthGauge` (`HealthRenderer` + panel vẽ thẻ điểm), `HealthUI` (tab Tổng quan, các phép đo), `HealthTests` |
-| `Branding.cs` | Logo ứng dụng và icon tab vẽ bằng mã (GDI+) |
+| `Branding.cs`, `TweekPro.ico` | Logo ứng dụng và icon tab vẽ bằng mã (GDI+); `.ico` xuất từ logo, nhúng vào exe |
+| `publish.ps1`, `installer/TweekPro.iss`, `.github/workflows/release.yml` | Đóng gói: zip portable + trình cài Inno Setup, build tự động trên GitHub Actions |
 | `Vault/PurgeForm.cs` | Hộp thoại dọn kho theo tuổi |
 | `CoreTests.cs`, `Tests07.cs` | Kiểm thử không cần Windows / kiểm thử 0.7 |
 
 Biên dịch (đường chính): cần .NET SDK 6+ (khuyến nghị 8): `dotnet build -c Release` → `bin\Release\net48\TweekPro-0.7.exe`. Trên Linux/macOS thêm `-p:EnableWindowsTargeting=true` để kiểm tra biên dịch. `build.ps1` trên Windows gọi lệnh trên, in hướng dẫn cài SDK nếu thiếu (`winget install Microsoft.DotNet.SDK.8`); thêm `-SelfTest` để chạy `--self-test` sau khi build. Ngôn ngữ C# 7.3 (mức tối đa của net48); gói NuGet duy nhất: `Microsoft.Diagnostics.Tracing.TraceEvent` 3.1.30.
 
-Dòng lệnh: `--self-test` (đầy đủ, Windows; tạo và dọn fixture `TweekProTest*`/`TweekProFixture*` trong AppData và HKCU), `--self-test core` (không cần Windows, chạy headless không cần màn hình), `--self-test junk` (core + dọn rác/kho, không Registry/UI), `--preview [scan|autorun|tools|junk|network|health]` kết xuất PNG, `--scan-smoke`.
+Dòng lệnh: `--self-test` (đầy đủ, Windows; tạo và dọn fixture `TweekProTest*`/`TweekProFixture*` trong AppData và HKCU), `--self-test core` (không cần Windows, chạy headless không cần màn hình), `--self-test junk` (core + dọn rác/kho, không Registry/UI), `--preview [scan|autorun|tools|junk|network|health]` kết xuất PNG, `--export-icon <tệp.ico>` ghi icon đa kích cỡ, `--scan-smoke`.
 
 Tham khảo định dạng đăng ký cài đặt của Microsoft:
 https://learn.microsoft.com/en-us/windows/win32/msi/uninstall-registry-key

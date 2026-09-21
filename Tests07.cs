@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -17,6 +18,25 @@ namespace TweekPro {
   static void Assert(bool ok,string message){if(!ok)throw new Exception("Tests07: "+message);}
   static void MustFail(Action a,string message){bool failed=false;try{a();}catch(Exception){failed=true;}Assert(failed,message);}
 
+  /// <summary>The exported .ico must be a valid multi-size container whose entries are PNG images (what Explorer and Inno Setup expect).</summary>
+  static void IconFile(string path){
+   Branding.WriteIconFile(path);
+   byte[] data=File.ReadAllBytes(path);
+   Assert(BitConverter.ToUInt16(data,0)==0&&BitConverter.ToUInt16(data,2)==1,"ico header");
+   int count=BitConverter.ToUInt16(data,4);Assert(count==7,"ico has 7 sizes");
+   var sizes=new List<int>();
+   for(int i=0;i<count;i++){
+    int entry=6+16*i;int width=data[entry]==0?256:data[entry];sizes.Add(width);
+    Assert(data[entry]==data[entry+1],"ico entry is square");
+    Assert(BitConverter.ToUInt16(data,entry+6)==32,"ico entry is 32bpp");
+    int length=BitConverter.ToInt32(data,entry+8),offset=BitConverter.ToInt32(data,entry+12);
+    Assert(offset>=6+16*count&&offset+length<=data.Length,"ico entry inside file");
+    Assert(data[offset]==0x89&&data[offset+1]==(byte)'P'&&data[offset+2]==(byte)'N'&&data[offset+3]==(byte)'G',"ico entry is PNG");
+    using(var stream=new MemoryStream(data,offset,length))using(var image=Image.FromStream(stream))Assert(image.Width==width&&image.Height==width,"ico PNG dimensions");
+   }
+   Assert(sizes.First()==16&&sizes.Last()==256,"ico covers 16..256");
+  }
+
   public static void Run(){
    string local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
    string id="TweekProTest"+Guid.NewGuid().ToString("N");
@@ -24,6 +44,7 @@ namespace TweekPro {
    string originalVault=Engine.Vault,originalLegacy=Paths.Legacy;
    try{
     Directory.CreateDirectory(Path.Combine(junkRoot,"nested"));
+    IconFile(Path.Combine(fixture,"logo.ico"));
     Engine.Vault=Path.Combine(fixture,"Vault");Paths.Legacy=Path.Combine(fixture,"AppCareLegacy");
     // Creation time cannot be back-dated on Linux/Mono, so the age filter (and the fresh-file fixture) only apply on Windows.
     bool windows=Environment.OSVersion.Platform==PlatformID.Win32NT;

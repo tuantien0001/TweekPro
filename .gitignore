@@ -18,3 +18,6 @@ preview-error.txt
 *.suo
 Thumbs.db
 .DS_Store
+
+# Distributables produced by publish.ps1
+dist/
