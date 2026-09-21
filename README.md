@@ -219,7 +219,7 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 
 ## Lịch sử phiên bản
 
-### 0.7.4 (chưa phát hành)
+### 0.7.4 (22/09/2026)
 
 - **Khởi động** liệt kê đủ ba nguồn như Autorun Manager: Run/RunOnce/shortcut Startup, ứng dụng Windows (cờ State của gói Appx), và dịch vụ Win32 tự chạy (không gồm driver). Mỗi dòng có ô tích: bỏ tích thì tắt qua Kho khôi phục, tích lại thì bật. Dịch vụ cốt lõi bị từ chối và dịch vụ đang chạy không bị dừng. Mục Run/Startup mà Windows đã tắt thì tích lại chỉ bật cờ StartupApproved, lệnh gốc giữ nguyên.
 
