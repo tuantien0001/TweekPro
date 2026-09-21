@@ -18,6 +18,9 @@ namespace TweekPro.Core {
   [DataMember(Name="junkMinAgeHours")] public int JunkMinAgeHours=24;
   [DataMember(Name="duplicateMinKB")] public int DuplicateMinKB=1;
   [DataMember(Name="duplicateKeepNewest")] public bool DuplicateKeepNewest=false;
+  [DataMember(Name="staleMinAgeDays")] public int StaleMinAgeDays=30;
+  [DataMember(Name="staleLargeMB")] public int StaleLargeMB=200;
+  [DataMember(Name="staleIncludeDesktop")] public bool StaleIncludeDesktop=false;
   [DataMember(Name="logRetentionDays")] public int LogRetentionDays=14;
   [DataMember(Name="windowWidth")] public int WindowWidth=0;
   [DataMember(Name="windowHeight")] public int WindowHeight=0;
@@ -31,12 +34,17 @@ namespace TweekPro.Core {
   [DataMember(Name="aiActionMode")] public string AiActionMode=AiActionModes.Confirm;
   public bool AiAllowActions { get { return AiActionMode!=AiActionModes.ReadOnly; } }
 
+  /// <summary>DataContract deserialization skips field initializers; members added after 0.7 shipped need their defaults restored for older files.</summary>
+  [OnDeserializing] void Defaults(StreamingContext context){StaleMinAgeDays=30;StaleLargeMB=200;}
+
   /// <summary>Clamps values that would make the UI unusable if the file was edited by hand.</summary>
   public void Normalize(){
    if(NetworkRefreshSeconds<1)NetworkRefreshSeconds=1;if(NetworkRefreshSeconds>30)NetworkRefreshSeconds=30;
    if(PurgeDefaultDays<0)PurgeDefaultDays=0;if(PurgeDefaultDays>3650)PurgeDefaultDays=3650;
    if(JunkMinAgeHours<0)JunkMinAgeHours=0;if(JunkMinAgeHours>24*30)JunkMinAgeHours=24*30;
    if(DuplicateMinKB<0)DuplicateMinKB=0;if(DuplicateMinKB>1048576)DuplicateMinKB=1048576;
+   if(StaleMinAgeDays<0)StaleMinAgeDays=0;if(StaleMinAgeDays>3650)StaleMinAgeDays=3650;
+   if(StaleLargeMB<0)StaleLargeMB=0;if(StaleLargeMB>1048576)StaleLargeMB=1048576;
    if(LogRetentionDays<1)LogRetentionDays=1;if(LogRetentionDays>365)LogRetentionDays=365;
    Language=L.Normalize(Language);
    AiProvider=AI.AiClient.Normalize(AiProvider);

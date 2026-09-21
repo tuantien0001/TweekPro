@@ -149,6 +149,7 @@ namespace TweekPro {
      case "trash":Trash(g,r,pen);break;
      case "folder":Folder(g,r,pen);break;
      case "duplicate":Duplicate(g,r,pen);break;
+     case "download":Download(g,r,pen);break;
      case "chart":Chart(g,r,brush);break;
      case "shield":Shield(g,r,pen);break;
      case "bolt":Bolt(g,r,brush);break;
@@ -172,6 +173,7 @@ namespace TweekPro {
    if(has("Ứng dụng","Applications"))return "apps";
    if(has("còn sót","Leftovers"))return "magnifier";
    if(has("trùng","Duplicates"))return "duplicate";
+   if(has("tải về cũ","Old Downloads"))return "download";
    if(has("rác","Junk"))return "trash";
    if(has("rỗng","Empty"))return "folder";
    if(has("Phân tích","Analyzer"))return "chart";
@@ -195,6 +197,13 @@ namespace TweekPro {
    path.CloseFigure();return path;
   }
 
+  /// <summary>Arrow pointing down into a tray: the Old Downloads tab.</summary>
+  static void Download(Graphics g,Rectangle r,Pen pen){
+   int cx=r.X+r.Width/2;int top=r.Y+1,tip=r.Bottom-5;
+   g.DrawLine(pen,cx,top,cx,tip);
+   g.DrawLine(pen,cx-4,tip-4,cx,tip);g.DrawLine(pen,cx+4,tip-4,cx,tip);
+   g.DrawLine(pen,r.X+1,r.Bottom-2,r.Right-1,r.Bottom-2);
+  }
   static void Pulse(Graphics g,Rectangle r,Pen pen){
    int mid=r.Y+r.Height/2;int w=r.Width;
    var points=new[]{new Point(r.X,mid),new Point(r.X+w*3/10,mid),new Point(r.X+w*4/10,r.Y+2),new Point(r.X+w*55/100,r.Bottom-2),new Point(r.X+w*65/100,mid),new Point(r.Right,mid)};

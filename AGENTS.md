@@ -8,7 +8,7 @@ Read `WORKSTATE.md` for the latest task checkpoint, then `HANDOFF.md` for archit
 
 - Windows: `powershell -ExecutionPolicy Bypass -File .\build.ps1 -SelfTest` (needs .NET SDK 6+; the built exe runs on the .NET Framework 4.8 that ships with Windows). The exe has a `requireAdministrator` manifest, so run `--self-test` from an elevated PowerShell.
 - Linux/macOS (CI or cloud agents): `dotnet build -c Release -p:EnableWindowsTargeting=true` then `env -u DISPLAY mono bin/Release/net48/TweekPro-0.7.exe --self-test junk`. The `junk` argument runs every platform-neutral suite (`CoreTests`, `Tests07` and everything it calls) and skips registry/UI tests. Exit code 0 and `bin/Release/net48/test-results.txt` starting with `PASS` mean success.
-- Layout preview without a real Windows session: `mono bin/Release/net48/TweekPro-0.7.exe --preview <remnants|apps|autorun|tools|junk|network|health|store|services|ai> [--show]` (`--show` opens the live window instead of writing `TweekPro-preview.png`). Under Mono set `MONO_WINFORMS_XIM_STYLE=disabled` and avoid keyboard input.
+- Layout preview without a real Windows session: `mono bin/Release/net48/TweekPro-0.7.exe --preview <remnants|apps|stale|autorun|tools|junk|network|health|store|services|ai> [--show]` (`--show` opens the live window instead of writing `TweekPro-preview.png`). Under Mono set `MONO_WINFORMS_XIM_STYLE=disabled` and avoid keyboard input.
 - Build must stay at 0 errors / 0 warnings. Every engine change needs a test in the matching `*Tests.cs`, wired into `Tests07.Run()`.
 
 ## Conventions

@@ -101,6 +101,7 @@ namespace TweekPro {
    BuildJunkTab();
    BuildEmptyTab();
    BuildDuplicateTab();
+   BuildStaleTab();
    BuildAnalyzerTab();
    BuildNetworkTab();
    BuildStoreTab();
@@ -109,7 +110,7 @@ namespace TweekPro {
    BuildListMenus();
    // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics → AI assistant last.
    remnantsTab=clean;
-   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,servicesTab,toolsTab,logs,aiTab};
+   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,staleTab,analyzerTab,vault,autorunTab,netTab,servicesTab,toolsTab,logs,aiTab};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);
@@ -305,7 +306,7 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary+Core.L.T("\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng."),Core.L.T("Kết quả dọn"),MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
   static string StateLabel(Backup b){return Core.L.T(b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":b.State=="PendingReboot"?"Hẹn xóa khi khởi động lại":"Cần kiểm tra");}
-  static string KindLabel(Backup b){return b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind=="Junk"?Core.L.T("Rác"):b.Kind=="Duplicate"?Core.L.T("Bản trùng"):b.Kind=="Folder"?Core.L.T("Thư mục"):b.Kind=="File"?Core.L.T("Tệp"):b.Kind=="RegistryValue"?Core.L.T("Giá trị Registry"):b.Kind=="Registry"?Core.L.T("Khóa Registry"):b.Kind;}
+  static string KindLabel(Backup b){return b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind=="Junk"?Core.L.T("Rác"):b.Kind==Stale.StaleFinder.BackupKind?Stale.StaleFinder.BackupKindLabel():b.Kind=="Duplicate"?Core.L.T("Bản trùng"):b.Kind=="Folder"?Core.L.T("Thư mục"):b.Kind=="File"?Core.L.T("Tệp"):b.Kind=="RegistryValue"?Core.L.T("Giá trị Registry"):b.Kind=="Registry"?Core.L.T("Khóa Registry"):b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){
@@ -390,7 +391,7 @@ namespace TweekPro {
     string mode=args.Length>1?args[1]:"";
     if(mode=="scan"){using(var window=new LeftoverScanForm(new[]{new AppEntry{Name="Ứng dụng mẫu",Hive="HKCU",View="64",Key="SOFTWARE\\Missing"}},true,null)){window.PopulateForPreview();Snapshot(window,"TweekPro-scan-preview.png");}return;}
     bool show=args.Contains("--show");
-    using(var form=new MainForm(true)){form.PopulateForPreview();if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode!="")form.PreviewRemnants();if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}
+    using(var form=new MainForm(true)){form.PopulateForPreview();if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode=="stale")form.PreviewStale();else if(mode!="")form.PreviewRemnants();if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}
    }catch(Exception error){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"preview-error.txt"),error.ToString());Environment.ExitCode=1;}return;}
    Application.ThreadException+=(s,e)=>{Core.Log.Error("Lỗi chưa xử lý",e.Exception);MessageBox.Show(e.Exception.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Error);};
    Application.Run(new MainForm());

@@ -270,6 +270,7 @@ namespace TweekPro {
    if(b.Kind=="File"||b.Kind=="RegistryValue"){Advanced.Restore(b);return;}
    if(b.Kind=="Junk"){Cleaner.JunkCleaner.Restore(b);return;}
    if(b.Kind=="Duplicate"){Dupes.DuplicateFinder.Restore(b);return;}
+   if(b.Kind==Stale.StaleFinder.BackupKind){Stale.StaleFinder.Restore(b);return;}
    if(b.Kind=="Store"){Store.WindowsApps.Restore(b);return;}
    if(b.Kind=="Service"){Network.ProcessControl.Restore(b);return;}
    Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");

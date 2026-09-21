@@ -31,7 +31,7 @@ namespace TweekPro.Core {
     }
 
     // Every tab title and every embedded junk rule group/name has an English translation so the UI never mixes languages.
-    foreach(string tab in new[]{"Tổng quan","Ứng dụng","Ứng dụng Windows","Phần còn sót","Dọn rác","Thư mục rỗng","Tệp trùng lặp","Phân tích ổ đĩa","Kho khôi phục","Khởi động","Mạng","Công cụ","Nhật ký"})
+    foreach(string tab in new[]{"Tổng quan","Ứng dụng","Ứng dụng Windows","Phần còn sót","Dọn rác","Thư mục rỗng","Tệp trùng lặp","Tệp tải về cũ","Phân tích ổ đĩa","Kho khôi phục","Khởi động","Mạng","Công cụ","Nhật ký"})
      Assert(L.Has(tab)&&Branding.GlyphKey(L.T(tab))==Branding.GlyphKey(tab)&&Branding.GlyphKey(tab)!="dot","tab translated with matching glyph: "+tab);
     var rules=Cleaner.JunkRules.LoadEmbedded();
     foreach(var r in rules.Rules)Assert(L.Has(r.Group)&&L.Has(r.Name)&&L.Has(r.Description),"junk rule translated: "+r.Id);
