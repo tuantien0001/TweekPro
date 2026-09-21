@@ -25,7 +25,7 @@ Read `WORKSTATE.md` for the latest task checkpoint, then `HANDOFF.md` for archit
 
 ## Git
 
-- Work directly on `main` (since 2026-09-21; PR #7 merged `cursor/integration-all-features-e772` into `main`, that branch is now frozen history). The owner wants the GitHub front page to always show the newest code, so every verified commit goes to `main`. Small logical commits with descriptive messages; never force-push.
+- Work directly on `main` (since 2026-09-21; PR #7 merged `cursor/integration-all-features-e772` into `main`; all `cursor/*` branches and PRs #1–#7 were then deleted/closed, so `main` is the only branch). The owner wants the GitHub front page to always show the newest code, so every verified commit goes to `main`. Small logical commits with descriptive messages; never force-push.
 
 ## Continuity between Cursor and Codex
 

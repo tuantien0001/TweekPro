@@ -6,7 +6,8 @@ Last editor: Cursor.
 
 ## Branch switch (20:05)
 
-PR #7 merged by fast-forwarding `main` to `f8ce05c`; `main` is the only working branch from now on (AGENTS.md updated). `cursor/integration-all-features-e772` is frozen history. `release.ps1` runs from `main`.
+PR #7 merged by fast-forwarding `main` to `f8ce05c`; `main` is the only working branch from now on (AGENTS.md updated). `release.ps1` runs from `main`.
+Branch cleanup (21:30, owner request): all seven `cursor/*-e772` branches deleted locally and on GitHub; PRs #1–#6 auto-closed (their content was already integrated into `main`). Only `main` remains. Do not look for the old branches; use `git log main` for history.
 
 ## Shipped today (pushed; now all on `main`)
 

@@ -2,7 +2,7 @@
 
 For the latest active task and Cursor/Codex transfer, read `WORKSTATE.md` first. The rest of this file is architecture and recovery history.
 
-Last updated: 2026-09-21, branch `main` (PR #7 merged 2026-09-21; `cursor/integration-all-features-e772` is frozen history), commit after `f8ce05c`.
+Last updated: 2026-09-21, branch `main` (PR #7 merged 2026-09-21; all `cursor/*` branches deleted afterwards, `main` is the only branch), commit after `f8ce05c`.
 Local working copy on the owner's PC: `C:\Users\ADMIN\TweekPro`. Refresh it with `powershell -ExecutionPolicy Bypass -File .\get-latest.ps1 -Run` from an elevated PowerShell.
 
 ## Recovery update — 2026-09-21
