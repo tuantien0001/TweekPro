@@ -150,7 +150,16 @@ namespace TweekPro {
   public static Label Note(string text,NoteKind kind){
    var note=new Label{Text=Core.L.T(text),Dock=DockStyle.Top,AutoSize=false,Height=52,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,Font=Body};
    Tint(note,kind);
+   EventHandler fit=(s,e)=>FitNoteHeight(note);note.Resize+=fit;note.TextChanged+=fit;
    return note;
+  }
+  /// <summary>Grows a note beyond its two-line default when the text wraps to more lines at the current width, so long notes are never clipped.</summary>
+  static void FitNoteHeight(Label note){
+   if(note.Width<=note.Padding.Horizontal+40||String.IsNullOrEmpty(note.Text))return;
+   int width=note.Width-note.Padding.Horizontal;
+   var size=TextRenderer.MeasureText(note.Text,note.Font,new Size(width,Int32.MaxValue),TextFormatFlags.WordBreak);
+   int wanted=Math.Max(52,size.Height+16);
+   if(note.Height!=wanted)note.Height=wanted;
   }
   /// <summary>Applies the background and foreground colors that correspond to a note kind.</summary>
   public static void Tint(Control control,NoteKind kind){
