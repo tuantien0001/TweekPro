@@ -219,7 +219,7 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 
 ## Lịch sử phiên bản
 
-### 0.7.n (chưa phát hành)
+### 0.7.3 (21/09/2026)
 
 - **Explorer → Duyệt tệp**: trình duyệt thư mục riêng của Tweek Pro hiện **mọi** tệp/thư mục ẩn và hệ thống bất kể thiết lập Explorer, có cột Đuôi, Mô tả (loại theo shell), Dung lượng, Sửa lần cuối, Thuộc tính; mục ẩn in nghiêng, hệ thống màu vàng, tệp giả dạng (`hoadon.pdf.exe`) màu đỏ; bấm một tệp là xem chi tiết ngay (mã băm tính khi bấm «Xem chi tiết + băm»); Lên một cấp / This PC / Thư mục người dùng / lọc «Chỉ hiện mục ẩn / hệ thống» / Mở trong Explorer / Thuộc tính Windows.
 - **Mạng → Chặn mạng theo ứng dụng** (`Network/FirewallBlock.cs`): chuột phải một ứng dụng → **Chặn mạng** tạo cặp quy tắc Windows Firewall (vào + ra) chỉ cho tệp .exe đó, tên quy tắc `TweekPro Block - <exe> [hash]`; cột **Chặn mạng** đỏ, menu **Bỏ chặn**, nút **Đang chặn mạng…** liệt kê và bỏ chặn hàng loạt; mỗi lần chặn là một mục Kho khôi phục (`Kind=Firewall`) — khôi phục = gỡ đúng quy tắc theo tên. Từ chối tiến trình cốt lõi, tệp trong `Windows\System32`, chính Tweek Pro, đường dẫn mạng và tệp không phải .exe.
