@@ -98,7 +98,7 @@ Tab **Thư mục rỗng** quét một thư mục do người dùng chọn và ch
 
 Dữ liệu gửi tới địa chỉ máy chủ được chọn; chỉ kết nối localhost mới ở trên cùng máy. Có thể dùng địa chỉ LAN cho máy chủ local. Không gửi key của nhà cung cấp trước khi đổi sang nhà cung cấp khác. Mô hình local được chờ tối đa 10 phút mỗi yêu cầu. Kho chỉ khôi phục phần dọn còn sót, **không hoàn tác trình gỡ chính thức**.
 
-Icon T + PC mẫu 2 được nhúng trong exe và dùng cho header/cửa sổ/bộ cài. `--export-icon` xuất đúng file ICO đã duyệt (11 kích thước), không vẽ lại logo cũ. Bản gốc và các kích thước PNG nằm trong `icon-handoff-tpc-ai-v1`.
+Icon T + PC mẫu 2 được nhúng trong exe và dùng cho header/cửa sổ/bộ cài. `--export-icon` xuất đúng file ICO đã duyệt (11 kích thước), không vẽ lại logo cũ. File ICO gốc là `TweekPro.ico` ở thư mục gốc dự án.
 
 ## Dữ liệu Tweek Pro
 

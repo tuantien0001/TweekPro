@@ -91,8 +91,8 @@ namespace TweekPro {
    var logbar=Bar();
    Add(logbar,"Mở thư mục nhật ký",()=>{Directory.CreateDirectory(Core.Paths.Logs);Process.Start("explorer.exe","\""+Core.Paths.Logs+"\"");return Task.FromResult(0);});
    Add(logbar,"Mở thư mục dữ liệu",()=>{Directory.CreateDirectory(Core.Paths.Root);Process.Start("explorer.exe","\""+Core.Paths.Root+"\"");return Task.FromResult(0);});
-   Add(logbar,"Lưu cài đặt ngay",()=>{SaveSettings();Log("Đã lưu settings.json.");return Task.FromResult(0);});
-   var logNote=Theme.Note("Nhật ký phiên hiện tại. Tệp nhật ký xoay vòng theo ngày trong "+Core.Paths.Logs+" (giữ "+settings.LogRetentionDays+" ngày). Cài đặt: "+Core.Paths.SettingsFile+".",NoteKind.Info);
+   Add(logbar,"Lưu cài đặt ngay",()=>{SaveSettings();Log(Core.L.T("Đã lưu settings.json."));return Task.FromResult(0);});
+   var logNote=Theme.Note(Core.L.F("Nhật ký phiên hiện tại. Tệp nhật ký xoay vòng theo ngày trong {0} (giữ {1} ngày). Cài đặt: {2}.",Core.Paths.Logs,settings.LogRetentionDays,Core.Paths.SettingsFile),NoteKind.Info);
    var logWrap=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Surface};logWrap.Controls.Add(log);logs.Controls.Add(logWrap);logs.Controls.Add(logNote);logs.Controls.Add(logbar);
    BuildHealthTab();
    BuildAdvancedTabs();
@@ -119,9 +119,9 @@ namespace TweekPro {
    Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
    Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
    if(!preview) Shown+=async(s,e)=>await Guard(async()=>await Reload());
-   FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,"Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất.");}};
+   FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,Core.L.T("Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất."));}};
    ResumeLayout(true);
-   try{if(File.Exists(sessions))history=Engine.Load<List<AppEntry>>(sessions);}catch(Exception e){Log("Không đọc được lịch sử: "+e.Message);}
+   try{if(File.Exists(sessions))history=Engine.Load<List<AppEntry>>(sessions);}catch(Exception e){Log(Core.L.T("Không đọc được lịch sử: ")+e.Message);}
   }
   /// <summary>
   /// Window size is persisted in logical (96-DPI) pixels and restored in the Load event, after auto-scaling, so it never compounds
@@ -153,8 +153,8 @@ namespace TweekPro {
    b.Click+=async(s,e)=>await Guard(action);bar.Controls.Add(b);actions.Add(b);
   }
   void SetupList(ListView list,string[] names,int[] widths,bool check,bool groups=false){Theme.StyleList(list);list.CheckBoxes=check;list.ShowGroups=groups;for(int i=0;i<names.Length;i++)list.Columns.Add(Core.L.T(names[i]),widths[i]);}
-  async Task Guard(Func<Task> action){if(busy)return;busy=true;foreach(var b in actions)b.Enabled=false;deepMode.Enabled=false;search.Enabled=false;apps.Enabled=false;remnants.Enabled=false;backups.Enabled=false;try{await action();}catch(Exception e){Log("LỖI: "+e.Message);MessageBox.Show(this,e.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Warning);}finally{busy=false;foreach(var b in actions)b.Enabled=true;deepMode.Enabled=true;search.Enabled=true;apps.Enabled=true;remnants.Enabled=true;backups.Enabled=true;}}
-  void Log(string value){log.AppendText(DateTime.Now.ToString("HH:mm:ss")+"  "+value+"\r\n");status.Text=value;if(value.StartsWith("LỖI",StringComparison.OrdinalIgnoreCase))Core.Log.Error(value);else Core.Log.Info(value);}
+  async Task Guard(Func<Task> action){if(busy)return;busy=true;foreach(var b in actions)b.Enabled=false;deepMode.Enabled=false;search.Enabled=false;apps.Enabled=false;remnants.Enabled=false;backups.Enabled=false;try{await action();}catch(Exception e){Log(Core.L.T("LỖI: ")+e.Message);MessageBox.Show(this,e.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Warning);}finally{busy=false;foreach(var b in actions)b.Enabled=true;deepMode.Enabled=true;search.Enabled=true;apps.Enabled=true;remnants.Enabled=true;backups.Enabled=true;}}
+  void Log(string value){log.AppendText(DateTime.Now.ToString("HH:mm:ss")+"  "+value+"\r\n");status.Text=value;if(value.StartsWith("LỖI",StringComparison.OrdinalIgnoreCase)||value.StartsWith("ERROR",StringComparison.OrdinalIgnoreCase))Core.Log.Error(value);else Core.Log.Info(value);}
   /// <summary>Persists settings.json; failures are logged, never shown as blocking errors.</summary>
   void SaveSettings(){try{settings.Save(Core.Paths.SettingsFile);}catch(Exception e){Core.Log.Warn("Không lưu được settings.json: "+e.Message);}}
   /// <summary>Adds the privilege badge and the compact language toggle to the right side of the header band.</summary>
@@ -174,7 +174,7 @@ namespace TweekPro {
    if(!Confirm(Core.L.T(toEnglish?"Đổi ngôn ngữ sang tiếng Anh và khởi động lại Tweek Pro?\r\n\r\nCài đặt và kho khôi phục được giữ nguyên.":"Đổi ngôn ngữ sang tiếng Việt và khởi động lại Tweek Pro?\r\n\r\nCài đặt và kho khôi phục được giữ nguyên.")))return;
    settings.Language=toEnglish?Core.L.EnglishCode:Core.L.Vietnamese;SaveSettings();
    Log(toEnglish?"Language set to English; restarting.":"Đã đặt ngôn ngữ tiếng Việt; khởi động lại.");
-   try{System.Diagnostics.Process.Start(Application.ExecutablePath);}catch(Exception ex){Log("LỖI: "+ex.Message);return;}
+   try{System.Diagnostics.Process.Start(Application.ExecutablePath);}catch(Exception ex){Log(Core.L.T("LỖI: ")+ex.Message);return;}
    BeginInvoke((Action)Close);
   }
   bool Confirm(string text){return MessageBox.Show(this,text,Core.L.T("Xác nhận thao tác"),MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)==DialogResult.Yes;}
@@ -193,10 +193,10 @@ namespace TweekPro {
   public void PreviewRemnants(){PresentCandidates(new[]{new Candidate{Kind="Folder",AppName="Ứng dụng mẫu",Path=@"C:\Program Files\Example App",Reason="Dữ liệu minh họa giao diện, không phải kết quả quét."},new Candidate{Kind="Registry",AppName="Ứng dụng mẫu",Path=@"SOFTWARE\Example App",Hive="HKCU",View="64",Reason="Dữ liệu minh họa giao diện."}});tabs.SelectedTab=remnantsTab;SetRemnantChecks(true);}
   async Task Reload(){
    Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nTweek Pro đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
-   Log("Đang đọc danh sách ứng dụng…");
+   Log(Core.L.T("Đang đọc danh sách ứng dụng…"));
    try{
     inventory=await Task.Run(()=>Engine.Inventory());inventoryError=null;LoadAppIcons();Filter();LoadBackups();
-    Log("Đã đọc "+inventory.Count+" ứng dụng desktop. Chưa bao gồm toàn bộ ứng dụng Microsoft Store.");
+    Log(Core.L.F("Đã đọc {0} ứng dụng desktop. Chưa bao gồm toàn bộ ứng dụng Microsoft Store.",inventory.Count));
    }catch(Exception e){
     inventoryError=e.Message;inventory=new List<AppEntry>();LoadAppIcons();Filter();
     throw;
@@ -205,8 +205,8 @@ namespace TweekPro {
   void LoadAppIcons(){appIcons.Images.Clear();var imageHandle=appIcons.Handle;foreach(var a in inventory){using(var bitmap=Presentation.AppIcon(a))appIcons.Images.Add(a.Id,bitmap);}}
   void Filter(){
    if(inventoryError!=null){
-    apps.BeginUpdate();apps.Items.Clear();apps.EndUpdate();appCount.Text="Không đọc được danh sách ứng dụng";
-    Theme.SetOverlay(appsOverlay,"Không đọc được danh sách ứng dụng.\r\n"+inventoryError+"\r\n\r\nBấm Làm mới để thử lại. Nếu khóa HKLM bị chặn, chạy Tweek Pro với quyền quản trị cùng tài khoản Windows.",NoteKind.Error);
+    apps.BeginUpdate();apps.Items.Clear();apps.EndUpdate();appCount.Text=Core.L.T("Không đọc được danh sách ứng dụng");
+    Theme.SetOverlay(appsOverlay,Core.L.F("Không đọc được danh sách ứng dụng.\r\n{0}\r\n\r\nBấm Làm mới để thử lại. Nếu khóa HKLM bị chặn, chạy Tweek Pro với quyền quản trị cùng tài khoản Windows.",inventoryError),NoteKind.Error);
     return;
    }
    var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();foreach(var a in inventory.Where(a=>(a.Name+" "+a.Publisher).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0)){
@@ -214,31 +214,31 @@ namespace TweekPro {
    var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate)}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+"\r\n"+Core.L.T("Ngày bộ cài khai báo: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("Không có"):a.InstallDate)};Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
   }apps.EndUpdate();appCount.Text=Core.L.F("{0} ứng dụng hiển thị  /  {1} ứng dụng trên máy",apps.Items.Count,inventory.Count);
    if(inventory.Count==0)Theme.SetOverlay(appsOverlay,"Không tìm thấy ứng dụng desktop nào.\r\nTweek Pro đọc các khóa Uninstall của HKLM/HKCU; chưa gồm toàn bộ ứng dụng Microsoft Store.",NoteKind.Info);
-   else if(apps.Items.Count==0)Theme.SetOverlay(appsOverlay,"Không có ứng dụng khớp với «"+q+"».\r\nThử từ khóa khác hoặc xóa ô tìm kiếm.",NoteKind.Info);
+   else if(apps.Items.Count==0)Theme.SetOverlay(appsOverlay,Core.L.F("Không có ứng dụng khớp với «{0}».\r\nThử từ khóa khác hoặc xóa ô tìm kiếm.",q),NoteKind.Info);
    else Theme.SetOverlay(appsOverlay,null,NoteKind.Info);
   }
   void Remember(IEnumerable<AppEntry> entries){foreach(var a in entries){history.RemoveAll(x=>x.Id==a.Id);history.Add(a);}Directory.CreateDirectory(Path.GetDirectoryName(sessions));Engine.Save(sessions,history);}
   async Task Uninstall(){
-   var queue=CheckedApps();if(queue.Count==0)throw new IOException("Chọn ứng dụng muốn gỡ.");
+   var queue=CheckedApps();if(queue.Count==0)throw new IOException(Core.L.T("Chọn ứng dụng muốn gỡ."));
    if(!Confirm(Core.L.F("Mở trình gỡ chính thức lần lượt cho {0} ứng dụng?\r\n\r\n{1}\r\n\r\nTrình gỡ có thể xóa dữ liệu và yêu cầu quyền quản trị. Kho Tweek Pro chỉ khôi phục phần dọn sau đó, không hoàn tác trình gỡ.",queue.Count,String.Join("\r\n",queue.Take(12).Select(a=>a.Name)))))return;
    foreach(var entry in queue)Advanced.Capture(entry);Remember(queue);candidates.Clear();RenderCandidates();
    for(int i=0;i<queue.Count;i++){
     var a=queue[i];if(i>0&&!Confirm(Core.L.F("Tiếp tục gỡ {0}?\r\nChọn No để dừng hàng đợi.",a.Name)))break;
     try{
-     var info=Engine.UninstallInfo(a);Log("Mở trình gỡ: "+a.Name);
+     var info=Engine.UninstallInfo(a);Log(Core.L.T("Mở trình gỡ: ")+a.Name);
      using(var process=Process.Start(info)){if(process!=null)await Task.Run(()=>process.WaitForExit());}
      bool remains=Engine.Installed(a.Id);
      if(remains){
       await Task.Delay(1500);remains=Engine.Installed(a.Id);
-      if(remains){MessageBox.Show(this,"Trình gỡ của "+a.Name+" đã kết thúc tiến trình chính nhưng ứng dụng vẫn còn đăng ký. Nếu có cửa sổ gỡ khác, hãy hoàn tất hoặc hủy rồi nhấn OK. Nếu cần khởi động lại, có thể quét lại lịch sử sau đó.","Kiểm tra trình gỡ",MessageBoxButtons.OK,MessageBoxIcon.Information);remains=Engine.Installed(a.Id);}
+      if(remains){MessageBox.Show(this,Core.L.F("Trình gỡ của {0} đã kết thúc tiến trình chính nhưng ứng dụng vẫn còn đăng ký. Nếu có cửa sổ gỡ khác, hãy hoàn tất hoặc hủy rồi nhấn OK. Nếu cần khởi động lại, có thể quét lại lịch sử sau đó.",a.Name),Core.L.T("Kiểm tra trình gỡ"),MessageBoxButtons.OK,MessageBoxIcon.Information);remains=Engine.Installed(a.Id);}
      }
-     Log(a.Name+": "+(remains?"vẫn còn đăng ký cài đặt; không tự quét/dọn.":"đã bỏ đăng ký; mở cửa sổ quét phần còn sót."));
+     Log(a.Name+": "+Core.L.T(remains?"vẫn còn đăng ký cài đặt; không tự quét/dọn.":"đã bỏ đăng ký; mở cửa sổ quét phần còn sót."));
      if(!remains)ReviewLeftovers(new[]{a},deepMode.Checked);
-    }catch(Exception e){Log(a.Name+": "+e.Message);MessageBox.Show(this,a.Name+"\r\n"+e.Message,"Không hoàn tất thao tác");}
+    }catch(Exception e){Log(a.Name+": "+e.Message);MessageBox.Show(this,a.Name+"\r\n"+e.Message,Core.L.T("Không hoàn tất thao tác"));}
    }
    await Reload();
    if(candidates.Count>0)tabs.SelectedTab=remnantsTab;
-   Log("Đã kết thúc hàng đợi. Còn "+candidates.Count+" mục chờ duyệt ở tab Phần còn sót.");
+   Log(Core.L.F("Đã kết thúc hàng đợi. Còn {0} mục chờ duyệt ở tab Phần còn sót.",candidates.Count));
   }
   /// <summary>Opens the dedicated leftover window for the given applications and merges what the user left behind into the review tab.</summary>
   void ReviewLeftovers(AppEntry[] entries,bool deep){
@@ -246,27 +246,27 @@ namespace TweekPro {
     window.ShowDialog(this);
     PresentCandidates(candidates.Concat(window.Remaining));
     LoadBackups();
-    Log(String.Join(", ",entries.Select(a=>a.Name))+": tìm thấy "+window.Found+" mục, đã xóa "+window.Deleted+", lỗi "+window.Failed+", còn "+window.Remaining.Count+" mục chờ duyệt.");
+    Log(String.Join(", ",entries.Select(a=>a.Name))+Core.L.F(": tìm thấy {0} mục, đã xóa {1}, lỗi {2}, còn {3} mục chờ duyệt.",window.Found,window.Deleted,window.Failed,window.Remaining.Count));
    }
   }
-  async Task ScanSelected(){var a=Selected();if(a==null)throw new IOException("Chọn một dòng ứng dụng trước.");await Task.Run(()=>Advanced.Capture(a));Remember(new[]{a});ReviewLeftovers(new[]{a},deepMode.Checked);if(candidates.Count>0)tabs.SelectedTab=remnantsTab;}
-  async Task ScanHistory(){if(history.Count==0)throw new IOException("Chưa có lịch sử. Hãy chọn ứng dụng và quét hoặc gỡ trước.");await ScanEntries(history.ToArray());}
+  async Task ScanSelected(){var a=Selected();if(a==null)throw new IOException(Core.L.T("Chọn một dòng ứng dụng trước."));await Task.Run(()=>Advanced.Capture(a));Remember(new[]{a});ReviewLeftovers(new[]{a},deepMode.Checked);if(candidates.Count>0)tabs.SelectedTab=remnantsTab;}
+  async Task ScanHistory(){if(history.Count==0)throw new IOException(Core.L.T("Chưa có lịch sử. Hãy chọn ứng dụng và quét hoặc gỡ trước."));await ScanEntries(history.ToArray());}
   async Task ScanEntries(IEnumerable<AppEntry> entries,bool append=false){
-   var input=entries.ToArray();Log("Đang quét "+input.Length+" ứng dụng…");
+   var input=entries.ToArray();Log(Core.L.F("Đang quét {0} ứng dụng…",input.Length));
    var found=await Task.Run(()=>input.SelectMany(a=>Engine.Scan(a)).ToList());
    PresentCandidates(append?candidates.Concat(found):found);tabs.SelectedTab=remnantsTab;
-   Log("Tìm thấy "+candidates.Count+" mục cần duyệt. Không tìm thấy không có nghĩa đã sạch toàn bộ.");
+   Log(Core.L.F("Tìm thấy {0} mục cần duyệt. Không tìm thấy không có nghĩa đã sạch toàn bộ.",candidates.Count));
   }
   internal void PresentCandidates(IEnumerable<Candidate> items){
    candidates=items.GroupBy(Advanced.Id,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).ToList();RenderCandidates();
   }
   internal int CheckedRemnantCount { get { return remnants.CheckedItems.Count; } }
   internal void SetRemnantChecks(bool check){remnants.BeginUpdate();foreach(ListViewItem item in remnants.Items)item.Checked=check&&!((Candidate)item.Tag).ReviewOnly;remnants.EndUpdate();UpdateSelectionSummary();}
-  void UpdateSelectionSummary(){selectionSummary.Text="Tìm thấy: "+remnants.Items.Count+" mục  •  Đã chọn: "+remnants.CheckedItems.Count+"  •  Xóa sẽ lưu bản khôi phục trước.";}
+  void UpdateSelectionSummary(){selectionSummary.Text=Core.L.F("Tìm thấy: {0} mục  •  Đã chọn: {1}  •  Xóa sẽ lưu bản khôi phục trước.",remnants.Items.Count,remnants.CheckedItems.Count);}
   void RenderCandidates(){
    remnants.BeginUpdate();remnants.Items.Clear();remnants.Groups.Clear();
    foreach(var c in candidates.OrderBy(Presentation.KindGroup).ThenBy(Presentation.CandidatePath,StringComparer.OrdinalIgnoreCase)){
-    var row=new ListViewItem(new[]{Presentation.KindLabel(c),c.AppName,Presentation.CandidatePath(c),(c.ReviewOnly?"CHỈ XEM • ":"")+c.Reason}){Tag=c,ToolTipText=Presentation.CandidatePath(c)+"\r\n"+c.Reason};
+    var row=new ListViewItem(new[]{Presentation.KindLabel(c),c.AppName,Presentation.CandidatePath(c),(c.ReviewOnly?Core.L.T("CHỈ XEM • "):"")+c.Reason}){Tag=c,ToolTipText=Presentation.CandidatePath(c)+"\r\n"+c.Reason};
     if(c.ReviewOnly)row.ForeColor=Theme.Muted;
     Theme.AssignGroup(remnants,row,Presentation.KindGroup(c),Presentation.KindGroupHeader(Presentation.KindGroup(c)));
     Theme.StripeRow(row,remnants.Items.Count);remnants.Items.Add(row);
@@ -276,31 +276,31 @@ namespace TweekPro {
    else Theme.SetOverlay(remnantsOverlay,null,NoteKind.Info);
   }
   void InspectCandidate(){
-   if(remnants.SelectedItems.Count==0)throw new IOException("Chọn một mục để xem.");var c=(Candidate)remnants.SelectedItems[0].Tag;
+   if(remnants.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một mục để xem."));var c=(Candidate)remnants.SelectedItems[0].Tag;
    if(c.Kind=="Folder"){Engine.ValidateFolder(c.Path,false);Process.Start("explorer.exe","\""+c.Path+"\"");}
    else if(c.Kind=="File"){Advanced.ValidateFile(c.Path);Process.Start("explorer.exe","/select,\""+c.Path+"\"");}
-   else MessageBox.Show(this,Presentation.CandidatePath(c)+"\r\n\r\n"+c.Reason+(c.ReviewOnly?"\r\n\r\nChỉ xem: không tự xóa mục này.":"\r\n\r\nKiểm tra đúng khóa hoặc giá trị trước khi chọn dọn."),"Chi tiết mục còn sót");
+   else MessageBox.Show(this,Presentation.CandidatePath(c)+"\r\n\r\n"+c.Reason+Core.L.T(c.ReviewOnly?"\r\n\r\nChỉ xem: không tự xóa mục này.":"\r\n\r\nKiểm tra đúng khóa hoặc giá trị trước khi chọn dọn."),Core.L.T("Chi tiết mục còn sót"));
   }
   async Task Cleanup(){
-   var selected=remnants.CheckedItems.Cast<ListViewItem>().Select(i=>(Candidate)i.Tag).Where(c=>!c.ReviewOnly).ToList();if(selected.Count==0)throw new IOException("Đánh dấu những mục đã kiểm tra và muốn dọn.");
-   if(!Confirm("Sao lưu và dọn "+selected.Count+" mục đã đánh dấu?\r\n\r\n"+String.Join("\r\n",selected.Take(8).Select(c=>c.Path))+"\r\n\r\nCác mục có thể chứa cài đặt, dự án hoặc dữ liệu cá nhân. Chỉ tiếp tục khi đã kiểm tra. File được chuyển vào kho nên chưa giải phóng dung lượng ổ đĩa. Registry được lưu giá trị và khóa con, không lưu quyền ACL."))return;
+   var selected=remnants.CheckedItems.Cast<ListViewItem>().Select(i=>(Candidate)i.Tag).Where(c=>!c.ReviewOnly).ToList();if(selected.Count==0)throw new IOException(Core.L.T("Đánh dấu những mục đã kiểm tra và muốn dọn."));
+   if(!Confirm(Core.L.F("Sao lưu và dọn {0} mục đã đánh dấu?\r\n\r\n{1}\r\n\r\nCác mục có thể chứa cài đặt, dự án hoặc dữ liệu cá nhân. Chỉ tiếp tục khi đã kiểm tra. File được chuyển vào kho nên chưa giải phóng dung lượng ổ đĩa. Registry được lưu giá trị và khóa con, không lưu quyền ACL.",selected.Count,String.Join("\r\n",selected.Take(8).Select(c=>c.Path)))))return;
    int removedFolders=0,removedKeys=0,failed=0,scheduled=0;var stubborn=new List<Candidate>();
-   foreach(var c in selected){try{Log("Đang sao lưu: "+c.Path);await Task.Run(()=>Engine.Quarantine(c));Log("Đã sao lưu và dọn: "+c.Path);candidates.Remove(c);if(c.Kind=="Folder"||c.Kind=="File")removedFolders++;else removedKeys++;}catch(Exception e){failed++;Log("Giữ lại / cần kiểm tra "+c.Path+": "+e.Message);if((c.Kind=="Folder"||c.Kind=="File")&&(Core.StubbornFiles.IsLocked(e)||Core.StubbornFiles.IsAccessDenied(e)))stubborn.Add(c);else MessageBox.Show(this,c.Path+"\r\n"+e.Message,"Mục chưa dọn xong");}}
+   foreach(var c in selected){try{Log(Core.L.T("Đang sao lưu: ")+c.Path);await Task.Run(()=>Engine.Quarantine(c));Log(Core.L.T("Đã sao lưu và dọn: ")+c.Path);candidates.Remove(c);if(c.Kind=="Folder"||c.Kind=="File")removedFolders++;else removedKeys++;}catch(Exception e){failed++;Log(Core.L.T("Giữ lại / cần kiểm tra ")+c.Path+": "+e.Message);if((c.Kind=="Folder"||c.Kind=="File")&&(Core.StubbornFiles.IsLocked(e)||Core.StubbornFiles.IsAccessDenied(e)))stubborn.Add(c);else MessageBox.Show(this,c.Path+"\r\n"+e.Message,Core.L.T("Mục chưa dọn xong"));}}
    if(stubborn.Count>0&&Core.StubbornFiles.IsWindows&&Confirm(Core.L.F("{0} mục vẫn bị Windows chặn dù đã bỏ thuộc tính và chiếm quyền sở hữu (thường do một tiến trình đang giữ tệp):\r\n\r\n{1}\r\n\r\nHẹn xóa các mục này khi khởi động lại Windows? Chúng sẽ bị xóa thẳng lúc khởi động, KHÔNG có bản sao lưu để khôi phục.",stubborn.Count,String.Join("\r\n",stubborn.Take(8).Select(c=>c.Path))))){
-    foreach(var c in stubborn){try{await Task.Run(()=>Engine.ScheduleOnReboot(c));scheduled++;failed--;candidates.Remove(c);Log(Core.L.T("Đã hẹn xóa khi khởi động lại: ")+c.Path);}catch(Exception e){Log("Không hẹn xóa được "+c.Path+": "+e.Message);MessageBox.Show(this,c.Path+"\r\n"+e.Message,"Mục chưa dọn xong");}}
-   }else if(stubborn.Count>0)foreach(var c in stubborn)MessageBox.Show(this,c.Path+"\r\n"+Core.L.T("Vẫn bị chặn sau khi chiếm quyền sở hữu; có thể đang bị một tiến trình giữ. Đóng ứng dụng liên quan rồi thử lại."),"Mục chưa dọn xong");
+    foreach(var c in stubborn){try{await Task.Run(()=>Engine.ScheduleOnReboot(c));scheduled++;failed--;candidates.Remove(c);Log(Core.L.T("Đã hẹn xóa khi khởi động lại: ")+c.Path);}catch(Exception e){Log(Core.L.T("Không hẹn xóa được ")+c.Path+": "+e.Message);MessageBox.Show(this,c.Path+"\r\n"+e.Message,Core.L.T("Mục chưa dọn xong"));}}
+   }else if(stubborn.Count>0)foreach(var c in stubborn)MessageBox.Show(this,c.Path+"\r\n"+Core.L.T("Vẫn bị chặn sau khi chiếm quyền sở hữu; có thể đang bị một tiến trình giữ. Đóng ứng dụng liên quan rồi thử lại."),Core.L.T("Mục chưa dọn xong"));
    RenderCandidates();LoadBackups();
-   string summary="Đã dọn và sao lưu: "+removedFolders+" mục file/thư mục, "+removedKeys+" mục Registry."+(scheduled>0?" Hẹn xóa khi khởi động lại: "+scheduled+" mục.":"")+" Chưa dọn: "+failed+" mục. Còn hiển thị: "+candidates.Count+" mục.";
-   Log(summary);MessageBox.Show(this,summary+"\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng.","Kết quả dọn",MessageBoxButtons.OK,MessageBoxIcon.Information);
+   string summary=Core.L.F("Đã dọn và sao lưu: {0} mục file/thư mục, {1} mục Registry.",removedFolders,removedKeys)+(scheduled>0?Core.L.F(" Hẹn xóa khi khởi động lại: {0} mục.",scheduled):"")+Core.L.F(" Chưa dọn: {0} mục. Còn hiển thị: {1} mục.",failed,candidates.Count);
+   Log(summary);MessageBox.Show(this,summary+Core.L.T("\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng."),Core.L.T("Kết quả dọn"),MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
   static string StateLabel(Backup b){return Core.L.T(b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":b.State=="PendingReboot"?"Hẹn xóa khi khởi động lại":"Cần kiểm tra");}
-  static string KindLabel(Backup b){return b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind=="Junk"?"Rác":b.Kind=="Duplicate"?"Bản trùng":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
+  static string KindLabel(Backup b){return b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind=="Junk"?Core.L.T("Rác"):b.Kind=="Duplicate"?Core.L.T("Bản trùng"):b.Kind=="Folder"?Core.L.T("Thư mục"):b.Kind=="File"?Core.L.T("Tệp"):b.Kind=="RegistryValue"?Core.L.T("Giá trị Registry"):b.Kind=="Registry"?Core.L.T("Khóa Registry"):b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){
    var items=Engine.Backups();int token=++backupsLoadToken;
    backups.BeginUpdate();backups.Items.Clear();
-   foreach(var b in items){var row=new ListViewItem(new[]{Presentation.StampLabel(b.Created),b.AppName,KindLabel(b),StateLabel(b),"…",b.VaultPath==null?"Tweek Pro":"AppCare (cũ)",b.Original}){Tag=b,ToolTipText=b.Original+"\r\n"+Path.Combine(Engine.VaultOf(b),b.Id)+(String.IsNullOrEmpty(b.Error)?"":"\r\n"+b.Error)};if(b.State=="Restored")row.ForeColor=Theme.Muted;else if(b.State=="PendingReboot")row.ForeColor=Theme.Warning;else if(b.State!="BackedUp")row.ForeColor=Theme.Danger;Theme.StripeRow(row,backups.Items.Count);backups.Items.Add(row);}
+   foreach(var b in items){var row=new ListViewItem(new[]{Presentation.StampLabel(b.Created),b.AppName,KindLabel(b),StateLabel(b),"…",b.VaultPath==null?"Tweek Pro":Core.L.T("AppCare (cũ)"),b.Original}){Tag=b,ToolTipText=b.Original+"\r\n"+Path.Combine(Engine.VaultOf(b),b.Id)+(String.IsNullOrEmpty(b.Error)?"":"\r\n"+b.Error)};if(b.State=="Restored")row.ForeColor=Theme.Muted;else if(b.State=="PendingReboot")row.ForeColor=Theme.Warning;else if(b.State!="BackedUp")row.ForeColor=Theme.Danger;Theme.StripeRow(row,backups.Items.Count);backups.Items.Add(row);}
    backups.EndUpdate();UpdateBackupSummary();
    if(items.Count==0)Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét, tab Phần còn sót hoặc Dọn rác sẽ xuất hiện ở đây để khôi phục hoặc xóa vĩnh viễn.",NoteKind.Info);
    else Theme.SetOverlay(backupsOverlay,null,NoteKind.Info);
@@ -315,35 +315,35 @@ namespace TweekPro {
    long total=all.Where(b=>b.Bytes>0).Sum(b=>b.Bytes),markedBytes=marked.Where(b=>b.Bytes>0).Sum(b=>b.Bytes);
    backupSummary.Text=Core.L.F("{0} bản sao lưu ({1} trên đĩa)  •  Đã đánh dấu {2} ({3})  •  Khôi phục dùng dòng đang chọn; xóa vĩnh viễn dùng ô đánh dấu.",all.Count,Presentation.BytesLabel(total),marked.Count,Presentation.BytesLabel(markedBytes));
   }
-  async Task Restore(){if(backups.SelectedItems.Count==0)throw new IOException("Chọn một bản sao lưu.");var b=(Backup)backups.SelectedItems[0].Tag;if(b.State=="Restored")throw new IOException("Mục này đã khôi phục.");if(!Confirm("Khôi phục về vị trí gốc?\r\n"+b.Original+"\r\n\r\nKhông ghi đè nếu đích đã tồn tại. Nếu lần dọn trước bị gián đoạn, kiểm tra cả vị trí gốc và kho."))return;await Task.Run(()=>Engine.Restore(b));LoadBackups();Log("Đã khôi phục: "+b.Original);}
+  async Task Restore(){if(backups.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một bản sao lưu."));var b=(Backup)backups.SelectedItems[0].Tag;if(b.State=="Restored")throw new IOException(Core.L.T("Mục này đã khôi phục."));if(!Confirm(Core.L.F("Khôi phục về vị trí gốc?\r\n{0}\r\n\r\nKhông ghi đè nếu đích đã tồn tại. Nếu lần dọn trước bị gián đoạn, kiểm tra cả vị trí gốc và kho.",b.Original)))return;await Task.Run(()=>Engine.Restore(b));LoadBackups();Log(Core.L.T("Đã khôi phục: ")+b.Original);}
   /// <summary>Permanently deletes the checked backups after a size-aware confirmation and reports the outcome.</summary>
   async Task PurgeChecked(){
    var marked=backups.CheckedItems.Cast<ListViewItem>().Select(i=>(Backup)i.Tag).ToList();
-   if(marked.Count==0)throw new IOException("Đánh dấu (tick) các bản sao lưu muốn xóa vĩnh viễn.");
-   await PurgeBackups(marked,"đã đánh dấu");
+   if(marked.Count==0)throw new IOException(Core.L.T("Đánh dấu (tick) các bản sao lưu muốn xóa vĩnh viễn."));
+   await PurgeBackups(marked,Core.L.T("đã đánh dấu"));
   }
   /// <summary>Opens the age-based purge dialog, then permanently deletes what the user confirmed.</summary>
   async Task PurgeByAge(){
-   var all=Engine.Backups();if(all.Count==0)throw new IOException("Kho trống.");
+   var all=Engine.Backups();if(all.Count==0)throw new IOException(Core.L.T("Kho trống."));
    foreach(var b in all)if(b.Bytes<0)b.Bytes=await Task.Run(()=>Engine.BackupSize(b));
    List<Backup> selected;
    using(var dialog=new PurgeForm(all,settings.PurgeDefaultDays)){if(dialog.ShowDialog(this)!=DialogResult.OK)return;selected=dialog.Selected;settings.PurgeDefaultDays=dialog.Days;}
-   if(selected.Count==0)throw new IOException("Không có bản sao lưu nào đủ tuổi theo lựa chọn.");
-   await PurgeBackups(selected,"cũ hơn "+settings.PurgeDefaultDays+" ngày");
+   if(selected.Count==0)throw new IOException(Core.L.T("Không có bản sao lưu nào đủ tuổi theo lựa chọn."));
+   await PurgeBackups(selected,Core.L.F("cũ hơn {0} ngày",settings.PurgeDefaultDays));
   }
   async Task PurgeBackups(List<Backup> selected,string label){
    long bytes=selected.Where(b=>b.Bytes>0).Sum(b=>b.Bytes);int unrestored=selected.Count(b=>b.State!="Restored");
-   var answer=MessageBox.Show(this,"XÓA VĨNH VIỄN "+selected.Count+" bản sao lưu "+label+" ("+Presentation.BytesLabel(bytes)+")?\r\n\r\n"+String.Join("\r\n",selected.Take(8).Select(b=>Presentation.StampLabel(b.Created)+"  "+b.AppName+"  •  "+StateLabel(b)))+(selected.Count>8?"\r\n… và "+(selected.Count-8)+" mục khác":"")+(unrestored>0?"\r\n\r\nCẢNH BÁO: "+unrestored+" bản chưa khôi phục sẽ mất vĩnh viễn — không thể hoàn tác các lần dọn tương ứng nữa.":"")+"\r\n\r\nThao tác này không thể hoàn tác.","Xác nhận xóa vĩnh viễn",MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2);
+   var answer=MessageBox.Show(this,Core.L.F("XÓA VĨNH VIỄN {0} bản sao lưu {1} ({2})?\r\n\r\n{3}",selected.Count,label,Presentation.BytesLabel(bytes),String.Join("\r\n",selected.Take(8).Select(b=>Presentation.StampLabel(b.Created)+"  "+b.AppName+"  •  "+StateLabel(b))))+(selected.Count>8?Core.L.F("\r\n… và {0} mục khác",selected.Count-8):"")+(unrestored>0?Core.L.F("\r\n\r\nCẢNH BÁO: {0} bản chưa khôi phục sẽ mất vĩnh viễn — không thể hoàn tác các lần dọn tương ứng nữa.",unrestored):"")+Core.L.T("\r\n\r\nThao tác này không thể hoàn tác."),Core.L.T("Xác nhận xóa vĩnh viễn"),MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2);
    if(answer!=DialogResult.Yes)return;
    int ok=0,failed=0;long freed=0;
-   foreach(var b in selected){try{freed+=await Task.Run(()=>Engine.Purge(b));ok++;Log("Đã xóa vĩnh viễn bản sao lưu "+b.Id+" ("+b.AppName+").");}catch(Exception e){failed++;Log("Không xóa được "+b.Id+": "+e.Message);}}
+   foreach(var b in selected){try{freed+=await Task.Run(()=>Engine.Purge(b));ok++;Log(Core.L.F("Đã xóa vĩnh viễn bản sao lưu {0} ({1}).",b.Id,b.AppName));}catch(Exception e){failed++;Log(Core.L.F("Không xóa được {0}: {1}",b.Id,e.Message));}}
    LoadBackups();
-   string summary="Đã xóa vĩnh viễn "+ok+" bản sao lưu, giải phóng "+Presentation.BytesLabel(freed)+". Lỗi: "+failed+".";
-   Log(summary);MessageBox.Show(this,summary,"Kết quả dọn kho",MessageBoxButtons.OK,failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
+   string summary=Core.L.F("Đã xóa vĩnh viễn {0} bản sao lưu, giải phóng {1}. Lỗi: {2}.",ok,Presentation.BytesLabel(freed),failed);
+   Log(summary);MessageBox.Show(this,summary,Core.L.T("Kết quả dọn kho"),MessageBoxButtons.OK,failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
   }
   string SavePath(string name){using(var dialog=new SaveFileDialog{Filter="CSV UTF-8|*.csv",FileName=name})return dialog.ShowDialog(this)==DialogResult.OK?dialog.FileName:null;}
-  void ExportApps(){string p=SavePath("TweekPro-applications.csv");if(p==null)return;var lines=new List<string>{"Name,Version,Publisher,SizeKB,RegistryView,InstallLocation,UninstallCommand"};lines.AddRange(inventory.Select(a=>String.Join(",",new[]{a.Name,a.Version,a.Publisher,a.Size.ToString(),a.Hive+"/"+a.View,a.Location,a.Command}.Select(Engine.Csv))));File.WriteAllLines(p,lines, new UTF8Encoding(true));Log("Đã xuất danh sách: "+p);}
-  void ExportCandidates(){string p=SavePath("TweekPro-review.csv");if(p==null)return;var lines=new List<string>{"App,Kind,Path,Hive,View,Reason"};lines.AddRange(candidates.Select(c=>String.Join(",",new[]{c.AppName,c.Kind,Presentation.CandidatePath(c),c.Hive,c.View,(c.ReviewOnly?"CHỈ XEM: ":"")+c.Reason}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new UTF8Encoding(true));Log("Đã xuất báo cáo: "+p);}
+  void ExportApps(){string p=SavePath("TweekPro-applications.csv");if(p==null)return;var lines=new List<string>{"Name,Version,Publisher,SizeKB,RegistryView,InstallLocation,UninstallCommand"};lines.AddRange(inventory.Select(a=>String.Join(",",new[]{a.Name,a.Version,a.Publisher,a.Size.ToString(),a.Hive+"/"+a.View,a.Location,a.Command}.Select(Engine.Csv))));File.WriteAllLines(p,lines, new UTF8Encoding(true));Log(Core.L.T("Đã xuất danh sách: ")+p);}
+  void ExportCandidates(){string p=SavePath("TweekPro-review.csv");if(p==null)return;var lines=new List<string>{"App,Kind,Path,Hive,View,Reason"};lines.AddRange(candidates.Select(c=>String.Join(",",new[]{c.AppName,c.Kind,Presentation.CandidatePath(c),c.Hive,c.View,(c.ReviewOnly?Core.L.T("CHỈ XEM: "):"")+c.Reason}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new UTF8Encoding(true));Log(Core.L.T("Đã xuất báo cáo: ")+p);}
  }
  public static class Program {
   /// <summary>Migrates the AppCare data folder once, then points the rotating log at the Tweek Pro data directory.</summary>

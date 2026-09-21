@@ -38,13 +38,13 @@ namespace TweekPro {
   }
   /// <summary>Formats a leftover candidate path, including hive, view and value name when present.</summary>
   public static string CandidatePath(Candidate c){return (c.Hive==null?"":c.Hive+" ["+c.View+"]\\")+c.Path+(c.ValueName==null?"":" :: "+c.ValueName);}
-  /// <summary>Returns the Vietnamese kind label shown in leftover lists.</summary>
+  /// <summary>Returns the localized kind label shown in leftover lists.</summary>
   public static string KindLabel(Candidate c){
-   if(c.ReviewOnly||c.Kind=="Review")return "Chỉ xem";
-   if(c.Kind=="Folder")return "Thư mục";
-   if(c.Kind=="File")return IsShortcut(c)?"Shortcut":"Tệp";
-   if(c.Kind=="RegistryValue")return "Giá trị Registry";
-   return "Khóa Registry";
+   if(c.ReviewOnly||c.Kind=="Review")return Core.L.T("Chỉ xem");
+   if(c.Kind=="Folder")return Core.L.T("Thư mục");
+   if(c.Kind=="File")return IsShortcut(c)?"Shortcut":Core.L.T("Tệp");
+   if(c.Kind=="RegistryValue")return Core.L.T("Giá trị Registry");
+   return Core.L.T("Khóa Registry");
   }
   /// <summary>Returns a sortable group key so leftover rows cluster as folder, file, shortcut, registry, then review-only.</summary>
   public static string KindGroup(Candidate c){
@@ -53,13 +53,13 @@ namespace TweekPro {
    if(c.Kind=="File")return IsShortcut(c)?"3-shortcut":"2-file";
    return "4-registry";
   }
-  /// <summary>Returns the Vietnamese header for a leftover kind group key.</summary>
+  /// <summary>Returns the localized header for a leftover kind group key.</summary>
   public static string KindGroupHeader(string key){
-   if(key=="1-folder")return "Thư mục";
-   if(key=="2-file")return "Tệp";
+   if(key=="1-folder")return Core.L.T("Thư mục");
+   if(key=="2-file")return Core.L.T("Tệp");
    if(key=="3-shortcut")return "Shortcut";
    if(key=="4-registry")return "Registry";
-   return "Chỉ xem";
+   return Core.L.T("Chỉ xem");
   }
   /// <summary>True when a leftover note records a permission or unreadable-path failure.</summary>
   public static bool PermissionNote(string note){

@@ -18,7 +18,7 @@ namespace TweekPro {
   /// <summary>Builds the Junk Cleaner tab: rule list with per-rule checkboxes, mode selector and preview/clean actions.</summary>
   void BuildJunkTab(){
    var tab=junkTab=new TabPage(Core.L.T("Dọn rác"));tabs.TabPages.Add(tab);
-   SetupList(junkList,new[]{"Quy tắc","Tệp","Dung lượng","Trạng thái","Vị trí","Mô tả"},new[]{300,80,110,220,300,360},true,true);
+   SetupList(junkList,new[]{"Quy tắc","Số tệp","Dung lượng","Trạng thái","Vị trí","Mô tả"},new[]{300,80,110,220,300,360},true,true);
    junkList.ItemCheck+=(s,e)=>{var r=(JunkRuleResult)junkList.Items[e.Index].Tag;if(r.Locked||r.Count==0)e.NewValue=CheckState.Unchecked;};
    junkList.ItemChecked+=(s,e)=>UpdateJunkSummary();
    junkList.DoubleClick+=(s,e)=>ShowJunkDetails();

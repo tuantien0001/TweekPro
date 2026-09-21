@@ -21,7 +21,7 @@ Enable alternating between Cursor and Codex without losing project progress when
 - Recovered seven sources from the former Cursor Cloud task; canonical files are `AI/*.cs` and `Core/Settings.cs`.
 - Added LM Studio/Ollama providers, model discovery, local chat, optional authentication and guidance-only fallback for models without tool support.
 - Added read-only / confirm / explicitly selected automatic action modes. Path protection, engine validation and vault backup remain enforced.
-- Integrated approved sample-2 T + PC artwork into runtime, executable and exported icon; assets and source artwork are in `icon-handoff-tpc-ai-v1`.
+- Integrated approved sample-2 T + PC artwork into runtime, executable and exported icon. The `icon-handoff-tpc-ai-v1` asset folder was removed from the repo at the owner's request (2026-09-21); the only copy of the PNG sources/master is now in the local backup `C:\Users\ADMIN\TweekPro-recovery-backup-20260921-171137\icon-handoff-tpc-ai-v1`. `TweekPro.ico` is the canonical icon.
 - Pushed application commit `4454705`. GitHub Actions run https://github.com/tuantien0001/TweekPro/actions/runs/35588685419 succeeded; its `TweekPro-dist` artifact contains `TweekPro-0.7-Setup.exe` and `TweekPro-0.7-portable.zip`. No GitHub Release was created. Artifact availability is time-limited; verify before linking it later.
 
 ## Validation and remaining limits
