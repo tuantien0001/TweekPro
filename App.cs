@@ -143,29 +143,16 @@ namespace TweekPro {
   void Log(string value){log.AppendText(DateTime.Now.ToString("HH:mm:ss")+"  "+value+"\r\n");status.Text=value;if(value.StartsWith("LỖI",StringComparison.OrdinalIgnoreCase))Core.Log.Error(value);else Core.Log.Info(value);}
   /// <summary>Persists settings.json; failures are logged, never shown as blocking errors.</summary>
   void SaveSettings(){try{settings.Save(Core.Paths.SettingsFile);}catch(Exception e){Core.Log.Warn("Không lưu được settings.json: "+e.Message);}}
-  /// <summary>Adds the privilege badge and the restart-as-administrator button to the right side of the header band.</summary>
+  /// <summary>Adds the privilege badge and the compact language toggle to the right side of the header band.</summary>
   void BuildHeaderActions(Panel header){
    var right=new FlowLayoutPanel{Dock=DockStyle.Right,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,FlowDirection=FlowDirection.RightToLeft,WrapContents=false,Padding=new Padding(0,22,0,0),BackColor=Theme.Header};
    bool elevated=Core.Elevation.IsElevated;
    var badge=new Label{Text=Core.Elevation.BadgeText,AutoSize=true,Padding=new Padding(10,6,10,6),Margin=new Padding(8,4,0,0),Font=Theme.Small,ForeColor=Color.White,BackColor=elevated?Theme.Success:Color.FromArgb(51,65,85)};
    right.Controls.Add(badge);
-   var language=Theme.Button(Core.L.English?"Tiếng Việt":"English",ButtonStyle.Secondary);language.Margin=new Padding(8,0,0,0);
+   var language=Branding.LanguageButton(Core.L.English?"EN":"VI",Core.L.T(Core.L.English?"Chuyển sang tiếng Việt":"Switch to English"));language.Margin=new Padding(8,2,0,0);
    language.Click+=async(s,e)=>await Guard(()=>{SwitchLanguage();return Task.FromResult(0);});
    right.Controls.Add(language);
-   if(!elevated){
-    var restart=Theme.Button("Khởi động lại với quyền quản trị",ButtonStyle.Primary);restart.Margin=new Padding(8,0,0,0);
-    restart.Click+=async(s,e)=>await Guard(()=>{RestartElevated();return Task.FromResult(0);});
-    right.Controls.Add(restart);
-   }
    header.Controls.Add(right);
-  }
-  /// <summary>Relaunches Tweek Pro elevated (one UAC prompt) and closes this instance once the new one has started.</summary>
-  void RestartElevated(){
-   if(!Confirm("Khởi động lại Tweek Pro với quyền quản trị?\r\n\r\nWindows sẽ hỏi xác nhận UAC một lần. Cửa sổ hiện tại sẽ đóng; cài đặt và kho khôi phục được giữ nguyên. Quyền quản trị chỉ cần cho băng thông mạng (ETW), C:\\Windows\\Temp và khóa HKLM."))return;
-   SaveSettings();
-   if(!Core.Elevation.RelaunchAsAdministrator()){Log("Đã hủy khởi động lại với quyền quản trị.");return;}
-   Log("Đang mở phiên bản quyền quản trị; đóng cửa sổ hiện tại.");
-   BeginInvoke((Action)Close);
   }
   /// <summary>Toggles between Vietnamese and English, saves the preference and relaunches so every tab is rebuilt in the new language.</summary>
   void SwitchLanguage(){
@@ -274,20 +261,23 @@ namespace TweekPro {
   async Task Cleanup(){
    var selected=remnants.CheckedItems.Cast<ListViewItem>().Select(i=>(Candidate)i.Tag).Where(c=>!c.ReviewOnly).ToList();if(selected.Count==0)throw new IOException("Đánh dấu những mục đã kiểm tra và muốn dọn.");
    if(!Confirm("Sao lưu và dọn "+selected.Count+" mục đã đánh dấu?\r\n\r\n"+String.Join("\r\n",selected.Take(8).Select(c=>c.Path))+"\r\n\r\nCác mục có thể chứa cài đặt, dự án hoặc dữ liệu cá nhân. Chỉ tiếp tục khi đã kiểm tra. File được chuyển vào kho nên chưa giải phóng dung lượng ổ đĩa. Registry được lưu giá trị và khóa con, không lưu quyền ACL."))return;
-   int removedFolders=0,removedKeys=0,failed=0;
-   foreach(var c in selected){try{Log("Đang sao lưu: "+c.Path);await Task.Run(()=>Engine.Quarantine(c));Log("Đã sao lưu và dọn: "+c.Path);candidates.Remove(c);if(c.Kind=="Folder"||c.Kind=="File")removedFolders++;else removedKeys++;}catch(Exception e){failed++;Log("Giữ lại / cần kiểm tra "+c.Path+": "+e.Message);MessageBox.Show(this,c.Path+"\r\n"+e.Message,"Mục chưa dọn xong");}}
+   int removedFolders=0,removedKeys=0,failed=0,scheduled=0;var stubborn=new List<Candidate>();
+   foreach(var c in selected){try{Log("Đang sao lưu: "+c.Path);await Task.Run(()=>Engine.Quarantine(c));Log("Đã sao lưu và dọn: "+c.Path);candidates.Remove(c);if(c.Kind=="Folder"||c.Kind=="File")removedFolders++;else removedKeys++;}catch(Exception e){failed++;Log("Giữ lại / cần kiểm tra "+c.Path+": "+e.Message);if((c.Kind=="Folder"||c.Kind=="File")&&(Core.StubbornFiles.IsLocked(e)||Core.StubbornFiles.IsAccessDenied(e)))stubborn.Add(c);else MessageBox.Show(this,c.Path+"\r\n"+e.Message,"Mục chưa dọn xong");}}
+   if(stubborn.Count>0&&Core.StubbornFiles.IsWindows&&Confirm(Core.L.F("{0} mục vẫn bị Windows chặn dù đã bỏ thuộc tính và chiếm quyền sở hữu (thường do một tiến trình đang giữ tệp):\r\n\r\n{1}\r\n\r\nHẹn xóa các mục này khi khởi động lại Windows? Chúng sẽ bị xóa thẳng lúc khởi động, KHÔNG có bản sao lưu để khôi phục.",stubborn.Count,String.Join("\r\n",stubborn.Take(8).Select(c=>c.Path))))){
+    foreach(var c in stubborn){try{await Task.Run(()=>Engine.ScheduleOnReboot(c));scheduled++;failed--;candidates.Remove(c);Log(Core.L.T("Đã hẹn xóa khi khởi động lại: ")+c.Path);}catch(Exception e){Log("Không hẹn xóa được "+c.Path+": "+e.Message);MessageBox.Show(this,c.Path+"\r\n"+e.Message,"Mục chưa dọn xong");}}
+   }else if(stubborn.Count>0)foreach(var c in stubborn)MessageBox.Show(this,c.Path+"\r\n"+Core.L.T("Vẫn bị chặn sau khi chiếm quyền sở hữu; có thể đang bị một tiến trình giữ. Đóng ứng dụng liên quan rồi thử lại."),"Mục chưa dọn xong");
    RenderCandidates();LoadBackups();
-   string summary="Đã dọn và sao lưu: "+removedFolders+" mục file/thư mục, "+removedKeys+" mục Registry. Chưa dọn: "+failed+" mục. Còn hiển thị: "+candidates.Count+" mục.";
+   string summary="Đã dọn và sao lưu: "+removedFolders+" mục file/thư mục, "+removedKeys+" mục Registry."+(scheduled>0?" Hẹn xóa khi khởi động lại: "+scheduled+" mục.":"")+" Chưa dọn: "+failed+" mục. Còn hiển thị: "+candidates.Count+" mục.";
    Log(summary);MessageBox.Show(this,summary+"\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng.","Kết quả dọn",MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
-  static string StateLabel(Backup b){return b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":"Cần kiểm tra";}
+  static string StateLabel(Backup b){return Core.L.T(b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":b.State=="PendingReboot"?"Hẹn xóa khi khởi động lại":"Cần kiểm tra");}
   static string KindLabel(Backup b){return b.Kind=="Junk"?"Rác":b.Kind=="Duplicate"?"Bản trùng":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){
    var items=Engine.Backups();int token=++backupsLoadToken;
    backups.BeginUpdate();backups.Items.Clear();
-   foreach(var b in items){var row=new ListViewItem(new[]{Presentation.StampLabel(b.Created),b.AppName,KindLabel(b),StateLabel(b),"…",b.VaultPath==null?"Tweek Pro":"AppCare (cũ)",b.Original}){Tag=b,ToolTipText=b.Original+"\r\n"+Path.Combine(Engine.VaultOf(b),b.Id)+(String.IsNullOrEmpty(b.Error)?"":"\r\n"+b.Error)};if(b.State=="Restored")row.ForeColor=Theme.Muted;else if(b.State!="BackedUp")row.ForeColor=Theme.Danger;Theme.StripeRow(row,backups.Items.Count);backups.Items.Add(row);}
+   foreach(var b in items){var row=new ListViewItem(new[]{Presentation.StampLabel(b.Created),b.AppName,KindLabel(b),StateLabel(b),"…",b.VaultPath==null?"Tweek Pro":"AppCare (cũ)",b.Original}){Tag=b,ToolTipText=b.Original+"\r\n"+Path.Combine(Engine.VaultOf(b),b.Id)+(String.IsNullOrEmpty(b.Error)?"":"\r\n"+b.Error)};if(b.State=="Restored")row.ForeColor=Theme.Muted;else if(b.State=="PendingReboot")row.ForeColor=Theme.Warning;else if(b.State!="BackedUp")row.ForeColor=Theme.Danger;Theme.StripeRow(row,backups.Items.Count);backups.Items.Add(row);}
    backups.EndUpdate();UpdateBackupSummary();
    if(items.Count==0)Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét, tab Phần còn sót hoặc Dọn rác sẽ xuất hiện ở đây để khôi phục hoặc xóa vĩnh viễn.",NoteKind.Info);
    else Theme.SetOverlay(backupsOverlay,null,NoteKind.Info);

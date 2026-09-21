@@ -111,6 +111,7 @@ namespace TweekPro {
   public static readonly Color SoftButton=Color.FromArgb(241,245,249);
   public static readonly Color SoftButtonHover=Color.FromArgb(226,232,240);
   public static readonly Color Success=Color.FromArgb(22,163,74);
+  public static readonly Color Warning=Color.FromArgb(180,83,9);
   public static readonly Font Body=new Font("Segoe UI",10f);
   public static readonly Font Small=new Font("Segoe UI",9f);
   public static readonly Font Strong=new Font("Segoe UI",10f,FontStyle.Bold);

@@ -11,7 +11,7 @@ namespace TweekPro.Core {
    {"Sẵn sàng. Tweek Pro chỉ thay đổi dữ liệu khi bạn xác nhận.","Ready. Tweek Pro only changes data after you confirm."},
    {"Khởi động lại với quyền quản trị","Restart as administrator"},
    {"Quyền quản trị viên","Administrator"},{"Quyền người dùng","Standard user"},
-   {"Tiếng Việt","Tiếng Việt"},{"English","English"},{"Xác nhận thao tác","Confirm action"},{"  •  cần quản trị","  •  administrator"},{" tệp  •  "," files  •  "},{"Băng thông: cần quyền quản trị","Bandwidth: administrator required"},{"ngày (0 = tất cả)","days (0 = all)"},{"Xóa bản sao lưu cũ hơn","Delete backups older than"},
+   {"Tiếng Việt","Tiếng Việt"},{"English","English"},{"Chuyển sang tiếng Việt","Switch to Vietnamese"},{"Switch to English","Switch to English"},{"Xác nhận thao tác","Confirm action"},{"  •  cần quản trị","  •  administrator"},{" tệp  •  "," files  •  "},{"Băng thông: cần quyền quản trị","Bandwidth: administrator required"},{"ngày (0 = tất cả)","days (0 = all)"},{"Xóa bản sao lưu cũ hơn","Delete backups older than"},
    {"Đổi ngôn ngữ sang tiếng Anh và khởi động lại Tweek Pro?\r\n\r\nCài đặt và kho khôi phục được giữ nguyên.","Switch the language to English and restart Tweek Pro?\r\n\r\nSettings and the recovery vault are kept."},
    {"Đổi ngôn ngữ sang tiếng Việt và khởi động lại Tweek Pro?\r\n\r\nCài đặt và kho khôi phục được giữ nguyên.","Switch the language to Vietnamese and restart Tweek Pro?\r\n\r\nSettings and the recovery vault are kept."},
 
@@ -102,6 +102,12 @@ namespace TweekPro.Core {
    {"Đang đo tệp rác theo quy tắc…","Measuring rule-matched junk…"},{"Đang đo kho khôi phục…","Measuring the recovery vault…"},{"Đang đếm mục khởi động…","Counting startup entries…"},{"Đang tìm thư mục rỗng trong Downloads…","Finding empty folders in Downloads…"},{"Đang đọc dung lượng trống…","Reading free space…"},
    {"Kiểm tra sức khỏe: {0}/100 ({1}). {2}","Health check: {0}/100 ({1}). {2}"},{"Đã dừng kiểm tra sức khỏe.","Health check stopped."},{"Đã sao chép báo cáo sức khỏe vào clipboard.","Health report copied to the clipboard."},
    {"Chọn một dòng kết quả trước.","Select a result row first."},{"Không tìm thấy tab {0}.","Tab {0} not found."},{"Chưa có báo cáo. Bấm Kiểm tra ngay trước.","No report yet. Click Check now first."},
+
+   // Vault states and stubborn files
+   {"Đã sao lưu","Backed up"},{"Đã khôi phục","Restored"},{"Cần kiểm tra","Needs review"},{"Hẹn xóa khi khởi động lại","Delete at next reboot"},
+   {"bỏ thuộc tính chỉ đọc/ẩn/hệ thống của {0} mục","cleared read-only/hidden/system on {0} entries"},{"chiếm quyền sở hữu và cấp toàn quyền cho Administrators","took ownership and granted Administrators full control"},
+   {"{0} mục vẫn bị Windows chặn dù đã bỏ thuộc tính và chiếm quyền sở hữu (thường do một tiến trình đang giữ tệp):\r\n\r\n{1}\r\n\r\nHẹn xóa các mục này khi khởi động lại Windows? Chúng sẽ bị xóa thẳng lúc khởi động, KHÔNG có bản sao lưu để khôi phục.","Windows still blocks {0} items after clearing attributes and taking ownership (usually a process is holding the files):\r\n\r\n{1}\r\n\r\nSchedule them for deletion at the next Windows restart? They will be deleted directly at boot, with NO backup to restore."},
+   {"Đã hẹn xóa khi khởi động lại: ","Scheduled for deletion at reboot: "},{"Vẫn bị chặn sau khi chiếm quyền sở hữu; có thể đang bị một tiến trình giữ. Đóng ứng dụng liên quan rồi thử lại.","Still blocked after taking ownership; a process may be holding it. Close the related application and try again."},
 
    // Junk cleaner runtime texts
    {"Bị khóa","Locked"},{"Chưa xem trước","Not previewed"},{"Không có gì để dọn","Nothing to clean"},{"Có thể dọn (chưa đủ)","Cleanable (partial)"},{"Có thể dọn","Cleanable"},

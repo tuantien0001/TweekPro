@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace TweekPro {
  /// <summary>
@@ -15,6 +16,34 @@ namespace TweekPro {
   static readonly Color LogoBottom=Color.FromArgb(29,78,216);
 
   /// <summary>Draws the app logo (rounded gradient badge with a white monogram) into the given rectangle.</summary>
+  /// <summary>Compact header button: a globe glyph with the two-letter language code; clicking it switches the UI language.</summary>
+  public static Button LanguageButton(string code,string tooltip){
+   var b=new Button{Size=new Size(64,32),FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Color.FromArgb(51,65,85),ForeColor=Color.White,Text="",TabStop=false,UseVisualStyleBackColor=false};
+   b.FlatAppearance.BorderSize=0;b.FlatAppearance.MouseOverBackColor=Color.FromArgb(71,85,105);b.FlatAppearance.MouseDownBackColor=Color.FromArgb(30,41,59);
+   b.Paint+=(s,e)=>DrawLanguageGlyph(e.Graphics,b.ClientRectangle,code,b.ForeColor);
+   new ToolTip().SetToolTip(b,tooltip);
+   b.AccessibleName=tooltip;
+   return b;
+  }
+
+  /// <summary>Draws a small globe (meridian + equator) followed by the language code, centered in r.</summary>
+  public static void DrawLanguageGlyph(Graphics g,Rectangle r,string code,Color color){
+   g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+   int d=Math.Min(r.Height-12,18);
+   using(var font=new Font("Segoe UI Semibold",9.5f))using(var brush=new SolidBrush(color))using(var pen=new Pen(color,1.6f)){
+    var text=g.MeasureString(code,font);
+    int total=d+6+(int)Math.Ceiling(text.Width);
+    int x=r.X+(r.Width-total)/2,y=r.Y+(r.Height-d)/2;
+    var globe=new Rectangle(x,y,d,d);
+    g.DrawEllipse(pen,globe);
+    g.DrawEllipse(pen,new RectangleF(x+d*0.3f,y,d*0.4f,d));
+    g.DrawLine(pen,x,y+d/2f,x+d,y+d/2f);
+    g.DrawLine(pen,x+d*0.12f,y+d*0.25f,x+d*0.88f,y+d*0.25f);
+    g.DrawLine(pen,x+d*0.12f,y+d*0.75f,x+d*0.88f,y+d*0.75f);
+    g.DrawString(code,font,brush,x+d+6,r.Y+(r.Height-text.Height)/2f);
+   }
+  }
+
   public static void DrawLogo(Graphics g,Rectangle r){
    var saved=g.SmoothingMode;g.SmoothingMode=SmoothingMode.AntiAlias;
    int radius=Math.Max(4,r.Width/4);

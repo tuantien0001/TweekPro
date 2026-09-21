@@ -113,7 +113,7 @@ namespace TweekPro {
     if(c.Kind=="File"){
      if(c.ExpectedHash!=FileHash(c.Path))throw new IOException("Shortcut đã thay đổi sau khi quét; hãy tải lại.");
      if(Path.GetPathRoot(c.Path)!=Path.GetPathRoot(payload))throw new IOException("Kho khôi phục và shortcut phải cùng ổ đĩa.");
-     File.Move(c.Path,payload);
+     Core.StubbornFiles.Escalate(c.Path,()=>File.Move(c.Path,payload));
     }else using(var root=Engine.Base(c.Hive,c.View))using(var key=root.OpenSubKey(c.Path,true)){
      if(key==null)throw new IOException("Không mở được khóa.");var value=ReadValue(key,c.ValueName);
      if(c.ExpectedHash!=Fingerprint(value))throw new IOException("Giá trị đã thay đổi sau khi quét; hãy tải lại.");

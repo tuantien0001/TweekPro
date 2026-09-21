@@ -194,7 +194,9 @@ namespace TweekPro {
     string payload=Path.Combine(Vault,backup.Id,backup.Payload);
     if(c.Kind=="Folder"){
      if(!String.Equals(Path.GetPathRoot(backup.Original),Path.GetPathRoot(payload),StringComparison.OrdinalIgnoreCase))throw new IOException("Bản này chỉ chuyển vào kho trên cùng ổ đĩa.");
-     ValidateFolder(backup.Original);Directory.Move(backup.Original,payload);
+     ValidateFolder(backup.Original);
+     var outcome=Core.StubbornFiles.Escalate(backup.Original,()=>Directory.Move(backup.Original,payload));
+     if(outcome.Steps!="")Core.Log.Info("Tệp cứng đầu tại "+backup.Original+": "+outcome.Steps+".");
     }else{
      using(var b=Base(c.Hive,c.View)){
       RegNode node;using(var key=b.OpenSubKey(c.Path)){if(key==null)throw new IOException("Khóa không còn tồn tại.");node=ReadTree(key);}
@@ -203,6 +205,27 @@ namespace TweekPro {
     }
     backup.State="BackedUp";SaveBackup(backup);return backup;
    }catch(Exception e){backup.Error=e.Message;backup.State="NeedsReview";SaveBackup(backup);throw;}
+  }
+  /// <summary>
+  /// Last resort for a leftover that stays locked after ownership takeover: schedules it for deletion at the next boot.
+  /// Same safety checks as Quarantine; records a PendingReboot entry (no payload) so the vault shows what will disappear.
+  /// </summary>
+  public static Backup ScheduleOnReboot(Candidate c){
+   if(c.ReviewOnly)throw new IOException("Mục này chỉ để kiểm tra.");
+   if(c.Kind!="Folder"&&c.Kind!="File")throw new IOException("Chỉ hẹn xóa được thư mục hoặc tệp.");
+   if(Installed(c.AppId))throw new IOException("Ứng dụng vẫn được đăng ký cài đặt. Hãy gỡ chính thức và chờ hoàn tất trước khi dọn.");
+   string path=Canon(c.Path);
+   if(c.Kind=="Folder"){
+    ValidateFolder(path);if(!Directory.Exists(path))throw new IOException("Thư mục không còn tồn tại.");
+    foreach(var a in Inventory())if(!String.IsNullOrWhiteSpace(a.Location)){try{if(Overlap(path,Canon(a.Location)))throw new IOException("Thư mục giao với ứng dụng còn cài: "+a.Name);}catch(ArgumentException){}}
+   }else{Advanced.ValidateFile(path);if(!File.Exists(path))throw new IOException("Tệp không còn tồn tại.");}
+   Core.StubbornFiles.ClearAttributes(path);Core.StubbornFiles.TakeOwnership(path);
+   int scheduled=Core.StubbornFiles.ScheduleDeleteOnReboot(path);
+   if(scheduled==0)throw new IOException("Windows không nhận lịch xóa khi khởi động lại cho "+path+".");
+   var backup=new Backup{Id=Guid.NewGuid().ToString("N"),Created=DateTime.Now.ToString("s"),State="PendingReboot",Original=path,Kind=c.Kind,AppName=c.AppName,Purpose="RebootDelete",Payload="",Error="Hẹn xóa "+scheduled+" mục khi khởi động lại; không có bản sao lưu."};
+   NoLinks(Vault,false);Directory.CreateDirectory(Path.Combine(Vault,backup.Id));SaveBackup(backup);
+   Core.Log.Info("Hẹn xóa khi khởi động lại ("+scheduled+" mục): "+path);
+   return backup;
   }
   /// <summary>Lists manifests from the current vault and, when present, the legacy AppCare vault so old backups stay restorable.</summary>
   public static List<Backup> Backups(){
@@ -231,6 +254,7 @@ namespace TweekPro {
   }
   /// <summary>Permanently deletes one backup folder (manifest and payload). Irreversible; the caller must have confirmed. Returns bytes released.</summary>
   public static long Purge(Backup b){
+   if(b.State=="PendingReboot")throw new IOException("Mục này được hẹn xóa khi khởi động lại và không có bản sao lưu để khôi phục.");
    Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");
    string vault=Canon(VaultOf(b));string dir=Canon(Path.Combine(vault,b.Id));
    if(!Under(dir,vault))throw new IOException("Thư mục sao lưu nằm ngoài kho.");
