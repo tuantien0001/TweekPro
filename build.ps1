@@ -37,8 +37,10 @@ Write-Output "Thu muc phan phoi (copy toan bo, gom cac DLL TraceEvent): $outDir"
 
 if ($SelfTest) {
   Write-Host 'Dang chay --self-test (tao va don fixture TweekProTest* trong AppData va HKCU)...'
-  & $exe --self-test
-  $code = $LASTEXITCODE
-  Get-Content (Join-Path $outDir 'test-results.txt')
+  $results = Join-Path $outDir 'test-results.txt'
+  if (Test-Path $results) { Remove-Item $results -Force }
+  $proc = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
+  $code = $proc.ExitCode
+  if (Test-Path $results) { Get-Content $results } else { Write-Host 'test-results.txt was not written.' -ForegroundColor Yellow; if ($code -eq 0) { $code = 1 } }
   if ($code -ne 0) { throw 'Self-test failed.' }
 }

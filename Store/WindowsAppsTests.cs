@@ -30,6 +30,12 @@ namespace TweekPro.Store {
    Assert(apps.First().Status==AppxStatus.Removable&&apps.Last().Status==AppxStatus.Protected,"sorted removable first, protected last");
    Assert(WindowsApps.Parse(SampleJson.Substring(1,SampleJson.IndexOf("},{")-1)+"}").Count==1,"single object accepted");
    Assert(WindowsApps.Parse("").Count==0&&WindowsApps.Parse("[]").Count==0,"empty input");
+   var legacy=WindowsApps.Parse("[{\"Name\":\"Microsoft.BingWeather\",\"PackageFullName\":\"Microsoft.BingWeather_4.0_x64__8wekyb3d8bbwe\",\"PackageFamilyName\":\"Microsoft.BingWeather_8wekyb3d8bbwe\",\"Version\":null,\"Publisher\":null,\"InstallLocation\":null,\"IsFramework\":null,\"NonRemovable\":null,\"SignatureKind\":null,\"Architecture\":null}]");
+   Assert(legacy.Count==1&&!legacy[0].NonRemovable&&!legacy[0].IsFramework&&legacy[0].SignatureKind==0&&legacy[0].Version==""&&legacy[0].Status==AppxStatus.Removable,"Windows 8.1/older 10 output with null properties parses");
+   Assert(WindowsApps.ListScript(false).Contains("[bool]$_.NonRemovable")&&WindowsApps.ListScript(false).Contains("[string]$_.Version"),"list script casts nullable properties");
+   MustFail(()=>WindowsApps.RegisterScript("C:\\x`$(calc)"),"register script with expansion characters");
+   Assert(WindowsApps.RemoveScript(new WindowsApp{Name="Some.App",FullName="Some.App_1.0_x64__abc"},false,true).Contains("-eq 'Some.App'"),"deprovision filter quotes the name");
+   MustFail(()=>WindowsApps.RemoveScript(new WindowsApp{Name="Some.App'; calc; '",FullName="Some.App_1.0_x64__abc"},false,true),"injection in package Name");
 
    // Protected prefixes stay protected unless explicitly whitelisted.
    Assert(WindowsApps.Classify(new WindowsApp{Name="Microsoft.Windows.SomethingNew",FullName="x"})==AppxStatus.Protected,"unknown inbox package protected by prefix");

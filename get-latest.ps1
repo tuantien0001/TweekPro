@@ -35,6 +35,7 @@ $dirty = git status --porcelain
 if ($dirty) {
   Write-Host 'Local changes detected; stashing them as "get-latest autostash" so the update cannot overwrite your work.' -ForegroundColor Yellow
   git stash push -u -m 'get-latest autostash' | Out-Null
+  $stashed = $true
 }
 
 $exists = git branch --list $Branch
@@ -45,6 +46,11 @@ if ($LASTEXITCODE -ne 0) { throw 'git pull failed (non fast-forward). Resolve ma
 
 Write-Host ''
 Write-Host ('Now at ' + (git log --oneline -1))
+if ($stashed) {
+  Write-Host 'Re-applying your stashed local changes...'
+  git stash pop
+  if ($LASTEXITCODE -ne 0) { Write-Host 'Stash pop had conflicts; your changes are kept in "git stash list" as "get-latest autostash".' -ForegroundColor Yellow }
+}
 Write-Host ''
 
 # The exe carries a requireAdministrator manifest, so --self-test only works from an elevated PowerShell.
@@ -63,6 +69,6 @@ Write-Host "Build OK: $exe" -ForegroundColor Green
 Write-Host 'Self-test results: bin\Release\net48\test-results.txt'
 Write-Host 'Next steps for an agent: read HANDOFF.md and AGENTS.md in this folder.'
 if ($Run) {
-  Write-Host 'Launching Tweek Pro (Windows will ask for administrator rights once)...'
+  Write-Host 'Launching Tweek Pro...'
   Start-Process $exe
 }

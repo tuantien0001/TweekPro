@@ -22,9 +22,13 @@ namespace TweekPro.Store {
   [DataMember(Name="Version")] public string Version="";
   [DataMember(Name="Publisher")] public string Publisher="";
   [DataMember(Name="InstallLocation")] public string InstallLocation="";
-  [DataMember(Name="IsFramework")] public bool IsFramework;
-  [DataMember(Name="NonRemovable")] public bool NonRemovable;
-  [DataMember(Name="SignatureKind")] public int SignatureKind;
+  [DataMember(Name="IsFramework")] bool? isFramework;
+  [DataMember(Name="NonRemovable")] bool? nonRemovable;
+  [DataMember(Name="SignatureKind")] int? signatureKind;
+  /// <summary>Older Windows builds omit these properties; nulls read as false/0 instead of failing deserialization.</summary>
+  public bool IsFramework { get { return isFramework??false; } set { isFramework=value; } }
+  public bool NonRemovable { get { return nonRemovable??false; } set { nonRemovable=value; } }
+  public int SignatureKind { get { return signatureKind??0; } set { signatureKind=value; } }
   [DataMember(Name="Architecture")] public string Architecture="";
 
   public string DisplayName { get { return WindowsApps.FriendlyName(Name); } }
@@ -111,7 +115,7 @@ namespace TweekPro.Store {
 
   /// <summary>PowerShell that lists packages as a JSON array with only the fields Tweek Pro needs. allUsers requires elevation.</summary>
   public static string ListScript(bool allUsers){
-   return "$ErrorActionPreference='Stop'; $p=Get-AppxPackage"+(allUsers?" -AllUsers":"")+" | Select-Object Name,PackageFullName,PackageFamilyName,@{n='Version';e={$_.Version.ToString()}},Publisher,InstallLocation,IsFramework,NonRemovable,@{n='SignatureKind';e={[int]$_.SignatureKind}},@{n='Architecture';e={$_.Architecture.ToString()}}; ConvertTo-Json -InputObject @($p) -Compress -Depth 2";
+   return "$ErrorActionPreference='Stop'; $p=Get-AppxPackage"+(allUsers?" -AllUsers":"")+" | Select-Object Name,PackageFullName,PackageFamilyName,@{n='Version';e={[string]$_.Version}},@{n='Publisher';e={[string]$_.Publisher}},@{n='InstallLocation';e={[string]$_.InstallLocation}},@{n='IsFramework';e={[bool]$_.IsFramework}},@{n='NonRemovable';e={[bool]$_.NonRemovable}},@{n='SignatureKind';e={[int]$_.SignatureKind}},@{n='Architecture';e={[string]$_.Architecture}}; ConvertTo-Json -InputObject @($p) -Compress -Depth 2";
   }
 
   /// <summary>Parses the JSON produced by ListScript; accepts a bare object for the single-package case.</summary>
@@ -133,12 +137,13 @@ namespace TweekPro.Store {
    return Parse(result.Output);
   }
 
-  static string Quote(string s){return "'"+(s??"").Replace("'","''")+"'";}
+  /// <summary>Single-quoted PowerShell literal; ASCII and Unicode single quotes are doubled because PowerShell treats U+2018–U+201B as quote characters too.</summary>
+  static string Quote(string s){return "'"+Regex.Replace(s??"","['\u2018-\u201B]",m=>m.Value+m.Value)+"'";}
 
   /// <summary>Removal script: refuses protected packages, removes for the current user (or all users when elevated) and optionally the provisioned copy for new accounts.</summary>
   public static string RemoveScript(WindowsApp a,bool allUsers,bool deprovision){
    if(Classify(a)==AppxStatus.Protected)throw new IOException(L.T("Thành phần được bảo vệ, không gỡ: ")+a.DisplayName+" — "+Reason(a));
-   if(!Regex.IsMatch(a.FullName??"",@"^[A-Za-z0-9._\-]+$"))throw new IOException(L.T("Tên gói không hợp lệ: ")+a.FullName);
+   if(!Regex.IsMatch(a.FullName??"",@"^[A-Za-z0-9._\-]+$")||!Regex.IsMatch(a.Name??"",@"^[A-Za-z0-9._\-]+$"))throw new IOException(L.T("Tên gói không hợp lệ: ")+a.FullName);
    var sb=new StringBuilder("$ErrorActionPreference='Stop'; ");
    sb.Append("Remove-AppxPackage -Package "+Quote(a.FullName)+(allUsers?" -AllUsers":"")+"; ");
    if(deprovision)sb.Append("Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq "+Quote(a.Name)+" } | ForEach-Object { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName | Out-Null }; ");
@@ -148,7 +153,8 @@ namespace TweekPro.Store {
 
   /// <summary>Re-registration script used by Restore when the package folder still exists (inbox apps stay under WindowsApps after removal).</summary>
   public static string RegisterScript(string installLocation){
-   string manifest=Path.Combine(installLocation??"","AppxManifest.xml");
+   if(String.IsNullOrWhiteSpace(installLocation)||installLocation.IndexOfAny(new[]{'\r','\n','\0','`','$'})>=0)throw new IOException(L.T("Thư mục gói không hợp lệ: ")+installLocation);
+   string manifest=Path.Combine(installLocation,"AppxManifest.xml");
    return "$ErrorActionPreference='Stop'; Add-AppxPackage -DisableDevelopmentMode -Register "+Quote(manifest)+"; 'OK'";
   }
 
@@ -172,7 +178,7 @@ namespace TweekPro.Store {
 
   /// <summary>Restores a removed package: re-registers from the still-present package folder, otherwise opens its Store page and explains.</summary>
   public static void Restore(Backup b){
-   if(b.Kind!="Store")throw new IOException("Không phải bản sao lưu ứng dụng Windows.");
+   if(b.Kind!="Store")throw new IOException(L.T("Không phải bản sao lưu ứng dụng Windows."));
    if(!String.IsNullOrWhiteSpace(b.Original)&&File.Exists(Path.Combine(b.Original,"AppxManifest.xml"))){
     var result=PowerShell.Run(RegisterScript(b.Original),TimeSpan.FromMinutes(3));
     if(result.ExitCode!=0||!result.Output.Contains("OK"))throw new IOException(L.T("Đăng ký lại gói thất bại: ")+(String.IsNullOrWhiteSpace(result.Error)?result.Output:result.Error));

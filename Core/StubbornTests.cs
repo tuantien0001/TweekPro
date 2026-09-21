@@ -9,6 +9,7 @@ namespace TweekPro.Core {
   static void MustFail<T>(Action a,string what) where T:Exception{try{a();}catch(T){return;}throw new Exception("Stubborn test failed: expected "+typeof(T).Name+" for "+what);}
 
   public static void Run(){
+   Assert(StubbornFiles.TokenPrivilegesSize==16&&StubbornFiles.TokenPrivilegesLuidOffset==4&&StubbornFiles.TokenPrivilegesAttributesOffset==12,"TOKEN_PRIVILEGES interop layout matches Win32 ("+StubbornFiles.TokenPrivilegesSize+"/"+StubbornFiles.TokenPrivilegesLuidOffset+"/"+StubbornFiles.TokenPrivilegesAttributesOffset+")");
    string root=Path.Combine(Path.GetTempPath(),"tweekpro-stubborn-"+Guid.NewGuid().ToString("N"));
    try{
     Directory.CreateDirectory(Path.Combine(root,"sub"));

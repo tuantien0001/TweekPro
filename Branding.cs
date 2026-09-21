@@ -15,7 +15,6 @@ namespace TweekPro {
   static readonly Color LogoTop=Color.FromArgb(56,132,255);
   static readonly Color LogoBottom=Color.FromArgb(29,78,216);
 
-  /// <summary>Draws the app logo (rounded gradient badge with a white monogram) into the given rectangle.</summary>
   /// <summary>Compact header button: a globe glyph with the two-letter language code; clicking it switches the UI language.</summary>
   public static Button LanguageButton(string code,string tooltip){
    var b=new Button{Size=new Size(64,32),FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Color.FromArgb(51,65,85),ForeColor=Color.White,Text="",TabStop=false,UseVisualStyleBackColor=false};
@@ -44,6 +43,7 @@ namespace TweekPro {
    }
   }
 
+  /// <summary>Draws the app logo (rounded gradient badge with a white monogram) into the given rectangle.</summary>
   public static void DrawLogo(Graphics g,Rectangle r){
    var saved=g.SmoothingMode;g.SmoothingMode=SmoothingMode.AntiAlias;
    int radius=Math.Max(4,r.Width/4);

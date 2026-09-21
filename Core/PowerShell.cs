@@ -17,7 +17,9 @@ namespace TweekPro.Core {
   public static string Decode(string encoded){return Encoding.Unicode.GetString(Convert.FromBase64String(encoded??""));}
 
   /// <summary>Full argument line for powershell.exe: no profile, non-interactive, bypass policy for this process only.</summary>
-  public static string Arguments(string script){return "-NoProfile -NonInteractive -ExecutionPolicy Bypass -OutputFormat Text -EncodedCommand "+Encode(script);}
+  public static string Arguments(string script){return "-NoProfile -NonInteractive -ExecutionPolicy Bypass -OutputFormat Text -EncodedCommand "+Encode(Utf8Prelude+script);}
+  /// <summary>Forces UTF-8 on the console streams so non-ASCII paths and publishers survive the round trip (powershell.exe defaults to the OEM code page).</summary>
+  public const string Utf8Prelude="[Console]::OutputEncoding=[Text.Encoding]::UTF8; $OutputEncoding=[Text.Encoding]::UTF8; ";
 
   /// <summary>Location of Windows PowerShell 5.1; null off Windows or when missing.</summary>
   public static string Executable {

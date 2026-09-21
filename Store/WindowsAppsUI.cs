@@ -31,7 +31,7 @@ namespace TweekPro {
    storeAllUsers=new CheckBox{Text=Core.L.T("Gỡ cho mọi tài khoản"),AutoSize=true,Margin=new Padding(8,8,12,0),Checked=Core.Elevation.IsElevated,Enabled=Core.Elevation.IsElevated,ForeColor=Theme.Text};
    storeDeprovision=new CheckBox{Text=Core.L.T("Không cài lại cho tài khoản mới"),AutoSize=true,Margin=new Padding(0,8,12,0),Checked=false,Enabled=Core.Elevation.IsElevated,ForeColor=Theme.Text};
    storeShowProtected=new CheckBox{Text=Core.L.T("Hiện thành phần được bảo vệ"),AutoSize=true,Margin=new Padding(0,8,12,0),Checked=false,ForeColor=Theme.Text};
-   storeShowProtected.CheckedChanged+=(s,e)=>RenderStoreApps();
+   storeShowProtected.CheckedChanged+=(s,e)=>{if(storeLoaded)RenderStoreApps();};
    bar.Controls.Add(storeAllUsers);bar.Controls.Add(storeDeprovision);bar.Controls.Add(storeShowProtected);
 
    var note=Theme.Note("Ứng dụng cài sẵn của Windows và ứng dụng Microsoft Store (gói Appx/MSIX). Gỡ qua Remove-AppxPackage của Windows; các thành phần cốt lõi (Start, Search, Settings, Windows Security, thư viện nền…) bị khóa trong mã và không thể chọn. Mục “Cần cân nhắc” gỡ được nhưng hữu ích (Store, App Installer, Photos…). Khôi phục: đăng ký lại từ thư mục gói nếu còn, hoặc cài lại từ Microsoft Store.",NoteKind.Info);
@@ -44,23 +44,32 @@ namespace TweekPro {
   async Task LoadStoreApps(){
    Theme.SetOverlay(storeOverlay,"Đang đọc danh sách gói qua PowerShell…",NoteKind.Info);
    bool allUsers=Core.Elevation.IsElevated;
-   storeApps=await Task.Run(()=>WindowsApps.List(allUsers));
-   await Task.Run(()=>LoadStoreIcons());
+   var apps=await Task.Run(()=>WindowsApps.List(allUsers));
+   var logos=await Task.Run(()=>LoadStoreIcons(apps));
+   SwapStoreData(apps,logos);
    RenderStoreApps();
    Log(Core.L.F("Ứng dụng Windows: {0} gói, {1} gỡ được, {2} được bảo vệ.",storeApps.Count,storeApps.Count(a=>a.Status!=AppxStatus.Protected),storeApps.Count(a=>a.Status==AppxStatus.Protected)));
   }
 
-  Dictionary<string,Bitmap> storeLogoCache=new Dictionary<string,Bitmap>(StringComparer.OrdinalIgnoreCase);
-  /// <summary>Loads package logos on a worker thread; missing or unreadable logos fall back to the drawn Windows glyph.</summary>
-  void LoadStoreIcons(){
-   foreach(var bmp in storeLogoCache.Values)bmp.Dispose();storeLogoCache.Clear();
-   foreach(var a in storeApps){
+  Dictionary<string,Bitmap> storeLogoCache=new Dictionary<string,Bitmap>(StringComparer.OrdinalIgnoreCase);bool storeLoaded;
+  /// <summary>Builds package logos into a fresh dictionary (safe on a worker thread); missing or unreadable logos fall back to the drawn Windows glyph.</summary>
+  static Dictionary<string,Bitmap> LoadStoreIcons(List<WindowsApp> apps){
+   var logos=new Dictionary<string,Bitmap>(StringComparer.OrdinalIgnoreCase);
+   foreach(var a in apps){
+    if(logos.ContainsKey(a.FullName))continue;
     string logo=WindowsApps.ResolveLogo(a.InstallLocation);
     Bitmap bitmap=null;
     if(logo!=null){try{using(var raw=new Bitmap(logo))bitmap=Presentation.FitIcon(raw,28);}catch(Exception){bitmap=null;}}
     if(bitmap==null)bitmap=Branding.WindowsAppGlyph(28,a.Origin=="System"?Theme.Primary:Theme.Muted);
-    storeLogoCache[a.FullName]=bitmap;
+    logos[a.FullName]=bitmap;
    }
+   return logos;
+  }
+
+  /// <summary>Publishes a freshly loaded list and logo set on the UI thread, disposing the previous logos only after the swap.</summary>
+  void SwapStoreData(List<WindowsApp> apps,Dictionary<string,Bitmap> logos){
+   var old=storeLogoCache;storeApps=apps;storeLogoCache=logos;storeLoaded=true;
+   foreach(var bmp in old.Values)bmp.Dispose();
   }
 
   void RenderStoreApps(){
@@ -120,8 +129,8 @@ namespace TweekPro {
 
   /// <summary>Fills the tab with the sample package list for --preview store so the layout can be reviewed off Windows.</summary>
   public void PreviewStoreApps(){
-   storeApps=WindowsApps.Parse(WindowsAppsTests.SampleJsonForPreview);
-   LoadStoreIcons();storeShowProtected.Checked=true;RenderStoreApps();tabs.SelectedTab=storeTab;
+   var apps=WindowsApps.Parse(WindowsAppsTests.SampleJsonForPreview);
+   SwapStoreData(apps,LoadStoreIcons(apps));storeShowProtected.Checked=true;RenderStoreApps();tabs.SelectedTab=storeTab;
   }
  }
 }

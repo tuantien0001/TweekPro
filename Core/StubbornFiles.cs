@@ -37,7 +37,7 @@ namespace TweekPro.Core {
   /// <summary>True when the exception means another process holds the file open.</summary>
   public static bool IsLocked(Exception e){
    var io=e as IOException;if(io==null||e is UnauthorizedAccessException)return false;
-   int code=Marshal.GetHRForException(e)&0xFFFF;
+   int code=e.HResult&0xFFFF;
    return code==ErrorSharingViolation||code==ErrorLockViolation;
   }
 
@@ -45,7 +45,7 @@ namespace TweekPro.Core {
   public static bool IsAccessDenied(Exception e){
    if(e is UnauthorizedAccessException)return true;
    var io=e as IOException;if(io==null)return false;
-   return (Marshal.GetHRForException(e)&0xFFFF)==ErrorAccessDenied;
+   return (e.HResult&0xFFFF)==ErrorAccessDenied;
   }
 
   /// <summary>Clears ReadOnly, Hidden and System on the path and, for directories, on every descendant. Returns how many entries changed.</summary>
@@ -65,11 +65,15 @@ namespace TweekPro.Core {
    return changed;
   }
 
-  /// <summary>Makes the Administrators group owner of the path (and descendants) and grants it Full Control. Windows only; false when unavailable.</summary>
+  /// <summary>
+  /// Makes the Administrators group owner of the path (and descendants), removes every Deny entry and grants Administrators Full Control.
+  /// Deny entries must go because they also bind an elevated token and would keep blocking the move. Windows only; false when unavailable.
+  /// </summary>
   public static bool TakeOwnership(string path){
    if(!IsWindows)return false;
    try{
-    EnablePrivilege("SeTakeOwnershipPrivilege");EnablePrivilege("SeRestorePrivilege");EnablePrivilege("SeBackupPrivilege");
+    bool privileged=EnablePrivilege("SeTakeOwnershipPrivilege")&EnablePrivilege("SeRestorePrivilege")&EnablePrivilege("SeBackupPrivilege");
+    if(!privileged)Log.Warn("Không bật được đủ đặc quyền chiếm quyền sở hữu; sẽ thử với quyền hiện có.");
     var admins=new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid,null);
     bool any=false;
     if(Directory.Exists(path)){
@@ -106,14 +110,22 @@ namespace TweekPro.Core {
   /// folders deepest-first, because the session manager processes the list in order. Returns the number of entries scheduled; 0 off-Windows.
   /// </summary>
   public static int ScheduleDeleteOnReboot(string path){
+   int failed;return ScheduleDeleteOnReboot(path,out failed);
+  }
+
+  /// <summary>Same as ScheduleDeleteOnReboot, also reporting how many entries Windows refused (each refusal is logged with its Win32 error).</summary>
+  public static int ScheduleDeleteOnReboot(string path,out int failed){
+   failed=0;
    if(!IsWindows)return 0;
-   int scheduled=0;
+   int scheduled=0,refused=0;
+   Action<string> schedule=p=>{if(MoveFileEx(Prefix(p),null,MoveFileDelayUntilReboot))scheduled++;else{refused++;Log.Warn("MoveFileEx từ chối hẹn xóa "+p+" (lỗi Win32 "+Marshal.GetLastWin32Error()+").");}};
    if(Directory.Exists(path)){
     var entries=EnumerateSafe(path).ToList();
-    foreach(string f in entries.Where(File.Exists))if(MoveFileEx(Prefix(f),null,MoveFileDelayUntilReboot))scheduled++;
-    foreach(string d in entries.Where(Directory.Exists).OrderByDescending(d=>d.Length))if(MoveFileEx(Prefix(d),null,MoveFileDelayUntilReboot))scheduled++;
-    if(MoveFileEx(Prefix(path),null,MoveFileDelayUntilReboot))scheduled++;
-   }else if(File.Exists(path)&&MoveFileEx(Prefix(path),null,MoveFileDelayUntilReboot))scheduled++;
+    foreach(string f in entries.Where(File.Exists))schedule(f);
+    foreach(string d in entries.Where(Directory.Exists).OrderByDescending(d=>d.Length))schedule(d);
+    schedule(path);
+   }else if(File.Exists(path))schedule(path);
+   failed=refused;
    return scheduled;
   }
 
@@ -137,42 +149,61 @@ namespace TweekPro.Core {
    }
   }
 
+  /// <summary>Owner is written through a fresh descriptor (no read first) so a DACL that denies READ_CONTROL cannot stop the takeover.</summary>
   static bool OwnDirectory(string path,SecurityIdentifier admins){
    try{
-    var info=new DirectoryInfo(path);var security=info.GetAccessControl(AccessControlSections.Owner);
-    security.SetOwner(admins);info.SetAccessControl(security);
-    security=info.GetAccessControl(AccessControlSections.Access);
+    var info=new DirectoryInfo(path);
+    var owner=new DirectorySecurity();owner.SetOwner(admins);info.SetAccessControl(owner);
+    var security=info.GetAccessControl(AccessControlSections.Access);
+    RemoveDenies(security);
     security.AddAccessRule(new FileSystemAccessRule(admins,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));
     info.SetAccessControl(security);return true;
-   }catch(Exception){return false;}
+   }catch(Exception e){Log.Warn("Không chiếm được quyền thư mục "+path+": "+e.Message);return false;}
   }
 
   static bool OwnFile(string path,SecurityIdentifier admins){
    try{
-    var info=new FileInfo(path);var security=info.GetAccessControl(AccessControlSections.Owner);
-    security.SetOwner(admins);info.SetAccessControl(security);
-    security=info.GetAccessControl(AccessControlSections.Access);
+    var info=new FileInfo(path);
+    var owner=new FileSecurity();owner.SetOwner(admins);info.SetAccessControl(owner);
+    var security=info.GetAccessControl(AccessControlSections.Access);
+    RemoveDenies(security);
     security.AddAccessRule(new FileSystemAccessRule(admins,FileSystemRights.FullControl,AccessControlType.Allow));
     info.SetAccessControl(security);return true;
-   }catch(Exception){return false;}
+   }catch(Exception e){Log.Warn("Không chiếm được quyền tệp "+path+": "+e.Message);return false;}
   }
 
-  static void EnablePrivilege(string name){
+  /// <summary>Drops explicit Deny entries; inherited ones are cut by protecting the DACL, since the item is about to be moved or deleted anyway.</summary>
+  static void RemoveDenies(FileSystemSecurity security){
+   var rules=security.GetAccessRules(true,true,typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().ToList();
+   if(rules.Any(r=>r.AccessControlType==AccessControlType.Deny&&r.IsInherited))security.SetAccessRuleProtection(true,true);
+   foreach(var rule in security.GetAccessRules(true,false,typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().Where(r=>r.AccessControlType==AccessControlType.Deny).ToList())security.RemoveAccessRuleAll(rule);
+  }
+
+  /// <summary>Enables one privilege on the process token; false when the token does not hold it (AdjustTokenPrivileges reports ERROR_NOT_ALL_ASSIGNED).</summary>
+  static bool EnablePrivilege(string name){
    IntPtr token;
-   if(!OpenProcessToken(System.Diagnostics.Process.GetCurrentProcess().Handle,TokenAdjustPrivileges|TokenQuery,out token))return;
+   if(!OpenProcessToken(System.Diagnostics.Process.GetCurrentProcess().Handle,TokenAdjustPrivileges|TokenQuery,out token))return false;
    try{
     var privileges=new TokenPrivileges{PrivilegeCount=1,Attributes=SePrivilegeEnabled};
-    if(!LookupPrivilegeValue(null,name,out privileges.Luid))return;
-    AdjustTokenPrivileges(token,false,ref privileges,0,IntPtr.Zero,IntPtr.Zero);
+    if(!LookupPrivilegeValue(null,name,out privileges.Luid))return false;
+    if(!AdjustTokenPrivileges(token,false,ref privileges,0,IntPtr.Zero,IntPtr.Zero))return false;
+    return Marshal.GetLastWin32Error()==0;
    }finally{CloseHandle(token);}
   }
 
   const int MoveFileDelayUntilReboot=0x4;
   const uint TokenAdjustPrivileges=0x20, TokenQuery=0x8, SePrivilegeEnabled=0x2;
-  [StructLayout(LayoutKind.Sequential)] struct TokenPrivileges{public uint PrivilegeCount;public long Luid;public uint Attributes;}
+  /// <summary>Native LUID: two 32-bit halves, 4-byte aligned.</summary>
+  [StructLayout(LayoutKind.Sequential,Pack=4)] internal struct Luid{public uint Low;public int High;}
+  /// <summary>Native TOKEN_PRIVILEGES with one entry: {DWORD Count; LUID; DWORD Attributes} = 16 bytes, LUID at offset 4.</summary>
+  [StructLayout(LayoutKind.Sequential,Pack=4)] internal struct TokenPrivileges{public uint PrivilegeCount;public Luid Luid;public uint Attributes;}
+  /// <summary>Exposed for the self-test so the interop layout is verified on every platform.</summary>
+  public static int TokenPrivilegesSize { get { return Marshal.SizeOf(typeof(TokenPrivileges)); } }
+  public static int TokenPrivilegesLuidOffset { get { return (int)Marshal.OffsetOf(typeof(TokenPrivileges),"Luid"); } }
+  public static int TokenPrivilegesAttributesOffset { get { return (int)Marshal.OffsetOf(typeof(TokenPrivileges),"Attributes"); } }
   [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool MoveFileEx(string existing,string target,int flags);
   [DllImport("advapi32.dll",SetLastError=true)] static extern bool OpenProcessToken(IntPtr process,uint access,out IntPtr token);
-  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool LookupPrivilegeValue(string system,string name,out long luid);
+  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool LookupPrivilegeValue(string system,string name,out Luid luid);
   [DllImport("advapi32.dll",SetLastError=true)] static extern bool AdjustTokenPrivileges(IntPtr token,bool disableAll,ref TokenPrivileges newState,uint length,IntPtr previous,IntPtr returnLength);
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool CloseHandle(IntPtr handle);
  }

@@ -39,7 +39,7 @@ namespace TweekPro {
    apps=targets.ToList();deep=deepScan;log=logger??(s=>{});
    string names=String.Join(", ",apps.Select(a=>a.Name));
    Text="Phần còn sót — "+names;Size=new Size(1180,760);MinimumSize=new Size(960,600);StartPosition=FormStartPosition.CenterParent;
-   Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;ShowIcon=false;
+   Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleDimensions=new SizeF(96F,96F);AutoScaleMode=AutoScaleMode.Dpi;ShowIcon=false;
 
    var header=Theme.HeaderBand("Quét phần còn sót",(deep?"Quét sâu":"Quét nhanh")+"  •  "+names,92);
 

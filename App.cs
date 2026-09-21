@@ -28,7 +28,7 @@ namespace TweekPro {
   public MainForm(bool preview=false){
    Text=AppTitle+" "+Version+" – "+Core.L.T(Tagline);Size=new Size(1240,820);MinimumSize=new Size(1120,700);StartPosition=FormStartPosition.CenterScreen;
    if(settings.WindowWidth>=MinimumSize.Width&&settings.WindowHeight>=MinimumSize.Height)Size=new Size(settings.WindowWidth,settings.WindowHeight);
-   Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;
+   Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleDimensions=new SizeF(96F,96F);AutoScaleMode=AutoScaleMode.Dpi;
    try{brandIcon=Branding.AppIcon(32);Icon=brandIcon;ShowIcon=true;}catch(Exception){}
    FormClosed+=(s,e)=>{if(brandIcon!=null)brandIcon.Dispose();};
    var header=Theme.HeaderBand(AppTitle+" – "+Core.L.T(Tagline),"Kiểm tra sức khỏe một nút  •  Gỡ ứng dụng và dọn phần còn sót  •  Dọn rác, tệp trùng, thư mục rỗng  •  Theo dõi mạng realtime  •  Mọi thao tác xóa đều sao lưu, hoàn tác được",96);

@@ -31,6 +31,8 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <DebugType>embedded</DebugType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- WinForms high-DPI section exists only in the .NET Framework machine.config; Mono (Linux self-test) rejects it, so it ships from Windows builds only. -->
+    <AppConfig Condition="'$(OS)' == 'Windows_NT'">App.Windows.config</AppConfig>
   </PropertyGroup>
 
   <ItemGroup>

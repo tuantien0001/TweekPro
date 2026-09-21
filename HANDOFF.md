@@ -15,7 +15,7 @@ Everything below is implemented, builds with 0 warnings and passes the headless 
 | Duplicates, empty folders, disk analyzer | `Dupes/`, `Cleaner/Empty*`, `Analyzer/` | Done, tests. |
 | Network view with per-app packet icons and realtime packet animation | `Network/` | Done; bandwidth via ETW needs admin (now default). |
 | Localization VI/EN | `Core/L.cs`, `Core/LangEn.cs`, `Core/LangTests.cs` | Done; toggle is the globe icon button in the header. Log messages in some older tabs are still Vietnamese only. |
-| Run as administrator by default | `app.manifest`, `TweekPro.csproj` | Done (`requireAdministrator`, PerMonitorV2, longPathAware). "Restart as administrator" button removed. |
+| Run as administrator by default | `app.manifest`, `App.Windows.config`, `TweekPro.csproj` | Done (`requireAdministrator`, PerMonitorV2 in manifest + WinForms `DpiAwareness` config that ships from Windows builds only, `AutoScaleDimensions` 96 on both forms). "Restart as administrator" button removed. |
 | Stubborn files (attributes → take ownership → retry → schedule delete at reboot) | `Core/StubbornFiles.cs`, `Core/StubbornTests.cs`, hooks in `Engine.Quarantine`, `Advanced.Store`, `Engine.ScheduleOnReboot`, Leftovers tab in `App.cs` | Done; Windows branches (`TakeOwnership`, `MoveFileEx`) untested on real Windows. |
 | Windows apps (Appx/MSIX) list + uninstall with code-level protection | `Store/WindowsApps.cs`, `Store/WindowsAppsUI.cs`, `Store/WindowsAppsTests.cs`, `Core/PowerShell.cs` | Done; real `Get-AppxPackage`/`Remove-AppxPackage` untested on real Windows (parser was written against real cmdlet output). |
 
@@ -90,4 +90,6 @@ Each item follows the standard pattern (engine + safety + tests + tab/finding + 
 - `Get-AppxPackage -AllUsers` needs elevation; the tab falls back to the current user when not elevated (should not happen now).
 - `Directory.Move` of a folder containing an open file fails with ERROR_ACCESS_DENIED, not a sharing violation, so the escalation ladder runs once before the reboot prompt is offered; that is intended.
 - `Theme.Note` grows with wrapped text; other fixed-height labels (`Height=30/34`) still truncate with `AutoEllipsis`.
+- Independent review round (2026-09-21) fixed: `TOKEN_PRIVILEGES` interop layout (privileges were never enabled), Deny ACE removal during ownership takeover, validation now runs inside the escalation ladder, `PendingReboot` entries purgeable and `Restore` refuses them, null-safe `Get-AppxPackage` fields for Windows 8.1/old 10, UTF-8 PowerShell output, `build.ps1` waits for the WinExe self-test, logo cache swapped atomically on the UI thread. The layout is now asserted by `StubbornTests`; the ACL path still needs the Windows checklist.
+- Line endings are mixed: `Engine.cs`/`Advanced.cs` are LF, `Presentation.cs`/`Core/L.cs`/`Core/StubbornFiles.cs` are CRLF. Keep each file's existing ending (do not renormalize in a feature commit; if desired add `.gitattributes` with `*.cs text=auto` in its own commit).
 - Tests create fixtures under `%TEMP%\tweekpro-*`, `%LOCALAPPDATA%\TweekProTest*` and `HKCU\Software\TweekProTest*` and clean them up.
