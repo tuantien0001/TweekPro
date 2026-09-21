@@ -105,9 +105,9 @@ namespace TweekPro {
    BuildServicesTab();
    BuildAiTab();
    BuildListMenus();
-   // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics.
+   // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics → AI assistant last.
    remnantsTab=clean;
-   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,servicesTab,aiTab,toolsTab,logs};
+   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,analyzerTab,vault,autorunTab,netTab,servicesTab,toolsTab,logs,aiTab};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(header);Controls.Add(status);

@@ -29,9 +29,9 @@ Chạy `TweekPro-0.7.exe` trong thư mục phân phối (cạnh các DLL `Micros
 | Khởi động (Autorun) | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
 | **Mạng** (mới) | Kết nối TCP/UDP theo tiến trình (tên, PID, nhà phát hành chữ ký, endpoint, trạng thái), làm mới 1–30 giây, tạm dừng, tìm kiếm, ẩn loopback, phân giải tên máy (tắt mặc định), CSV; khi có quyền quản trị: **Bật băng thông (ETW)** hiển thị byte gửi/nhận và tốc độ theo tiến trình | Chỉ xem, không chặn, không driver; phiên ETW tên `TweekPro-Network` luôn được dừng khi đóng |
 | **Dịch vụ hệ thống** (mới) | Mọi dịch vụ Windows (WMI) với **giải thích bằng lời thường** từ cơ sở kiến thức ~180 dịch vụ + mẫu tên (trình cập nhật, nâng quyền, anti-cheat, máy chủ CSDL…), huy hiệu màu theo mức an toàn (đỏ = cốt lõi, xanh dương = Windows, vàng = tùy chọn, xanh lá = bên thứ ba), PID/RAM, nhà phát hành theo chữ ký; lọc Đang chạy / Bên thứ ba / Có thể tắt; chuột phải: Dừng, Khởi động, Khởi động lại, **Dừng và vô hiệu hóa (lưu Kho)**, Kết thúc tiến trình, mở thư mục, chi tiết | Dịch vụ cốt lõi bị khóa mọi thao tác dừng; svchost không cho kết thúc tiến trình; vô hiệu hóa lưu kiểu khởi động cũ vào Kho (`Kind=Service`) |
-| **Trợ lý AI** | Claude/OpenAI và Local AI (LM Studio/Ollama); tải danh sách model, chat, quét/dọn phần còn sót qua công cụ | Mặc định hỏi xác nhận; có Chỉ đọc và Tự động do người dùng chọn. Giới hạn bảo vệ luôn giữ nguyên; model không hỗ trợ công cụ chỉ trả lời hướng dẫn |
 | Công cụ (Windows Tools) | 19 lối mở công cụ có sẵn | SFC hỏi xác nhận quyền quản trị |
 | Nhật ký | Nhật ký phiên, nút mở thư mục nhật ký/dữ liệu, lưu cài đặt | Nhật ký xoay vòng theo ngày |
+| **Trợ lý AI** (tab cuối) | Claude/OpenAI và Local AI (LM Studio/Ollama); tải danh sách model, chat, quét/dọn phần còn sót qua công cụ | Mặc định hỏi xác nhận; có Chỉ đọc và Tự động do người dùng chọn. Giới hạn bảo vệ luôn giữ nguyên; model không hỗ trợ công cụ chỉ trả lời hướng dẫn |
 
 ## Dọn rác: quy tắc và giới hạn
 
@@ -215,7 +215,8 @@ Phân tích ổ đĩa v1: quét chỉ đọc một thư mục, hiển thị thư
 Thư mục rỗng v1: tìm và xóa các nhánh thư mục hoàn toàn rỗng, kiểm tra lại ngay trước khi xóa.
 Mạng: gộp theo ứng dụng với icon packet ra/vào theo hướng và dải animation luồng packet realtime.
 Tổng quan v1: kiểm tra sức khỏe một nút với điểm 0–100, hạng A–E, sáu khu vực đo chỉ đọc, dung lượng có thể giải phóng, nhảy tới tab xử lý, sao chép báo cáo.
-Giao diện: logo riêng, icon vector cho từng tab, nhãn tab tiếng Việt; thứ tự tab chuẩn: Tổng quan → Ứng dụng → Phần còn sót → Dọn rác → Thư mục rỗng → Tệp trùng lặp → Phân tích ổ đĩa → Kho khôi phục → Khởi động → Mạng → Công cụ → Nhật ký.
+Giao diện: logo riêng, icon vector cho từng tab, nhãn tab tiếng Việt; thứ tự tab chuẩn: Tổng quan → Ứng dụng → Ứng dụng Windows → Phần còn sót → Dọn rác → Thư mục rỗng → Tệp trùng lặp → Phân tích ổ đĩa → Kho khôi phục → Khởi động → Mạng → Dịch vụ hệ thống → Công cụ → Nhật ký → Trợ lý AI (tab cuối, theo yêu cầu chủ dự án).
+Icon thanh tác vụ Windows 11: gán icon 256 px qua `WM_SETICON` (ICON_SMALL/ICON_BIG) và đăng ký AppUserModelID `TweekPro.App.0.7.tpc` để taskbar không dùng cache icon cũ; `Branding.AppIcon` lấy đúng khung PNG trong ICO đa kích thước.
 Rác hệ thống: nhóm quy tắc cần quản trị cho cache Windows Update, nhật ký CBS, dump kernel, nhật ký Panther, Downloaded Program Files; INetCache và cache shader GPU cho tài khoản; `JunkSafety.WindowsCoreFolders` chặn cứng System32/SysWOW64/WinSxS/servicing/Boot/Fonts/Installer… và Program Files, có test chứng minh System32, thư mục con của nó, gốc Windows và gốc ổ đĩa đều bị từ chối.
 Quyền quản trị mặc định qua `app.manifest` (kèm PerMonitorV2, long paths); bỏ nút Khởi động lại với quyền quản trị; nút ngôn ngữ thành icon quả cầu EN/VI.
 Tệp cứng đầu: `Core/StubbornFiles` (bỏ thuộc tính, chiếm quyền sở hữu với SeTakeOwnership/SeRestore, bậc thang leo thang, hẹn xóa khi khởi động lại) nối vào Quarantine thư mục/tệp; trạng thái Kho `PendingReboot`.
