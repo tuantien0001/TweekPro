@@ -18,7 +18,7 @@ namespace TweekPro.Health {
  public class HealthInputs {
   public long JunkBytes; public int JunkFiles; public int JunkLockedRules; public bool JunkMeasured=true;
   public int VaultBackups; public long VaultBytes; public int VaultStale; public long VaultStaleBytes; public int VaultStaleDays=90; public bool VaultMeasured=true;
-  public int AutorunEntries; public bool AutorunMeasured=true;
+  public int AutorunEntries; public int AutorunBroken; public bool AutorunMeasured=true;
   public int EmptyFolders; public string EmptyRoot; public bool EmptyMeasured=true;
   public int LeftoverCandidates; public bool LeftoverMeasured=true;
   public long DiskFreeBytes; public long DiskTotalBytes; public string DiskName; public bool DiskMeasured=true;
@@ -126,7 +126,8 @@ namespace TweekPro.Health {
    if(!i.AutorunMeasured){Unmeasured(f);return f;}
    f.Severity=i.AutorunEntries<=8?HealthSeverity.Good:i.AutorunEntries<=15?HealthSeverity.Low:i.AutorunEntries<=25?HealthSeverity.Medium:HealthSeverity.High;
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Ít mục khởi động":f.Severity==HealthSeverity.Low?"Khá nhiều mục khởi động":"Quá nhiều mục khởi động");
-   f.Detail=L.F("{0} mục đang bật (Run/RunOnce/Startup). Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries);
+   if(i.AutorunBroken>0&&f.Severity==HealthSeverity.Good){f.Severity=HealthSeverity.Low;f.Verdict=L.T("Có mục khởi động hỏng");}
+   f.Detail=i.AutorunBroken>0?L.F("{0} mục đang bật (Run/RunOnce/Startup); {1} mục trỏ tới tệp không còn tồn tại. Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries,i.AutorunBroken):L.F("{0} mục đang bật (Run/RunOnce/Startup). Mỗi mục kéo dài thời gian mở máy.",i.AutorunEntries);
    return f;
   }
 

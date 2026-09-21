@@ -68,7 +68,14 @@ namespace TweekPro {
   }
   static bool IsShortcut(Candidate c){return c.Path!=null&&c.Path.EndsWith(".lnk",StringComparison.OrdinalIgnoreCase);}
   [DllImport("shell32.dll",CharSet=CharSet.Unicode)]static extern uint ExtractIconEx(string file,int index,out IntPtr large,out IntPtr small,uint count);
+  [DllImport("shell32.dll",CharSet=CharSet.Unicode)]static extern IntPtr SHGetFileInfo(string path,uint attributes,ref ShFileInfo info,uint size,uint flags);
   [DllImport("user32.dll")]static extern bool DestroyIcon(IntPtr icon);
+  const uint ShgfiIcon=0x100,ShgfiSmallIcon=0x1,ShgfiLargeIcon=0x0;
+  [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)]struct ShFileInfo{
+   public IntPtr hIcon;public int iIcon;public uint dwAttributes;
+   [MarshalAs(UnmanagedType.ByValTStr,SizeConst=260)]public string szDisplayName;
+   [MarshalAs(UnmanagedType.ByValTStr,SizeConst=80)]public string szTypeName;
+  }
   public static bool ParseIcon(string raw,out string path,out int index){
    path="";index=0;if(String.IsNullOrWhiteSpace(raw))return false;
    string text=Environment.ExpandEnvironmentVariables(raw.Trim());
@@ -76,6 +83,11 @@ namespace TweekPro {
    if(match.Success){if(!Int32.TryParse(match.Groups[1].Value,out index))return false;text=text.Substring(0,match.Index);}
    path=text.Trim().Trim('"');
    return Path.IsPathRooted(path)&&!path.StartsWith(@"\\")&&path.Length>2&&path[1]==':';
+  }
+  /// <summary>True when a path is a local fixed-drive file safe to open for icon extraction.</summary>
+  static bool SafeIconFile(string path){
+   try{return new DriveInfo(Path.GetPathRoot(path)).DriveType==DriveType.Fixed&&File.Exists(path)&&((int)File.GetAttributes(path)&(0x1000|0x40000|0x400000|0x400))==0;}
+   catch(IOException){return false;}catch(UnauthorizedAccessException){return false;}catch(ArgumentException){return false;}
   }
   /// <summary>Scales a logo into a square of the given size, keeping aspect ratio and centering on a transparent canvas.</summary>
   public static Bitmap FitIcon(Image source,int size){
@@ -88,9 +100,32 @@ namespace TweekPro {
    }
    return bmp;
   }
+  /// <summary>Loads the native Windows icon for an exe/cpl/msc/dll path (ExtractIconEx, then shell association for .msc), scaled for an ImageList.</summary>
+  public static Bitmap ShellIcon(string raw,int size){
+   int side=Math.Max(16,size);Bitmap rawIcon=null;
+   try{string path;int index;
+   if(ParseIcon(raw,out path,out index)&&SafeIconFile(path)){
+    IntPtr large=IntPtr.Zero,small=IntPtr.Zero;
+    try{
+     ExtractIconEx(path,index,out large,out small,1);IntPtr handle=large!=IntPtr.Zero?large:small;
+     if(handle!=IntPtr.Zero)using(var icon=(Icon)Icon.FromHandle(handle).Clone())rawIcon=icon.ToBitmap();
+    }catch(ArgumentException){}catch(ExternalException){}finally{if(large!=IntPtr.Zero)DestroyIcon(large);if(small!=IntPtr.Zero)DestroyIcon(small);}
+    if(rawIcon==null){
+     var info=new ShFileInfo();uint flags=ShgfiIcon|(side<=16?ShgfiSmallIcon:ShgfiLargeIcon);
+     try{
+      SHGetFileInfo(path,0,ref info,(uint)Marshal.SizeOf(typeof(ShFileInfo)),flags);
+      if(info.hIcon!=IntPtr.Zero)using(var icon=(Icon)Icon.FromHandle(info.hIcon).Clone())rawIcon=icon.ToBitmap();
+     }catch(ArgumentException){}catch(ExternalException){}
+     finally{if(info.hIcon!=IntPtr.Zero)DestroyIcon(info.hIcon);}
+    }
+   }
+   }catch(IOException){}catch(UnauthorizedAccessException){}catch(System.Security.SecurityException){}catch(ArgumentException){}catch(DllNotFoundException){}
+   if(rawIcon!=null){using(rawIcon)return FitIcon(rawIcon,side);}
+   using(var fallback=SystemIcons.Application.ToBitmap())return FitIcon(fallback,side);
+  }
   public static Bitmap AppIcon(AppEntry app){
    try{string path;int index;
-   if(ParseIcon(app.DisplayIcon,out path,out index)&&new DriveInfo(Path.GetPathRoot(path)).DriveType==DriveType.Fixed&&File.Exists(path)&&((int)File.GetAttributes(path)&(0x1000|0x40000|0x400000|0x400))==0){
+   if(ParseIcon(app.DisplayIcon,out path,out index)&&SafeIconFile(path)){
     IntPtr large=IntPtr.Zero,small=IntPtr.Zero;
     try{
      ExtractIconEx(path,index,out large,out small,1);IntPtr handle=large!=IntPtr.Zero?large:small;

@@ -34,7 +34,12 @@ namespace TweekPro {
     Assert(nested.Items.Any(x=>x.Kind=="RegistryValue"&&x.ValueName==id),"Deep scan Run executable reference");
     Assert(nested.Items.Any(x=>x.Kind=="Folder"&&x.Path.IndexOf(Path.Combine("Programs",id),StringComparison.OrdinalIgnoreCase)>=0),"Deep scan nested Local\\Programs-style leftover");
     var cancelled=new CancellationTokenSource();cancelled.Cancel();Reject(()=>Advanced.DeepScan(app,cancelled.Token,new[]{fixture}));cancelled.Dispose();
-    Assert(WindowsTools.Catalog().Count>=15&&WindowsTools.Catalog().Any(t=>t.Name=="Services"&&t.Available),"Windows tool catalog");
+    Assert(WindowsTools.Catalog().Count>=18&&WindowsTools.Catalog().Any(t=>t.Name=="Services"&&t.Available),"Windows tool catalog");
+    Assert(WindowsTools.Catalog().Any(t=>t.Name=="Services"&&t.IconPath.EndsWith("services.msc",StringComparison.OrdinalIgnoreCase)),"Services uses msc icon path");
+    var netInfo=WindowsTools.Catalog().First(t=>t.Name=="Network Information");Assert(netInfo.IconPath.EndsWith("cmd.exe",StringComparison.OrdinalIgnoreCase),"cmd wrappers keep cmd.exe icon");
+    var sec=WindowsTools.Catalog().FirstOrDefault(t=>t.Name=="Security Center");if(sec!=null)Assert(sec.IconPath.EndsWith("wscui.cpl",StringComparison.OrdinalIgnoreCase),"Security Center cpl icon path");
+    using(var bmp=WindowsTools.Icon(WindowsTools.Catalog().First(t=>t.Name=="Services"),24))Assert(bmp.Width==24&&bmp.Height==24,"Services shell icon size");
+    using(var bmp=Presentation.ShellIcon(Path.Combine(Environment.SystemDirectory,"rstrui.exe"),32))Assert(bmp.Width==32&&bmp.Height==32,"ShellIcon scales exe");
    }finally{
     Engine.Vault=originalVault;
     using(var root=Engine.Base("HKCU",view))using(var key=root.OpenSubKey(Advanced.Run,true))if(key!=null)key.DeleteValue(id,false);

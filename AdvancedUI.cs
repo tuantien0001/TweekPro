@@ -9,12 +9,14 @@ using System.Windows.Forms;
 namespace TweekPro {
  public partial class MainForm {
   CheckBox deepMode=new CheckBox();CancellationTokenSource scanCancellation;
-  ListView autorunList=new SmoothListView(),toolList=new SmoothListView();ImageList startupIcons=new ImageList();
+  ListView autorunList=new SmoothListView(),toolList=new SmoothListView();ImageList startupIcons=new ImageList(),toolIcons=new ImageList();
   Label autorunNote,autorunOverlay;Button cancelScan;TabPage autorunTab,toolsTab;
   void BuildAdvancedTabs(){
    autorunTab=new TabPage(Core.L.T("Khởi động"));toolsTab=new TabPage(Core.L.T("Công cụ"));tabs.TabPages.Add(autorunTab);tabs.TabPages.Add(toolsTab);
-   startupIcons.ColorDepth=ColorDepth.Depth32Bit;startupIcons.ImageSize=new Size(24,24);autorunList.SmallImageList=startupIcons;FormClosed+=(s,e)=>startupIcons.Dispose();
-   SetupList(autorunList,new[]{"Tên khởi động","Trạng thái","Lệnh / đích","Vị trí"},new[]{230,180,440,360},false);
+   startupIcons.ColorDepth=ColorDepth.Depth32Bit;startupIcons.ImageSize=new Size(24,24);autorunList.SmallImageList=startupIcons;
+   toolIcons.ColorDepth=ColorDepth.Depth32Bit;toolIcons.ImageSize=new Size(24,24);toolList.SmallImageList=toolIcons;
+   FormClosed+=(s,e)=>{startupIcons.Dispose();toolIcons.Dispose();};
+   SetupList(autorunList,new[]{"Tên khởi động","Trạng thái","Windows","Tác động","Chữ ký","Kích cỡ","Lệnh / đích","Vị trí"},new[]{200,150,110,130,150,80,340,250},false);
    var autorunHost=Theme.ListHost(autorunList,out autorunOverlay);
    var bar=Bar();
    Add(bar,"Tải danh sách",async()=>await LoadAutoruns());
@@ -23,13 +25,14 @@ namespace TweekPro {
    Add(bar,"Sao chép vị trí",()=>{var a=CurrentAutorun();Clipboard.SetText(a.Item!=null?Presentation.CandidatePath(a.Item):a.Saved.Original);return Task.FromResult(0);});
    Add(bar,"Startup của Windows",()=>{WindowsTools.Launch(WindowsTools.Catalog().First(t=>t.Name=="Startup Apps"));return Task.FromResult(0);});
    Add(bar,"Xuất CSV",()=>{ExportAutoruns();return Task.FromResult(0);});
-   autorunNote=Theme.Note("Run, RunOnce và shortcut Startup của tài khoản hiện tại/toàn máy. Có đăng ký không có nghĩa Windows đang cho chạy. Bật lại áp dụng cho mục đã tắt bằng Tweek Pro.",NoteKind.Info);
+   autorunNote=Theme.Note("Run, RunOnce và shortcut Startup của tài khoản hiện tại/toàn máy, kèm trạng thái Windows cho phép chạy (Task Manager › Startup), chữ ký số, kích cỡ và tác động ước tính theo kích cỡ tệp. Mục đích không tồn tại được tô cam. Bật lại áp dụng cho mục đã tắt bằng Tweek Pro.",NoteKind.Info);
    autorunTab.Controls.Add(autorunHost);autorunTab.Controls.Add(autorunNote);autorunTab.Controls.Add(bar);
    Theme.SetOverlay(autorunOverlay,"Chưa tải mục khởi động.\r\nBấm Tải danh sách hoặc mở tab này để đọc Run/RunOnce và shortcut Startup.",NoteKind.Info);
-   SetupList(toolList,new[]{"Công cụ","Tình trạng","Công dụng"},new[]{240,160,710},false);
-   var toolbar=Bar();Add(toolbar,"Mở công cụ",()=>{OpenTool();return Task.FromResult(0);});
+   SetupList(toolList,new[]{"Công cụ","Dòng lệnh","Tình trạng","Công dụng"},new[]{220,420,120,360},false);
+   var toolbar=Bar();Add(toolbar,"Mở công cụ",()=>{OpenTool();return Task.FromResult(0);},ButtonStyle.Primary);
+   Add(toolbar,"Kiểm tra cập nhật",async()=>await CheckForUpdates());
    Add(toolbar,"Tài liệu truy vết",()=>{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"SCAN-GUIDE.md")){UseShellExecute=true});return Task.FromResult(0);});
-   var note=Theme.Note("Chỉ mở công cụ khi bạn chọn. Công cụ thiếu trên phiên bản Windows hiện tại sẽ được đánh dấu. SFC có thể sửa file hệ thống và yêu cầu quyền quản trị.",NoteKind.Info);
+   var note=Theme.Note("Mỗi mục dùng icon hệ thống của tệp .exe/.cpl/.msc tương ứng. Chỉ mở công cụ khi bạn chọn. Công cụ thiếu trên phiên bản Windows hiện tại sẽ được đánh dấu. SFC/chkdsk có thể sửa hệ thống và yêu cầu quyền quản trị. Kiểm tra cập nhật hỏi GitHub Releases (tag v*), không theo từng push nhánh.",NoteKind.Info);
    toolsTab.Controls.Add(toolList);toolsTab.Controls.Add(note);toolsTab.Controls.Add(toolbar);FillTools();
    toolList.DoubleClick+=async(s,e)=>await Guard(()=>{OpenTool();return Task.FromResult(0);});
    tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==autorunTab&&autorunList.Items.Count==0&&!busy)await Guard(async()=>await LoadAutoruns());};
@@ -37,20 +40,42 @@ namespace TweekPro {
    cancelScan.Click+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};status.Controls.Add(cancelScan);
    deepMode.Font=Theme.Body;
   }
-  void FillTools(){toolList.Items.Clear();int index=0;foreach(var t in WindowsTools.Catalog()){var row=new ListViewItem(new[]{t.Name,Core.L.T(t.Available?"Có sẵn":"Không có sẵn"),Core.L.T(t.Description)}){Tag=t,ForeColor=t.Available?Theme.Text:Theme.Muted,ToolTipText=Core.L.T(t.Description)+(t.Available?"":Core.L.T("\r\nCông cụ không có trên phiên bản Windows này."))};Theme.StripeRow(row,index++);toolList.Items.Add(row);}}
+  void FillTools(){
+   toolList.BeginUpdate();toolList.Items.Clear();toolIcons.Images.Clear();var imageHandle=toolIcons.Handle;int index=0;int iconSize=toolIcons.ImageSize.Width;
+   foreach(var t in WindowsTools.Catalog()){
+    using(var bitmap=WindowsTools.Icon(t,iconSize))toolIcons.Images.Add(bitmap);
+    var row=new ListViewItem(new[]{t.Name,t.CommandLine,Core.L.T(t.Available?"Có sẵn":"Không có sẵn"),Core.L.T(t.Description)}){Tag=t,ImageIndex=index,ForeColor=t.Available?Theme.Text:Theme.Muted,ToolTipText=t.CommandLine+"\r\n"+Core.L.T(t.Description)+(t.Available?"":Core.L.T("\r\nCông cụ không có trên phiên bản Windows này."))};
+    Theme.StripeRow(row,index++);toolList.Items.Add(row);
+   }
+   toolList.EndUpdate();
+  }
   void OpenTool(){if(toolList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn công cụ muốn mở."));var t=(WindowsTool)toolList.SelectedItems[0].Tag;if(t.Admin&&!Confirm(Core.L.T(t.Description)+Core.L.T("\r\nTiếp tục mở công cụ với quyền quản trị?")))return;WindowsTools.Launch(t);}
   AutorunEntry CurrentAutorun(){if(autorunList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một mục khởi động."));return (AutorunEntry)autorunList.SelectedItems[0].Tag;}
   void ShowAutoruns(List<AutorunEntry> entries){
    autorunList.BeginUpdate();autorunList.Items.Clear();startupIcons.Images.Clear();var imageHandle=startupIcons.Handle;int index=0;
-   foreach(var a in entries){string target=Advanced.CommandExe(a.Command);if(target==""&&Advanced.LocalPath(a.Command))target=a.Command;using(var bitmap=Presentation.AppIcon(new AppEntry{DisplayIcon=target}))startupIcons.Images.Add(bitmap);var row=new ListViewItem(new[]{a.Name,Core.L.T(a.State),a.Command,Core.L.T(a.Source)}){Tag=a,ImageIndex=index,ToolTipText=a.Command+"\r\n"+Core.L.T(a.Source)};Theme.StripeRow(row,index++);autorunList.Items.Add(row);}
+   foreach(var a in entries){
+    var i=a.Insight??new Startup.StartupInsight();string target=i.Target!=""?i.Target:Advanced.CommandExe(a.Command);if(target==""&&Advanced.LocalPath(a.Command))target=a.Command;
+    using(var bitmap=Presentation.AppIcon(new AppEntry{DisplayIcon=target}))startupIcons.Images.Add(bitmap);
+    string windows=a.Item==null?"":i.Approval.Enabled?Core.L.T("Đang bật"):i.Approval.DisabledAt.HasValue?Core.L.F("Đã tắt {0}",i.Approval.DisabledAt.Value.ToString("dd/MM/yyyy")):Core.L.T("Đã tắt");
+    string impact=a.Item==null?"":Core.L.T(Startup.StartupRating.ImpactLabel(i.Impact)),signer=i.TargetExists?Core.L.T(i.Signer):"",size=i.Bytes>=0?Presentation.SizeLabel(i.Bytes):"";
+    string tip=a.Command+"\r\n"+Core.L.T(a.Source)+(i.Target==""?"":"\r\n"+Core.L.T("Đích: ")+i.Target)+(i.Flags.Count==0?"":"\r\n"+Core.L.T("Cảnh báo: ")+String.Join("; ",i.Flags.Select(Core.L.T)));
+    var row=new ListViewItem(new[]{a.Name,Core.L.T(a.State),windows,impact,signer,size,a.Command,Core.L.T(a.Source)}){Tag=a,ImageIndex=index,ToolTipText=tip};
+    if(i.Broken||i.Flags.Count>0)row.ForeColor=Theme.Warning;else if(!i.Approval.Enabled)row.ForeColor=Theme.Muted;
+    Theme.StripeRow(row,index++);autorunList.Items.Add(row);
+   }
    autorunList.EndUpdate();
    if(entries.Count==0)Theme.SetOverlay(autorunOverlay,"Không tìm thấy mục Run/RunOnce hoặc shortcut Startup.\r\nMục toàn máy có thể cần Run as administrator với cùng tài khoản Windows.",NoteKind.Info);
    else Theme.SetOverlay(autorunOverlay,null,NoteKind.Info);
   }
-  async Task LoadAutoruns(){Log(Core.L.T("Đang đọc mục khởi động…"));var entries=await Task.Run(()=>Advanced.Autoruns());ShowAutoruns(entries);Log(Core.L.F("Đã đọc {0} mục khởi động và bản đã tắt. Chưa gồm service/driver/tác vụ lịch.",entries.Count));}
+  static List<AutorunEntry> AnnotatedAutoruns(){var entries=Advanced.Autoruns();Startup.StartupInspector.Annotate(entries);return entries;}
+  async Task LoadAutoruns(){
+   Log(Core.L.T("Đang đọc mục khởi động…"));var entries=await Task.Run(()=>AnnotatedAutoruns());ShowAutoruns(entries);
+   var live=entries.Where(a=>a.Item!=null&&a.Insight!=null).ToList();
+   Log(Core.L.F("Đã đọc {0} mục khởi động: {1} đang chạy khi đăng nhập, {2} Windows đã tắt, {3} đích không tồn tại. Chưa gồm service/driver/tác vụ lịch.",entries.Count,live.Count(a=>a.Insight.RunsAtLogon),live.Count(a=>!a.Insight.Approval.Enabled),live.Count(a=>a.Insight.Broken)));
+  }
   async Task DisableAutorun(){var a=CurrentAutorun();if(a.Item==null)throw new IOException(Core.L.T("Mục này đã nằm trong kho; dùng Bật lại từ kho."));if(!Confirm(Core.L.F("Tắt mục khởi động này và lưu bản khôi phục?\r\n\r\n{0}\r\n{1}\r\n\r\nKhông dừng ứng dụng đang chạy. Thay đổi áp dụng cho lần đăng nhập sau.",a.Name,a.Command)))return;await Task.Run(()=>Advanced.Store(a.Item,true));await LoadAutoruns();LoadBackups();Log(Core.L.T("Đã tắt và sao lưu: ")+a.Name);}
   async Task EnableAutorun(){var a=CurrentAutorun();if(a.Saved==null)throw new IOException(Core.L.T("Mục này vẫn có đăng ký. Nếu bị Windows tắt, hãy dùng Startup của Windows."));if(!Confirm(Core.L.F("Khôi phục mục khởi động {0}?\r\nKhông ghi đè mục đã tồn tại. Windows vẫn có thể chặn theo cài đặt Startup riêng.",a.Name)))return;await Task.Run(()=>Engine.Restore(a.Saved));await LoadAutoruns();LoadBackups();Log(Core.L.T("Đã khôi phục đăng ký khởi động: ")+a.Name);}
-  void ExportAutoruns(){string p=SavePath("TweekPro-autoruns.csv");if(p==null)return;var lines=new List<string>{"Name,State,Command,Location"};lines.AddRange(autorunList.Items.Cast<ListViewItem>().Select(i=>(AutorunEntry)i.Tag).Select(a=>String.Join(",",new[]{a.Name,a.State,a.Command,a.Source}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new System.Text.UTF8Encoding(true));Log(Core.L.T("Đã xuất mục khởi động."));}
+  void ExportAutoruns(){string p=SavePath("TweekPro-autoruns.csv");if(p==null)return;var lines=new List<string>{"Name,State,WindowsEnabled,Impact,Signer,Bytes,Target,Flags,Command,Location"};lines.AddRange(autorunList.Items.Cast<ListViewItem>().Select(i=>(AutorunEntry)i.Tag).Select(a=>{var s=a.Insight??new Startup.StartupInsight();return String.Join(",",new[]{a.Name,a.State,a.Item==null?"":s.Approval.Enabled?"yes":"no",a.Item==null?"":s.Impact.ToString(),s.Signer,s.Bytes<0?"":s.Bytes.ToString(),s.Target,String.Join("; ",s.Flags),a.Command,a.Source}.Select(Engine.Csv));}));File.WriteAllLines(p,lines,new System.Text.UTF8Encoding(true));Log(Core.L.T("Đã xuất mục khởi động."));}
   async Task DeepHistory(){
    if(history.Count==0)throw new IOException(Core.L.T("Chọn ứng dụng ở tab Ứng dụng rồi Quét mục đang xem để ghi nhận trước; sau đó dùng Quét siêu sâu."));
    await ScanDeepEntries(history.ToArray(),false);
@@ -68,6 +93,6 @@ namespace TweekPro {
    }catch(OperationCanceledException){PresentCandidates(all);Log(Core.L.T("Đã dừng quét. Giữ kết quả các ứng dụng đã quét xong; ứng dụng đang quét chưa được cộng vào."));}
    finally{cancelScan.Visible=false;scanCancellation.Dispose();scanCancellation=null;}
   }
-  public void PreviewAdvanced(string mode){if(mode=="autorun"){ShowAutoruns(Advanced.Autoruns());tabs.SelectedTab=autorunTab;}else if(mode=="junk")tabs.SelectedTab=junkTab;else if(mode=="network")PreviewNetwork();else if(mode=="services")PreviewServices();else if(mode=="ai")PreviewAi();else if(mode=="health")PreviewHealth();else if(mode=="store")PreviewStoreApps();else tabs.SelectedTab=toolsTab;}
+  public void PreviewAdvanced(string mode){if(mode=="autorun"){ShowAutoruns(AnnotatedAutoruns());tabs.SelectedTab=autorunTab;}else if(mode=="junk")tabs.SelectedTab=junkTab;else if(mode=="network")PreviewNetwork();else if(mode=="services")PreviewServices();else if(mode=="ai")PreviewAi();else if(mode=="health")PreviewHealth();else if(mode=="store")PreviewStoreApps();else tabs.SelectedTab=toolsTab;}
  }
 }

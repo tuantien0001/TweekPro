@@ -23,7 +23,7 @@ namespace TweekPro {
   public long Bytes=-1; public int Files; public bool Partial; public string Detail="";
  }
  public class AutorunEntry {
-  public string Name,Command,Source,Publisher,State; public Candidate Item; public Backup Saved;
+  public string Name,Command,Source,Publisher,State; public Candidate Item; public Backup Saved; public Startup.StartupInsight Insight;
  }
  public static class Advanced {
   public const string Run=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
@@ -314,13 +314,44 @@ namespace TweekPro {
    return fp;
   }
  }
- public class WindowsTool {public string Name,File,Arguments,Description;public bool Admin;public bool Available{get{return File.StartsWith("ms-settings:")||System.IO.File.Exists(File);}}}
+ public class WindowsTool {
+  public string Name,File,Arguments,Description;public bool Admin;
+  public bool Available{get{return File.StartsWith("ms-settings:")||System.IO.File.Exists(File);}}
+  /// <summary>Best icon source: .msc/.cpl quoted in Arguments (mmc host), else File, else SystemSettings/shell32 for ms-settings: URIs. Cmd wrappers keep cmd.exe like Revo.</summary>
+  public string IconPath{get{
+   string nested=QuotedPath(Arguments);
+   if(nested!=""&&System.IO.File.Exists(nested)){
+    string ext=Path.GetExtension(nested);
+    if(ext.Equals(".msc",StringComparison.OrdinalIgnoreCase)||ext.Equals(".cpl",StringComparison.OrdinalIgnoreCase))return nested;
+   }
+   if(File.StartsWith("ms-settings:",StringComparison.OrdinalIgnoreCase)){
+    string settings=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),"ImmersiveControlPanel","SystemSettings.exe");
+    if(System.IO.File.Exists(settings))return settings;
+    string shell=Path.Combine(Environment.SystemDirectory,"shell32.dll");return System.IO.File.Exists(shell)?shell+",15":"";
+   }
+   return File;
+  }}
+  /// <summary>Full launch string shown in the Tools list (Revo-style command-line column).</summary>
+  public string CommandLine{get{return File.StartsWith("ms-settings:",StringComparison.OrdinalIgnoreCase)?File:(String.IsNullOrEmpty(Arguments)?File:File+" "+Arguments);}}
+  static string QuotedPath(string args){
+   if(String.IsNullOrWhiteSpace(args))return "";
+   var m=System.Text.RegularExpressions.Regex.Match(args,@"[""']([A-Za-z]:\\[^""']+\.(?:msc|cpl|exe|dll))[""']",System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+   if(m.Success)return m.Groups[1].Value;
+   m=System.Text.RegularExpressions.Regex.Match(args,@"([A-Za-z]:\\[^\s""']+\.(?:msc|cpl|exe))",System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+   return m.Success?m.Groups[1].Value:"";
+  }
+ }
  public static class WindowsTools {
+  /// <summary>Native system icon for a catalog tool, sized for the Tools ImageList.</summary>
+  public static System.Drawing.Bitmap Icon(WindowsTool tool,int size){return Presentation.ShellIcon(tool==null?"":tool.IconPath,size);}
   public static List<WindowsTool> Catalog(){
    string sys=Environment.SystemDirectory;var list=new List<WindowsTool>();
    Action<string,string,string,string,bool> add=(n,f,a,d,u)=>list.Add(new WindowsTool{Name=n,File=Path.Combine(sys,f),Arguments=a,Description=d,Admin=u});
+   Action<string,string,string> cpl=(n,f,d)=>{string p=Path.Combine(sys,f);if(File.Exists(p))list.Add(new WindowsTool{Name=n,File=p,Description=d});};
    add("System Restore","rstrui.exe","","Mở trình khôi phục hệ thống; bạn chọn điểm khôi phục trong Windows.",false);
-   add("System Properties","SystemPropertiesAdvanced.exe","","Thông số hệ thống và biến môi trường.",false);
+   cpl("Network Connections","ncpa.cpl","Kết nối mạng và adapter.");
+   cpl("Security Center","wscui.cpl","Trung tâm bảo mật / trạng thái bảo vệ Windows.");
+   cpl("System Properties","sysdm.cpl","Thuộc tính hệ thống, tên máy và điểm khôi phục.");
    add("System Information","msinfo32.exe","","Thông tin phần cứng và phần mềm.",false);
    add("Task Manager","Taskmgr.exe","","Tiến trình, hiệu năng và ứng dụng khởi động.",false);
    foreach(var item in new[]{new[]{"Services","services.msc","Quản lý dịch vụ."},new[]{"Task Scheduler","taskschd.msc","Quản lý tác vụ theo lịch."},new[]{"Device Manager","devmgmt.msc","Quản lý thiết bị và driver."},new[]{"Event Viewer","eventvwr.msc","Xem nhật ký Windows."},new[]{"Disk Management","diskmgmt.msc","Quản lý phân vùng và ổ đĩa."},new[]{"Shared Folders","fsmgmt.msc","Quản lý thư mục chia sẻ."},new[]{"Group Policy","gpedit.msc","Chính sách nhóm; có thể không có trên Windows Home."}}){
@@ -331,7 +362,11 @@ namespace TweekPro {
    add("Optimize Drives","dfrgui.exe","","Mở công cụ tối ưu ổ đĩa.",false);
    add("Resource Monitor","resmon.exe","","Xem tài nguyên CPU, RAM, đĩa và mạng.",false);
    add("On-Screen Keyboard","osk.exe","","Bàn phím trên màn hình.",false);
+   add("Windows Backup","sdclt.exe","","Sao lưu và khôi phục Windows.",false);
+   if(File.Exists(Path.Combine(sys,"mrt.exe")))add("Malicious Software Removal Tool","mrt.exe","","Công cụ gỡ phần mềm độc hại của Microsoft.",true);
    add("Network Information","cmd.exe","/k \"\""+Path.Combine(sys,"ipconfig.exe")+"\" /all\"","Hiển thị cấu hình mạng; không thay đổi mạng.",false);
+   add("TCP/IP Netstat","cmd.exe","/k \"\""+Path.Combine(sys,"netstat.exe")+"\" -a -b\"","Liệt kê kết nối TCP/IP và tiến trình sở hữu.",false);
+   add("Check Disk","cmd.exe","/k \"\""+Path.Combine(sys,"chkdsk.exe")+"\"\"","Kiểm tra ổ đĩa; sửa lỗi cần quyền quản trị và có thể yêu cầu khởi động lại.",true);
    add("System File Checker","cmd.exe","/k \"\""+Path.Combine(sys,"sfc.exe")+"\" /scannow\"","Kiểm tra và sửa file hệ thống; cần quyền quản trị.",true);
    list.Add(new WindowsTool{Name="Windows Security",File="ms-settings:windowsdefender",Description="Mở cài đặt bảo mật Windows."});
    list.Add(new WindowsTool{Name="Startup Apps",File="ms-settings:startupapps",Description="Xem trạng thái bật/tắt khởi động do Windows quản lý."});

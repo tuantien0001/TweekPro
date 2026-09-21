@@ -57,6 +57,8 @@ namespace TweekPro.Health {
    auto.AutorunEntries=9;Assert(HealthCheck.Evaluate(auto).Findings[4].Severity==HealthSeverity.Low,"9 autoruns low");
    auto.AutorunEntries=16;Assert(HealthCheck.Evaluate(auto).Findings[4].Severity==HealthSeverity.Medium,"16 autoruns medium");
    auto.AutorunEntries=26;Assert(HealthCheck.Evaluate(auto).Findings[4].Severity==HealthSeverity.High,"26 autoruns high");
+   auto.AutorunEntries=3;auto.AutorunBroken=1;var broken=HealthCheck.Evaluate(auto).Findings[4];Assert(broken.Severity==HealthSeverity.Low&&broken.Detail.Contains("1"),"broken autorun lifts good to low");
+   auto.AutorunEntries=16;var brokenMedium=HealthCheck.Evaluate(auto).Findings[4];Assert(brokenMedium.Severity==HealthSeverity.Medium,"broken autorun never lowers a worse severity");
 
    // Disk: 20% good, 10% low, 5% medium, else high; missing total means unmeasured.
    var disk=Clean();disk.DiskFreeBytes=50*HealthCheck.GB;Assert(HealthCheck.Evaluate(disk).Findings[5].Severity==HealthSeverity.Low,"10% free low");

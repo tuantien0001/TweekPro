@@ -71,6 +71,7 @@ namespace TweekPro {
     Store.WindowsAppsTests.Run();
     Pup.PupTests.Run();
     Stale.StaleTests.Run();
+    Startup.StartupTests.Run();
     Update.UpdateTests.Run();
 
     // Safety boundary: rules cannot reach user documents, the data folder or a whole AppData root.
