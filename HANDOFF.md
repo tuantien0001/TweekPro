@@ -1,5 +1,7 @@
 # Tweek Pro – handoff for the next agent (Codex or any other)
 
+For the latest active task and Cursor/Codex transfer, read `WORKSTATE.md` first. The rest of this file is architecture and recovery history.
+
 Last updated: 2026-09-21, branch `cursor/integration-all-features-e772` (PR #7), commit after `54e9f8a`.
 Local working copy on the owner's PC: `C:\Users\ADMIN\TweekPro`. Refresh it with `powershell -ExecutionPolicy Bypass -File .\get-latest.ps1 -Run` from an elevated PowerShell.
 

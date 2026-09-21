@@ -2,7 +2,7 @@
 
 Tweek Pro 0.7 is a .NET Framework 4.8 WinForms application (C# 7.3, SDK-style `TweekPro.csproj`) that manages Windows: uninstall + leftovers, junk cleaner, duplicates, empty folders, disk analyzer, network view, health check, Windows (Appx) apps, recovery vault. The UI language is Vietnamese by default with an English dictionary.
 
-Read `HANDOFF.md` first for the current state, roadmap and Windows-only verification checklist.
+Read `WORKSTATE.md` for the latest task checkpoint, then `HANDOFF.md` for architecture/history and `README.md` for product behavior. Verify notes against the actual Git state; notes are not proof that a push or test succeeded.
 
 ## Build and test
 
@@ -24,3 +24,13 @@ Read `HANDOFF.md` first for the current state, roadmap and Windows-only verifica
 ## Git
 
 - Work on `cursor/integration-all-features-e772` (PR #7 collects everything; PRs #1–#6 are its ancestors). Small logical commits with descriptive messages; never force-push.
+
+## Continuity between Cursor and Codex
+
+- Use the owner's existing checkout `C:\Users\ADMIN\TweekPro` when working locally, on `cursor/integration-all-features-e772`. Only one agent may write to this checkout at a time. Do not infer that a session stopped from an old note alone; the owner controls handoff.
+- At task start, inspect branch, status and latest commits. Fetch the remote and compare before making changes. Fast-forward only when the working tree is clean and it is safe; preserve uncommitted work, and never reset/clean/stash it away automatically. A dirty tree may be the previous agent's unfinished work.
+- Update `WORKSTATE.md` at the start of substantive work, after meaningful milestones, before long verification, and before handing off. Record the user's objective, completed work, pending files/steps, exact test results, blockers, and the next concrete action. Keep it short; replace stale status rather than appending an endless diary.
+- Commit coherent, validated changes and push them to the existing development branch as part of the owner's established GitHub workflow. Verify remote commit identity before saying work is backed up. Do not wait until the very end of a long task to checkpoint. Do not force-push, merge main, create a release, or include secrets merely to hand off.
+- If work is incomplete, preserve it and label the checkpoint clearly as incomplete, including failing tests. Local uncommitted files can be resumed in the same checkout; they are not a GitHub backup. For a remote handoff, use a clearly identified work-in-progress branch if needed rather than knowingly breaking the integration branch, and tell the next agent the exact branch and base.
+- Treat repository files as the shared memory. Do not assume access to the other assistant's chat, cloud VM, credentials, model configuration or unsaved buffers. Do not rely on a guaranteed warning before a usage limit; a sudden interruption may occur before the next checkpoint.
+- On handoff, finish or stop pending commands, report any still-running process, save files, update state, and report commit/branch/push status. Once handed off, do not keep editing the shared checkout until the owner returns the task.
