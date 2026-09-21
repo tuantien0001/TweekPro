@@ -23,6 +23,9 @@ namespace TweekPro.Network {
      using(var pen=new Pen(PacketIdle,1.6f)){int d=Math.Min(r.Width,r.Height)-4;g.DrawEllipse(pen,r.X+2,r.Y+2,d,d);}
      using(var b=new SolidBrush(PacketIdle))g.FillEllipse(b,r.X+r.Width/2-2,r.Y+r.Height/2-2,4,4);
      break;
+    case "kill":
+     using(var pen=new Pen(Color.FromArgb(220,38,38),Math.Max(1.8f,r.Width/8f)){StartCap=LineCap.Round,EndCap=LineCap.Round}){int inset=Math.Max(3,r.Width/4);g.DrawLine(pen,r.X+inset,r.Y+inset,r.Right-inset,r.Bottom-inset);g.DrawLine(pen,r.Right-inset,r.Y+inset,r.X+inset,r.Bottom-inset);}
+     break;
     default:
      using(var b=new SolidBrush(PacketIdle))g.FillEllipse(b,r.X+r.Width/2-3,r.Y+r.Height/2-3,6,6);
      break;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace TweekPro {
   TextBox netSearch=new TextBox();NumericUpDown netInterval=new NumericUpDown();CheckBox netResolve=new CheckBox(),netHideLoopback=new CheckBox();
   Button netPause,netBandwidth,netShowAll;Timer netTimer=new Timer();EtwNetworkSession etw;ImageList netIcons=new ImageList(),netAppIcons=new ImageList();PacketFlowStrip netFlow;SplitContainer netSplit;
   bool netPaused,netRefreshing,netAutoBandwidthTried;List<ConnectionInfo> netRows=new List<ConnectionInfo>();Dictionary<int,TrafficSample> netTraffic=new Dictionary<int,TrafficSample>();
-  HashSet<int> netSelectedPids=new HashSet<int>();double netMaxRate=1;
+  HashSet<int> netSelectedPids=new HashSet<int>();double netMaxRate=1;ContextMenuStrip netMenu=new ContextMenuStrip();
   const int NetColApp=0,NetColDirection=1,NetColUp=2,NetColDown=3;
 
   /// <summary>Builds the read-only Network tab: applications with live send/receive activity on top, their connections below, ETW bandwidth when elevated.</summary>
@@ -27,6 +28,8 @@ namespace TweekPro {
    netApps.DrawSubItem+=DrawNetworkAppCell;
    netApps.SelectedIndexChanged+=(s,e)=>{netSelectedPids=new HashSet<int>(netApps.SelectedItems.Cast<ListViewItem>().Select(i=>((ProcessNetworkSummary)i.Tag).Pid));RenderNetworkConnections();};
    netApps.DoubleClick+=(s,e)=>ShowApplicationDetails();
+   netMenu.Opening+=(s,e)=>{e.Cancel=!BuildNetworkMenu();};
+   netApps.ContextMenuStrip=netMenu;netList.ContextMenuStrip=netMenu;
    // ImageList copies bitmaps only once its handle exists; create the handles first so the source bitmaps can be disposed safely.
    netIcons.ColorDepth=ColorDepth.Depth32Bit;netIcons.ImageSize=new Size(16,16);var iconsHandle=netIcons.Handle;
    foreach(string k in new[]{"out","in","both","listen","idle"})using(var bmp=NetworkGlyphs.Icon(k,16))netIcons.Images.Add(k,bmp);
@@ -237,6 +240,62 @@ namespace TweekPro {
    netFilterLabel.Text=Core.L.F("Kết nối của: {0}",label);netShowAll.Visible=true;
   }
 
+  /// <summary>PID under the context menu: the selected application row, or the process of the selected connection row.</summary>
+  int NetworkMenuPid(){
+   var source=netMenu.SourceControl;
+   if(source==netList&&netList.SelectedItems.Count>0)return ((ConnectionInfo)netList.SelectedItems[0].Tag).Pid;
+   if(netApps.SelectedItems.Count>0)return ((ProcessNetworkSummary)netApps.SelectedItems[0].Tag).Pid;
+   return -1;
+  }
+
+  /// <summary>Fills the right-click menu for the process under the cursor: end process, stop/disable hosted services, open folder, details.</summary>
+  bool BuildNetworkMenu(){
+   netMenu.Items.Clear();
+   int pid=NetworkMenuPid();if(pid<0)return false;
+   var id=ProcessResolver.Resolve(pid);
+   string blocked=ProcessControl.TerminateBlockReason(pid,id.Name);
+   var kill=new ToolStripMenuItem(Core.L.F("Kết thúc tiến trình {0} (PID {1})",id.Display,pid)){Enabled=blocked==null,ToolTipText=blocked,Image=NetworkGlyphs.Icon("kill",16)};
+   if(blocked!=null)kill.Text+="  — "+blocked;
+   kill.Click+=async(s,e)=>await Guard(async()=>{
+    if(!Confirm(Core.L.F("Kết thúc tiến trình {0} (PID {1})?\r\nỨng dụng sẽ đóng ngay và dữ liệu chưa lưu có thể mất. Nếu đây là dịch vụ, Windows có thể tự chạy lại nó — dùng \"Dừng và vô hiệu hóa\" để ngăn.",id.Display,pid)))return;
+    await Task.Run(()=>ProcessControl.Terminate(pid,id.Name));
+    Log(Core.L.F("Mạng: đã kết thúc {0} (PID {1}).",id.Display,pid));
+    await RefreshNetwork(false);
+   });
+   netMenu.Items.Add(kill);
+   var services=ProcessControl.ServicesOf(pid);
+   if(services.Count>0){
+    netMenu.Items.Add(new ToolStripSeparator());
+    var header=new ToolStripMenuItem(Core.L.F("Dịch vụ Windows trong tiến trình này ({0})",services.Count)){Enabled=false};netMenu.Items.Add(header);
+    foreach(var svc in services.Take(12)){
+     var service=svc;bool core=ProcessControl.IsCoreService(service.Name);
+     string label=service.DisplayName==""?service.Name:service.DisplayName+" ("+service.Name+")";
+     var stop=new ToolStripMenuItem(Core.L.F("Dừng dịch vụ: {0}",label)+(core?"  — "+Core.L.T("dịch vụ cốt lõi"):"")){Enabled=!core};
+     stop.Click+=async(s,e)=>await Guard(async()=>{
+      if(!Confirm(Core.L.F("Dừng dịch vụ {0}?\r\nDịch vụ sẽ chạy lại theo kiểu khởi động hiện tại ({1}) ở lần khởi động máy sau.",label,service.StartMode)))return;
+      await Task.Run(()=>ProcessControl.StopService(service,false));
+      Log(Core.L.F("Mạng: đã dừng dịch vụ {0}.",label));await RefreshNetwork(false);
+     });
+     var disable=new ToolStripMenuItem(Core.L.F("Dừng và vô hiệu hóa: {0}",label)+(core?"  — "+Core.L.T("dịch vụ cốt lõi"):"")){Enabled=!core};
+     disable.Click+=async(s,e)=>await Guard(async()=>{
+      if(!Confirm(Core.L.F("Dừng và vô hiệu hóa dịch vụ {0}?\r\nDịch vụ không tự chạy lại nữa. Kiểu khởi động cũ ({1}) được lưu vào Kho khôi phục để bật lại bất kỳ lúc nào.",label,service.StartMode)))return;
+      await Task.Run(()=>ProcessControl.StopService(service,true));
+      Log(Core.L.F("Mạng: đã dừng và vô hiệu hóa dịch vụ {0}; bật lại trong Kho khôi phục.",label));LoadBackups();await RefreshNetwork(false);
+     });
+     netMenu.Items.Add(stop);netMenu.Items.Add(disable);
+    }
+   }
+   netMenu.Items.Add(new ToolStripSeparator());
+   var open=new ToolStripMenuItem(Core.L.T("Mở thư mục chứa tệp")){Enabled=id.Path!=""&&File.Exists(id.Path)};
+   open.Click+=(s,e)=>{try{Process.Start(new ProcessStartInfo("explorer.exe","/select,\""+id.Path+"\""){UseShellExecute=true});}catch(Exception error){Log("LỖI: "+error.Message);}};
+   var copy=new ToolStripMenuItem(Core.L.T("Sao chép đường dẫn")){Enabled=id.Path!=""};
+   copy.Click+=(s,e)=>{try{Clipboard.SetText(id.Path);}catch(Exception){}};
+   var details=new ToolStripMenuItem(Core.L.T("Chi tiết ứng dụng"));
+   details.Click+=(s,e)=>{if(netMenu.SourceControl==netList)ShowConnectionDetails();else ShowApplicationDetails();};
+   netMenu.Items.Add(open);netMenu.Items.Add(copy);netMenu.Items.Add(details);
+   return true;
+  }
+
   /// <summary>Shows the per-process rollup for the selected application.</summary>
   void ShowApplicationDetails(){
    if(netApps.SelectedItems.Count==0)return;var s=(ProcessNetworkSummary)netApps.SelectedItems[0].Tag;var id=ProcessResolver.Resolve(s.Pid);
@@ -275,6 +334,7 @@ namespace TweekPro {
     new ProcessIdentity{Pid=91006,Name="steam.exe",Path=@"C:\Program Files (x86)\Steam\steam.exe",Publisher="Valve Corp."},
     new ProcessIdentity{Pid=91007,Name="mysqld.exe",Path=@"C:\Program Files\MySQL\bin\mysqld.exe",Publisher=""}};
    foreach(var a in apps)ProcessResolver.Seed(a);
+   ProcessControl.ServiceProvider=pid=>pid==91004?new List<HostedService>{new HostedService{Pid=pid,Name="RpcSs",DisplayName="Remote Procedure Call (RPC)",State="Running",StartMode="Auto"},new HostedService{Pid=pid,Name="Spooler",DisplayName="Print Spooler",State="Running",StartMode="Auto"},new HostedService{Pid=pid,Name="WSearch",DisplayName="Windows Search",State="Running",StartMode="Auto"}}:pid==91007?new List<HostedService>{new HostedService{Pid=pid,Name="MySQL80",DisplayName="MySQL80",State="Running",StartMode="Auto",PathName=@"C:\Program Files\MySQL\bin\mysqld.exe"}}:new List<HostedService>();
    Func<int,string,string,int,int,string,ConnectionInfo> tcp=(pid,local,remote,lp,rp,state)=>new ConnectionInfo{Protocol="TCP",Pid=pid,LocalAddress=System.Net.IPAddress.Parse(local),LocalPort=lp,RemoteAddress=remote==null?null:System.Net.IPAddress.Parse(remote),RemotePort=rp,State=state};
    netRows=new List<ConnectionInfo>{
     tcp(91001,"192.168.1.20","142.250.66.100",52011,443,"Đã kết nối"),tcp(91001,"192.168.1.20","104.18.32.7",52012,443,"Đã kết nối"),tcp(91001,"192.168.1.20","151.101.1.69",52013,443,"Đã kết nối"),

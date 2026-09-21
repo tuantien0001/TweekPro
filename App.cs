@@ -282,7 +282,7 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary+"\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng.","Kết quả dọn",MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
   static string StateLabel(Backup b){return Core.L.T(b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":b.State=="PendingReboot"?"Hẹn xóa khi khởi động lại":"Cần kiểm tra");}
-  static string KindLabel(Backup b){return b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Junk"?"Rác":b.Kind=="Duplicate"?"Bản trùng":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
+  static string KindLabel(Backup b){return b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind=="Junk"?"Rác":b.Kind=="Duplicate"?"Bản trùng":b.Kind=="Folder"?"Thư mục":b.Kind=="File"?"Tệp":b.Kind=="RegistryValue"?"Giá trị Registry":b.Kind=="Registry"?"Khóa Registry":b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){

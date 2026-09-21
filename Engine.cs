@@ -271,6 +271,7 @@ namespace TweekPro {
    if(b.Kind=="Junk"){Cleaner.JunkCleaner.Restore(b);return;}
    if(b.Kind=="Duplicate"){Dupes.DuplicateFinder.Restore(b);return;}
    if(b.Kind=="Store"){Store.WindowsApps.Restore(b);return;}
+   if(b.Kind=="Service"){Network.ProcessControl.Restore(b);return;}
    Guid id;if(!Guid.TryParseExact(b.Id,"N",out id))throw new IOException("Mã sao lưu không hợp lệ.");
    string payload=Path.Combine(VaultOf(b),b.Id,b.Kind=="Folder"?"content":"registry.xml");NoLinks(payload,true);
    if(b.Kind=="Folder"){

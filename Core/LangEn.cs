@@ -190,7 +190,22 @@ namespace TweekPro.Core {
    {"Tweek Pro chỉ hiển thị; không chặn hay thay đổi kết nối.","Tweek Pro only displays; it never blocks or changes connections."},{"Chi tiết ứng dụng","Application details"},
    {"Đang lắng nghe","Listening"},{"Đã đóng","Closed"},{"Đang đóng","Closing"},{"SYN đã gửi","SYN sent"},{"SYN đã nhận","SYN received"},
    {"{0} kết nối hiển thị / {1} tổng  •  {2} tiến trình","{0} connections shown / {1} total  •  {2} processes"},{"Đã tạm dừng làm mới","Refresh paused"},{"Làm mới mỗi {0} giây","Refreshing every {0} s"},
-   {"ETW: {0} sự kiện","ETW: {0} events"},{", mất {0}",", {0} lost"},{"Tổng","Total"},{"Băng thông: chưa bật","Bandwidth: off"}
+   {"ETW: {0} sự kiện","ETW: {0} events"},{", mất {0}",", {0} lost"},{"Tổng","Total"},{"Băng thông: chưa bật","Bandwidth: off"},
+   // Network tab: end process / stop service
+   {"Dịch vụ","Service"},{"Chỉ hỗ trợ trên Windows.","Windows only."},{"Tiến trình đã kết thúc.","The process has already exited."},
+   {"Tiến trình cốt lõi của Windows — không thể kết thúc.","Core Windows process — cannot be ended."},{"Đây là Tweek Pro.","This is Tweek Pro itself."},
+   {"svchost.exe chứa nhiều dịch vụ Windows — hãy dừng từng dịch vụ bên trong thay vì kết thúc tiến trình.","svchost.exe hosts several Windows services — stop the individual services instead of ending the process."},
+   {"Không đủ quyền để kết thúc tiến trình này (tiến trình được bảo vệ).","Not allowed to end this process (protected process)."},{"Windows từ chối kết thúc tiến trình này.","Windows refused to end this process."},{"Tiến trình chưa kết thúc sau 8 giây.","The process did not exit within 8 seconds."},
+   {"{0} là dịch vụ cốt lõi của Windows — không dừng.","{0} is a core Windows service — not stopped."},{"Tên dịch vụ không hợp lệ.","Invalid service name."},{"Dịch vụ không cho phép dừng (CanStop=false).","The service does not accept stop requests (CanStop=false)."},
+   {"Đã dừng và vô hiệu hóa; khôi phục = đặt lại kiểu khởi động {0} và chạy lại dịch vụ.","Stopped and disabled; restore = set start mode back to {0} and start the service."},{"Không dừng được dịch vụ {0}: {1}","Could not stop service {0}: {1}"},
+   {"Không phải bản sao lưu dịch vụ.","Not a service backup."},{"Đã đặt lại kiểu khởi động nhưng chưa chạy được dịch vụ: {0}","Start mode restored but the service could not be started: {0}"},
+   {"Kết thúc tiến trình {0} (PID {1})","End process {0} (PID {1})"},{"Kết thúc tiến trình {0} (PID {1})?\r\nỨng dụng sẽ đóng ngay và dữ liệu chưa lưu có thể mất. Nếu đây là dịch vụ, Windows có thể tự chạy lại nó — dùng \"Dừng và vô hiệu hóa\" để ngăn.","End process {0} (PID {1})?\r\nThe application closes immediately and unsaved data may be lost. If it is a service, Windows may restart it — use \"Stop and disable\" to prevent that."},
+   {"Mạng: đã kết thúc {0} (PID {1}).","Network: ended {0} (PID {1})."},{"Dịch vụ Windows trong tiến trình này ({0})","Windows services in this process ({0})"},{"dịch vụ cốt lõi","core service"},
+   {"Dừng dịch vụ: {0}","Stop service: {0}"},{"Dừng và vô hiệu hóa: {0}","Stop and disable: {0}"},
+   {"Dừng dịch vụ {0}?\r\nDịch vụ sẽ chạy lại theo kiểu khởi động hiện tại ({1}) ở lần khởi động máy sau.","Stop service {0}?\r\nIt will start again according to its current start mode ({1}) at the next boot."},
+   {"Dừng và vô hiệu hóa dịch vụ {0}?\r\nDịch vụ không tự chạy lại nữa. Kiểu khởi động cũ ({1}) được lưu vào Kho khôi phục để bật lại bất kỳ lúc nào.","Stop and disable service {0}?\r\nIt will no longer start on its own. The previous start mode ({1}) is saved in the Recovery Vault so you can re-enable it any time."},
+   {"Mạng: đã dừng dịch vụ {0}.","Network: stopped service {0}."},{"Mạng: đã dừng và vô hiệu hóa dịch vụ {0}; bật lại trong Kho khôi phục.","Network: stopped and disabled service {0}; re-enable it from the Recovery Vault."},
+   {"Mở thư mục chứa tệp","Open file location"},{"Sao chép đường dẫn","Copy path"},
   };
  }
 }

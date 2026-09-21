@@ -58,6 +58,7 @@ namespace TweekPro {
     Dupes.DupeTests.Run();
     Analyzer.AnalyzerTests.Run();
     Network.NetworkStatsTests.Run();
+    Network.ProcessControlTests.Run();
     Network.PacketAnimatorTests.Run();
     Cleaner.EmptyFolderTests.Run();
     Health.HealthTests.Run();
