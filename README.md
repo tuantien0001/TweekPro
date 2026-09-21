@@ -87,6 +87,12 @@ Chưa có theo dõi cài đặt, forced uninstall, gỡ ứng dụng Store, qu�
 - `TweekPro-0.7.exe --self-test junk` chạy bằng Mono trên Linux: PASS (xem `test-results.txt`) — phân tích quy tắc JSON, mở rộng đường dẫn, glob, hàng rào an toàn, chọn bản cần xóa theo tuổi, di trú thư mục dữ liệu, `settings.json`, xoay vòng nhật ký, xem trước/dọn/khôi phục rác qua kho, xóa thẳng, bỏ qua tệp đang mở, khóa quy tắc khi tiến trình chạy, xóa vĩnh viễn, liệt kê kho cũ, **tìm tệp trùng lặp** (chọn bản giữ lại, gom theo kích thước + SHA-256, bỏ qua thư mục được bảo vệ, chuyển vào kho/khôi phục/xóa thẳng), **phân tích ổ đĩa** (tổng dung lượng, theo thư mục con và phần mở rộng, thứ tự tệp lớn nhất, bounded top-N), **mạng** (gộp theo tiến trình, phân loại hướng, mô hình animation packet), **thư mục rỗng** (phát hiện nhánh rỗng cao nhất, từ chối thư mục bảo vệ, xóa), **kiểm tra sức khỏe** (ngưỡng từng khu vực, cộng dồn và kẹp điểm, ranh giới hạng, khu vực chưa đo không trừ điểm, tổng dung lượng giải phóng). Chạy headless không cần màn hình.
 - **Chưa chạy trên Windows** trong lần phát hành này: giao diện WinForms, `--self-test` đầy đủ (Registry, deep scan, autorun), bảng kết nối iphlpapi, phiên ETW, khởi động lại với quyền quản trị. Xem `TEST-PLAN.md` trước khi dùng thật; chỉ thử tính năng phá hủy trong máy ảo.
 
+## Bàn giao cho agent khác / cập nhật máy Windows
+
+- `get-latest.ps1`: kéo nhánh mới nhất về `C:\Users\ADMIN\TweekPro` (hoặc clone nếu thư mục trống), build, chạy `--self-test` (khi PowerShell chạy quản trị) và mở app với `-Run`.
+- `HANDOFF.md`: hiện trạng, quy tắc sản phẩm bất biến, checklist kiểm chứng trên Windows thật, lộ trình tính năng tiếp theo.
+- `AGENTS.md`: lệnh build/test và quy ước mã cho agent (Codex, Cursor…) đọc tự động.
+
 ## Mã nguồn và biên dịch
 
 | Tệp/thư mục | Nội dung |
