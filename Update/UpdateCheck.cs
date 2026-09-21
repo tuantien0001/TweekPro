@@ -91,6 +91,12 @@ namespace TweekPro.Update {
    info.UpdateAvailable=IsNewer(info.Latest,info.Current);
   }
 
+  /// <summary>Startup banner rule: a real, newer release that the user has not dismissed with "skip this version".</summary>
+  public static bool ShouldNotify(UpdateInfo info,string skipVersion){
+   if(info==null||!info.UpdateAvailable||!String.IsNullOrEmpty(info.Error)||String.IsNullOrEmpty(info.Latest))return false;
+   return !String.Equals(Normalize(skipVersion),info.Latest,StringComparison.OrdinalIgnoreCase);
+  }
+
   public static string Normalize(string tag){
    if(String.IsNullOrWhiteSpace(tag))return "0";
    string t=tag.Trim();if(t.StartsWith("v",StringComparison.OrdinalIgnoreCase))t=t.Substring(1);

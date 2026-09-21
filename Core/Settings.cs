@@ -22,6 +22,8 @@ namespace TweekPro.Core {
   [DataMember(Name="staleLargeMB")] public int StaleLargeMB=200;
   [DataMember(Name="staleIncludeDesktop")] public bool StaleIncludeDesktop=false;
   [DataMember(Name="logRetentionDays")] public int LogRetentionDays=14;
+  [DataMember(Name="updateAutoCheck")] public bool UpdateAutoCheck=true;
+  [DataMember(Name="updateSkipVersion")] public string UpdateSkipVersion="";
   [DataMember(Name="windowWidth")] public int WindowWidth=0;
   [DataMember(Name="windowHeight")] public int WindowHeight=0;
   [DataMember(Name="language")] public string Language=L.Vietnamese;
@@ -35,7 +37,7 @@ namespace TweekPro.Core {
   public bool AiAllowActions { get { return AiActionMode!=AiActionModes.ReadOnly; } }
 
   /// <summary>DataContract deserialization skips field initializers; members added after 0.7 shipped need their defaults restored for older files.</summary>
-  [OnDeserializing] void Defaults(StreamingContext context){StaleMinAgeDays=30;StaleLargeMB=200;}
+  [OnDeserializing] void Defaults(StreamingContext context){StaleMinAgeDays=30;StaleLargeMB=200;UpdateAutoCheck=true;UpdateSkipVersion="";}
 
   /// <summary>Clamps values that would make the UI unusable if the file was edited by hand.</summary>
   public void Normalize(){
@@ -46,6 +48,7 @@ namespace TweekPro.Core {
    if(StaleMinAgeDays<0)StaleMinAgeDays=0;if(StaleMinAgeDays>3650)StaleMinAgeDays=3650;
    if(StaleLargeMB<0)StaleLargeMB=0;if(StaleLargeMB>1048576)StaleLargeMB=1048576;
    if(LogRetentionDays<1)LogRetentionDays=1;if(LogRetentionDays>365)LogRetentionDays=365;
+   if(UpdateSkipVersion==null)UpdateSkipVersion="";
    Language=L.Normalize(Language);
    AiProvider=AI.AiClient.Normalize(AiProvider);
    if(AiModel==null)AiModel="";if(AiEndpoint==null)AiEndpoint="";if(AiKeyProtected==null)AiKeyProtected="";

@@ -33,7 +33,7 @@ namespace TweekPro {
    healthGauge.Dock=DockStyle.Top;healthGauge.Height=176;
    healthStage=new Label{Dock=DockStyle.Top,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
    var note=Theme.Note("Kiểm tra sức khỏe chỉ đọc: đo tệp rác theo quy tắc, mục còn sót chờ duyệt, thư mục rỗng trong Downloads, bản sao lưu cũ hơn tuổi dọn kho, số mục khởi động, dung lượng trống ổ hệ thống và phần mềm không mong muốn (PUP/bloatware). Không xóa gì; bấm đúp một dòng để mở tab xử lý tương ứng.",NoteKind.Info);
-   tab.Controls.Add(host);tab.Controls.Add(healthStage);tab.Controls.Add(note);tab.Controls.Add(healthGauge);tab.Controls.Add(bar);
+   tab.Controls.Add(host);tab.Controls.Add(healthStage);tab.Controls.Add(note);tab.Controls.Add(healthGauge);tab.Controls.Add(bar);tab.Controls.Add(BuildUpdateBanner());
    Theme.SetOverlay(healthOverlay,"Chưa kiểm tra.\r\nBấm Kiểm tra ngay để chấm điểm máy. Mỗi dòng kết quả chỉ ra tab có thể dọn an toàn.",NoteKind.Info);
   }
 
@@ -116,6 +116,7 @@ namespace TweekPro {
 
   /// <summary>Fills the Overview tab with illustrative numbers for --preview health; no probes run.</summary>
   public void PreviewHealth(){
+   ShowUpdateBanner(new TweekPro.Update.UpdateInfo{UpdateAvailable=true,Latest="0.7.2",Current=Version,PageUrl=TweekPro.Update.UpdateCheck.ReleasesPage});
    var sample=new HealthInputs{JunkBytes=730L*HealthCheck.MB,JunkFiles=4812,JunkLockedRules=1,LeftoverCandidates=3,EmptyFolders=17,EmptyRoot=@"C:\Users\ADMIN\Downloads",VaultBackups=9,VaultBytes=2200L*HealthCheck.MB,VaultStale=4,VaultStaleBytes=640L*HealthCheck.MB,AutorunEntries=12,DiskName="Ổ C:",DiskFreeBytes=38L*HealthCheck.GB,DiskTotalBytes=476L*HealthCheck.GB,PupCount=3,PupHigh=1};
    healthReport=HealthCheck.Evaluate(sample);healthGauge.Report=healthReport;RenderHealth();tabs.SelectedTab=healthTab;
   }

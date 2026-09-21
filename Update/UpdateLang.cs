@@ -6,6 +6,9 @@ namespace TweekPro.Update {
  public static class UpdateLang {
   public static readonly Dictionary<string,string> Table=new Dictionary<string,string>(StringComparer.Ordinal){
    {"Kiểm tra cập nhật","Check for updates"},
+   {"Tải bản mới","Download update"},{"Bỏ qua bản này","Skip this version"},
+   {"Có bản Tweek Pro {0} mới (đang dùng {1}). Tải bộ cài để cập nhật — ứng dụng không tự ghi đè.","Tweek Pro {0} is available (you are running {1}). Download the installer to update — the app never overwrites itself."},
+   {"Đã bỏ qua thông báo cho bản {0}.","Update notice for version {0} dismissed."},
    {"Có cập nhật mới","Update available"},
    {"Đang kiểm tra cập nhật trên GitHub…","Checking GitHub for updates…"},
    {"Không kiểm tra được cập nhật: ","Could not check for updates: "},

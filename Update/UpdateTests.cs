@@ -10,6 +10,20 @@ namespace TweekPro.Update {
    Assert(UpdateCheck.IsNewer("0.8","0.7")&&UpdateCheck.IsNewer("1.0","0.9")&&!UpdateCheck.IsNewer("0.7","0.7")&&!UpdateCheck.IsNewer("0.6","0.7"),"version compare");
    Assert(UpdateCheck.IsNewer("0.7.1","0.7"),"patch newer");
 
+   // Startup banner: only a real newer release, and never the version the user chose to skip.
+   var avail=new UpdateInfo{UpdateAvailable=true,Latest="0.7.1",Current="0.7"};
+   Assert(UpdateCheck.ShouldNotify(avail,"")&&UpdateCheck.ShouldNotify(avail,null)&&UpdateCheck.ShouldNotify(avail,"0.7"),"notify when newer and not skipped");
+   Assert(!UpdateCheck.ShouldNotify(avail,"0.7.1")&&!UpdateCheck.ShouldNotify(avail,"v0.7.1"),"skipped version silences banner");
+   Assert(!UpdateCheck.ShouldNotify(new UpdateInfo{UpdateAvailable=false,Latest="0.7"},""),"no banner when current");
+   Assert(!UpdateCheck.ShouldNotify(new UpdateInfo{UpdateAvailable=true,Latest="0.8",Error="offline"},"")&&!UpdateCheck.ShouldNotify(null,""),"no banner on error/null");
+   string settingsFile=System.IO.Path.Combine(System.IO.Path.GetTempPath(),"tweekpro-update-"+Guid.NewGuid().ToString("N")+".json");
+   try{
+    System.IO.File.WriteAllText(settingsFile,"{\"version\":1,\"purgeDefaultDays\":45}");
+    var legacy=Core.Settings.Load(settingsFile);Assert(legacy.UpdateAutoCheck&&legacy.UpdateSkipVersion=="","old settings default to auto check, nothing skipped");
+    legacy.UpdateAutoCheck=false;legacy.UpdateSkipVersion="0.7.1";legacy.Save(settingsFile);
+    var round=Core.Settings.Load(settingsFile);Assert(!round.UpdateAutoCheck&&round.UpdateSkipVersion=="0.7.1","update settings round-trip");
+   }finally{try{System.IO.File.Delete(settingsFile);}catch(Exception){}}
+
    string json="{\"tag_name\":\"v0.8\",\"name\":\"Tweek Pro 0.8\",\"html_url\":\"https://github.com/tuantien0001/TweekPro/releases/tag/v0.8\",\"body\":\"Notes\",\"assets\":[{\"name\":\"notes.txt\",\"browser_download_url\":\"https://example/notes.txt\"},{\"name\":\"TweekPro-Setup.exe\",\"browser_download_url\":\"https://example/setup.exe\"},{\"name\":\"TweekPro-portable.zip\",\"browser_download_url\":\"https://example/portable.zip\"}]}";
    var release=UpdateCheck.Parse(json);Assert(release!=null&&release.TagName=="v0.8"&&release.Assets.Length==3,"parse release");
    Assert(UpdateCheck.PickAsset(release.Assets)=="https://example/setup.exe","prefer installer exe");
