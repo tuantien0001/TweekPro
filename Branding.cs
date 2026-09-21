@@ -46,56 +46,28 @@ namespace TweekPro {
    }
   }
 
-  /// <summary>Draws the app logo (rounded gradient badge with a white monogram) into the given rectangle.</summary>
+  static readonly Lazy<Bitmap> AppLogo=new Lazy<Bitmap>(()=>{
+   using(var stream=typeof(Branding).Assembly.GetManifestResourceStream("TweekPro.Branding.png"))
+   using(var source=new Bitmap(stream))return new Bitmap(source);
+  });
+
+  /// <summary>Draws the approved T + PC artwork from its embedded PNG resource.</summary>
   public static void DrawLogo(Graphics g,Rectangle r){
-   var saved=g.SmoothingMode;g.SmoothingMode=SmoothingMode.AntiAlias;
-   int radius=Math.Max(4,r.Width/4);
-   using(var path=Rounded(r,radius))
-   using(var fill=new LinearGradientBrush(r,LogoTop,LogoBottom,LinearGradientMode.Vertical)){
-    g.FillPath(fill,path);
-    // A soft top highlight gives the badge a little depth.
-    var highlight=new Rectangle(r.X,r.Y,r.Width,r.Height/2);
-    using(var glossPath=Rounded(highlight,radius))
-    using(var gloss=new SolidBrush(Color.FromArgb(38,255,255,255)))g.FillPath(gloss,glossPath);
-   }
-   // A stylised "T" monogram plus a spark dot, drawn as vector shapes so it scales cleanly.
-   using(var white=new SolidBrush(Color.White)){
-    float unit=r.Width/16f;
-    var bar=new RectangleF(r.X+unit*3.5f,r.Y+unit*4f,unit*9f,unit*2.1f);
-    var stem=new RectangleF(r.X+unit*6.95f,r.Y+unit*4f,unit*2.1f,unit*8f);
-    g.FillRectangle(white,bar);g.FillRectangle(white,stem);
-    using(var spark=new SolidBrush(Color.FromArgb(191,219,254)))
-     g.FillEllipse(spark,r.X+unit*10.5f,r.Y+unit*9.5f,unit*2.4f,unit*2.4f);
-   }
-   g.SmoothingMode=saved;
+   var state=g.Save();
+   try{
+    g.InterpolationMode=InterpolationMode.HighQualityBicubic;
+    int side=Math.Min(r.Width,r.Height);
+    g.DrawImage(AppLogo.Value,new Rectangle(r.X+(r.Width-side)/2,r.Y+(r.Height-side)/2,side,side));
+   }finally{g.Restore(state);}
   }
 
-  /// <summary>Renders the logo into a managed icon of the requested square size for the window and taskbar.</summary>
-  /// <summary>
-  /// Writes a multi-size .ico (16–256 px, PNG-compressed entries as Windows Vista+ expects) drawn from the same logo, for the exe
-  /// resource and the installer. Pure managed code so it runs on every platform.
-  /// </summary>
+  /// <summary>Exports the approved multi-size icon without regenerating the old code-drawn logo.</summary>
   public static void WriteIconFile(string path){
-   int[] sizes={16,24,32,48,64,128,256};
-   var pngs=new List<byte[]>();
-   foreach(int size in sizes){
-    using(var bitmap=new Bitmap(size,size))using(var stream=new MemoryStream()){
-     using(var g=Graphics.FromImage(bitmap)){g.Clear(Color.Transparent);DrawLogo(g,new Rectangle(0,0,size,size));}
-     bitmap.Save(stream,ImageFormat.Png);pngs.Add(stream.ToArray());
-    }
-   }
-   using(var file=new FileStream(path,FileMode.Create,FileAccess.Write))using(var w=new BinaryWriter(file)){
-    w.Write((ushort)0);w.Write((ushort)1);w.Write((ushort)sizes.Length);
-    int offset=6+16*sizes.Length;
-    for(int i=0;i<sizes.Length;i++){
-     byte dim=(byte)(sizes[i]>=256?0:sizes[i]);
-     w.Write(dim);w.Write(dim);w.Write((byte)0);w.Write((byte)0);w.Write((ushort)1);w.Write((ushort)32);w.Write(pngs[i].Length);w.Write(offset);
-     offset+=pngs[i].Length;
-    }
-    foreach(var png in pngs)w.Write(png);
-   }
+   using(var stream=typeof(Branding).Assembly.GetManifestResourceStream("TweekPro.Branding.ico"))
+   using(var file=new FileStream(path,FileMode.Create,FileAccess.Write))stream.CopyTo(file);
   }
 
+  /// <summary>Returns an independently owned icon at the requested Windows display size.</summary>
   public static Icon AppIcon(int size){
    using(var bitmap=new Bitmap(size,size)){
     using(var g=Graphics.FromImage(bitmap)){g.Clear(Color.Transparent);DrawLogo(g,new Rectangle(0,0,size,size));}

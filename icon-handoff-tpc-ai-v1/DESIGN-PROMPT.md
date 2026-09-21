@@ -1,0 +1,9 @@
+# Approved design provenance
+
+Design: sample 2, AI PC Manager.
+
+Generation mode: new image through the built-in ImageGen tool in the earlier design turn. No new AI generation was performed for this handoff; the approved master was copied and resized with Pillow.
+
+## Original prompt
+
+Use case: logo-brand. Asset: one final premium desktop app icon for an AI PC application manager, combining T and PC. Make this an exceptionally clean modern software icon with geometric precision and a memorable silhouette. Icon concept: a compact luminous desktop-monitor outline with a short central stand that subtly forms a capital T. Inside the monitor, three substantial rounded application tiles in an asymmetric dashboard arrangement; one tile has a simple four-point AI sparkle cutout. Integrate a tiny but legible geometric 'PC' monogram as a single small detail at the monitor base; the large overall T/monitor is the primary emblem. Exact letters only T and PC, no other wording. This should feel like a beautifully designed real productivity utility for Windows, focused on organizing applications with intelligence. Avoid merely putting three giant letters next to one another. Sophisticated flat vector-like symbol, minimal two-tone white and electric mint/cyan, restrained cobalt edge lighting. Dark graphite-to-midnight navy rounded-square tile. High contrast, bold forms and deliberate negative space, recognizable at 32 pixels. No busy circuitry, no brain, no robot, no shield, no photorealistic monitor, no gaming aesthetic, no noisy gradients, no metallic texture, no mockup scene, no tiny ornament. Front facing square 1:1, symbol centered with generous inner padding, rounded tile fills 92% of image; genuine transparent alpha outside tile. Produce ONE finished icon, not a sheet or presentation.

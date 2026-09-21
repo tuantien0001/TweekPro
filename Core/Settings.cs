@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
@@ -26,8 +27,9 @@ namespace TweekPro.Core {
   [DataMember(Name="aiEndpoint")] public string AiEndpoint="";
   [DataMember(Name="aiKeyProtected")] public string AiKeyProtected="";
   [DataMember(Name="aiDenyActions")] public bool AiDenyActions=false;
-  /// <summary>Stored inverted so a missing key in an older settings.json keeps the default (allowed, with confirmation).</summary>
-  public bool AiAllowActions { get { return !AiDenyActions; } set { AiDenyActions=!value; } }
+  /// <summary>How the assistant may change the system: "readonly" (never), "confirm" (dialog per action) or "auto" (acts at once; engine safety limits still apply).</summary>
+  [DataMember(Name="aiActionMode")] public string AiActionMode=AiActionModes.Confirm;
+  public bool AiAllowActions { get { return AiActionMode!=AiActionModes.ReadOnly; } }
 
   /// <summary>Clamps values that would make the UI unusable if the file was edited by hand.</summary>
   public void Normalize(){
@@ -37,8 +39,9 @@ namespace TweekPro.Core {
    if(DuplicateMinKB<0)DuplicateMinKB=0;if(DuplicateMinKB>1048576)DuplicateMinKB=1048576;
    if(LogRetentionDays<1)LogRetentionDays=1;if(LogRetentionDays>365)LogRetentionDays=365;
    Language=L.Normalize(Language);
-   AiProvider=(AiProvider??"").ToLowerInvariant()=="openai"?"openai":"anthropic";
+   AiProvider=AI.AiClient.Normalize(AiProvider);
    if(AiModel==null)AiModel="";if(AiEndpoint==null)AiEndpoint="";if(AiKeyProtected==null)AiKeyProtected="";
+   AiActionMode=AiActionModes.Normalize(AiActionMode,AiDenyActions);AiDenyActions=AiActionMode==AiActionModes.ReadOnly;
    if(WindowWidth<0)WindowWidth=0;if(WindowHeight<0)WindowHeight=0;
   }
 
@@ -63,6 +66,20 @@ namespace TweekPro.Core {
     new DataContractJsonSerializer(typeof(Settings)).WriteObject(writer,this);writer.Flush();stream.Flush(true);
    }
    if(File.Exists(path))File.Replace(tmp,path,null);else File.Move(tmp,path);
+  }
+ }
+ /// <summary>Action-mode keys for the AI assistant, shared by settings, agent and UI.</summary>
+ public static class AiActionModes {
+  public const string ReadOnly="readonly", Confirm="confirm", Auto="auto";
+  public static readonly string[] All={ReadOnly,Confirm,Auto};
+  /// <summary>Maps stored text to a known mode; an old "aiDenyActions=true" file becomes read-only, anything unknown requires confirmation.</summary>
+  public static string Normalize(string mode,bool legacyDeny=false){
+   mode=(mode??"").Trim().ToLowerInvariant();
+   if(All.Contains(mode))return mode;
+   return legacyDeny?ReadOnly:Confirm;
+  }
+  public static string Label(string mode){
+   return mode==ReadOnly?L.T("Chỉ đọc — không thay đổi gì"):mode==Confirm?L.T("Hỏi xác nhận trước mỗi thao tác"):L.T("Tự động thực hiện, không hỏi lại");
   }
  }
 }

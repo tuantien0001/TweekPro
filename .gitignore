@@ -21,3 +21,6 @@ Thumbs.db
 
 # Distributables produced by publish.ps1
 dist/
+
+# Original recovery copies; canonical sources are integrated under AI/ and Core/
+/file đang dang dở chưa push/

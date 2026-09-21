@@ -29,7 +29,7 @@ Chạy `TweekPro-0.7.exe` trong thư mục phân phối (cạnh các DLL `Micros
 | Khởi động (Autorun) | Run/RunOnce/shortcut Startup: tắt có sao lưu, bật lại, CSV | Không dừng tiến trình đang chạy |
 | **Mạng** (mới) | Kết nối TCP/UDP theo tiến trình (tên, PID, nhà phát hành chữ ký, endpoint, trạng thái), làm mới 1–30 giây, tạm dừng, tìm kiếm, ẩn loopback, phân giải tên máy (tắt mặc định), CSV; khi có quyền quản trị: **Bật băng thông (ETW)** hiển thị byte gửi/nhận và tốc độ theo tiến trình | Chỉ xem, không chặn, không driver; phiên ETW tên `TweekPro-Network` luôn được dừng khi đóng |
 | **Dịch vụ hệ thống** (mới) | Mọi dịch vụ Windows (WMI) với **giải thích bằng lời thường** từ cơ sở kiến thức ~180 dịch vụ + mẫu tên (trình cập nhật, nâng quyền, anti-cheat, máy chủ CSDL…), huy hiệu màu theo mức an toàn (đỏ = cốt lõi, xanh dương = Windows, vàng = tùy chọn, xanh lá = bên thứ ba), PID/RAM, nhà phát hành theo chữ ký; lọc Đang chạy / Bên thứ ba / Có thể tắt; chuột phải: Dừng, Khởi động, Khởi động lại, **Dừng và vô hiệu hóa (lưu Kho)**, Kết thúc tiến trình, mở thư mục, chi tiết | Dịch vụ cốt lõi bị khóa mọi thao tác dừng; svchost không cho kết thúc tiến trình; vô hiệu hóa lưu kiểu khởi động cũ vào Kho (`Kind=Service`) |
-| **Trợ lý AI** (mới) | Nhập API key **Anthropic (Claude)** hoặc **OpenAI (GPT/Codex)** (mã hóa DPAPI theo tài khoản), chọn model, điểm cuối tùy chỉnh cho máy chủ tương thích; khung chat với câu hỏi nhanh; AI truy vấn máy qua 9 công cụ chỉ đọc (tổng quan, ứng dụng, dịch vụ, mạng, khởi động, kho, xem trước rác…) và điều khiển qua 5 công cụ thay đổi (dừng/khởi động dịch vụ, kết thúc tiến trình, tắt khởi động, gỡ ứng dụng) | Mọi công cụ thay đổi hiện hộp xác nhận từng lần và vẫn qua các giới hạn an toàn của Tweek Pro; có thể tắt hẳn thao tác thay đổi; key chỉ gửi tới điểm cuối đã chọn |
+| **Trợ lý AI** | Claude/OpenAI và Local AI (LM Studio/Ollama); tải danh sách model, chat, quét/dọn phần còn sót qua công cụ | Mặc định hỏi xác nhận; có Chỉ đọc và Tự động do người dùng chọn. Giới hạn bảo vệ luôn giữ nguyên; model không hỗ trợ công cụ chỉ trả lời hướng dẫn |
 | Công cụ (Windows Tools) | 19 lối mở công cụ có sẵn | SFC hỏi xác nhận quyền quản trị |
 | Nhật ký | Nhật ký phiên, nút mở thư mục nhật ký/dữ liệu, lưu cài đặt | Nhật ký xoay vòng theo ngày |
 
@@ -85,8 +85,20 @@ Tab **Thư mục rỗng** quét một thư mục do người dùng chọn và ch
 ## Trợ lý AI: cơ chế
 
 - `AI/AiClient`: Anthropic Messages API (`x-api-key`, `anthropic-version 2023-06-01`, khối `tool_use`/`tool_result`) và OpenAI Chat Completions (`Authorization: Bearer`, `tools[type=function]`, thông điệp `tool`); model mặc định `claude-sonnet-4-5` / `gpt-4.1` (sửa được), `max_completion_tokens` cho họ gpt-5/o*. Transport HTTP tách rời nên toàn bộ dựng/đọc yêu cầu được kiểm thử ngoài mạng.
-- `AI/AiAgent`: vòng lặp hỏi → gọi công cụ → trả kết quả → hỏi tiếp, tối đa 8 vòng; công cụ thay đổi phải qua `IAiHost.ConfirmAction` (hộp thoại) và có thể bị tắt hoàn toàn; lỗi công cụ trả về cho model dưới dạng văn bản thay vì làm hỏng lượt.
+- `AI/AiAgent`: vòng lặp hỏi → gọi công cụ → trả kết quả → hỏi tiếp, tối đa 8 vòng; công cụ thay đổi mặc định qua `IAiHost.ConfirmAction`; chế độ Chỉ đọc chặn chúng, chế độ Tự động thực thi không hỏi lại sau khi người dùng chọn; lỗi công cụ trả về cho model dưới dạng văn bản thay vì làm hỏng lượt.
 - Khóa lưu trong `settings.json` dưới dạng `dpapi:<base64>` (`ProtectedData`, phạm vi người dùng hiện tại, có entropy riêng); ngoài Windows chỉ là `plain:<base64>` và giao diện nói rõ điều đó.
+
+## Local AI: LM Studio / Ollama
+
+1. Mở máy chủ LM Studio hoặc Ollama và nạp/tải một model chat. Tweek Pro kết nối tới máy chủ, không tự cài model.
+2. Trong **Trợ lý AI**, chọn **LM Studio (local)** hoặc **Ollama (local)**. Địa chỉ mặc định lần lượt là `http://localhost:1234/v1/chat/completions` và `http://localhost:11434/v1/chat/completions`.
+3. Bấm **Tải danh sách model**, chọn model rồi **Lưu cấu hình** và **Kiểm tra kết nối**. Không cần API key khi máy chủ không yêu cầu; máy chủ có xác thực vẫn có thể dùng key.
+4. Chọn quyền thao tác: **Chỉ đọc**, **Hỏi xác nhận** (mặc định), hoặc **Tự động**. Chế độ Tự động vẫn từ chối đường dẫn hệ thống, mục chưa rõ quyền sở hữu và thao tác bị engine chặn.
+5. Nếu model từ chối gọi công cụ, Tweek Pro chuyển sang trả lời hướng dẫn và thông báo rõ. Cần model có hỗ trợ tool calling để quản lý ứng dụng.
+
+Dữ liệu gửi tới địa chỉ máy chủ được chọn; chỉ kết nối localhost mới ở trên cùng máy. Có thể dùng địa chỉ LAN cho máy chủ local. Không gửi key của nhà cung cấp trước khi đổi sang nhà cung cấp khác. Mô hình local được chờ tối đa 10 phút mỗi yêu cầu. Kho chỉ khôi phục phần dọn còn sót, **không hoàn tác trình gỡ chính thức**.
+
+Icon T + PC mẫu 2 được nhúng trong exe và dùng cho header/cửa sổ/bộ cài. `--export-icon` xuất đúng file ICO đã duyệt (11 kích thước), không vẽ lại logo cũ. Bản gốc và các kích thước PNG nằm trong `icon-handoff-tpc-ai-v1`.
 
 ## Dữ liệu Tweek Pro
 
@@ -189,6 +201,8 @@ build.ps1 đóng gói AppCare-0.6.exe.
 Ứng dụng có biểu tượng riêng vẽ bằng mã (không dùng icon mặc định của WinForms): một huy hiệu bo góc chuyển sắc xanh với chữ "T" và một chấm sáng, dùng làm icon cửa sổ/thanh tác vụ và logo trên dải tiêu đề đậm. Mỗi tab có một icon vector nhỏ vẽ bằng GDI+ (ứng dụng, kính lúp, thùng rác, chart, khiên, tia sét, quả cầu, bánh răng, tài liệu…) cùng dải gạch chân nhấn màu cho tab đang chọn, giúp người dùng không chuyên nhận diện nhanh. Các tab tiếng Anh được đổi sang nhãn tiếng Việt ngắn gọn ("Khởi động", "Công cụ"). Toàn bộ được vẽ bằng vector nên nét ở mọi mức phóng đại và DPI. Xem `Branding.cs`.
 
 ## Cập nhật 0.7
+
+Khôi phục Local AI từ 7 file đã cứu: LM Studio/Ollama, chọn model, API key tùy chọn, ba chế độ thao tác và công cụ quét/dọn phần còn sót; sửa cấu hình lỗi dùng nhầm endpoint cũ, chặn đường dẫn mơ hồ, model thiếu công cụ chỉ chat. Tích hợp icon T + PC mẫu 2. Build và toàn bộ self-test Windows đã qua; đã thử HTTP/giao diện bằng máy chủ local giả lập, chưa thử suy luận bằng model thật.
 
 Đổi tên thành **Tweek Pro – Trình quản lý Windows**; namespace `TweekPro`, exe `TweekPro-0.7.exe`; thư mục dữ liệu `%LOCALAPPDATA%\TweekPro` với di trú tự động từ `AppCare` và khả năng đọc kho cũ tại chỗ.
 Build chính chuyển sang `TweekPro.csproj` SDK-style (net48, C# 7.3, NuGet); `build.ps1` bọc `dotnet build` và báo rõ khi thiếu SDK.

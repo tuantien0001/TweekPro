@@ -36,33 +36,48 @@ namespace TweekPro.AI {
  /// compatible servers), with tool calling. The HTTP transport is injectable so the request/response code is testable offline.
  /// </summary>
  public class AiClient {
-  public const string Anthropic="anthropic", OpenAI="openai";
+  public const string Anthropic="anthropic", OpenAI="openai", LmStudio="lmstudio", Ollama="ollama";
+  public static readonly string[] Providers={Anthropic,OpenAI,LmStudio,Ollama};
   public const string DefaultAnthropicModel="claude-sonnet-4-5", DefaultOpenAIModel="gpt-4.1";
   public const string AnthropicEndpoint="https://api.anthropic.com/v1/messages", OpenAIEndpoint="https://api.openai.com/v1/chat/completions";
+  public const string LmStudioEndpoint="http://localhost:1234/v1/chat/completions", OllamaEndpoint="http://localhost:11434/v1/chat/completions";
   public string Provider=Anthropic, Model="", ApiKey="", Endpoint="";
   public int MaxTokens=2048;
+  /// <summary>Set after a local server rejected the tool list; the next requests go out without tools so plain chat still works.</summary>
+  public bool ToolsUnsupported;
   /// <summary>Sends a POST and returns the response body; throws IOException with the API's error text on non-2xx.</summary>
   public Func<string,Dictionary<string,string>,string,Task<string>> Transport;
+  /// <summary>Sends a GET and returns the response body (used for /models on local servers).</summary>
+  public Func<string,Dictionary<string,string>,Task<string>> GetTransport;
   static readonly HttpClient Http=CreateHttp();
 
   static HttpClient CreateHttp(){
    ServicePointManager.SecurityProtocol|=SecurityProtocolType.Tls12;
-   var c=new HttpClient{Timeout=TimeSpan.FromSeconds(120)};
+   var c=new HttpClient{Timeout=System.Threading.Timeout.InfiniteTimeSpan};
    c.DefaultRequestHeaders.UserAgent.ParseAdd("TweekPro/0.7");
    return c;
   }
 
-  public AiClient(){Transport=HttpTransport;}
+  public AiClient(){Transport=HttpTransport;GetTransport=HttpGet;}
 
-  public static string DefaultModel(string provider){return provider==OpenAI?DefaultOpenAIModel:DefaultAnthropicModel;}
-  public static string DefaultEndpoint(string provider){return provider==OpenAI?OpenAIEndpoint:AnthropicEndpoint;}
-  public static string ProviderLabel(string provider){return provider==OpenAI?"OpenAI (GPT / Codex)":"Anthropic (Claude)";}
+  /// <summary>Local servers (LM Studio, Ollama) speak the OpenAI wire format, run on this PC and need no API key.</summary>
+  public static bool IsLocal(string provider){return provider==LmStudio||provider==Ollama;}
+  /// <summary>Whether the provider uses the OpenAI Chat Completions format (OpenAI itself and every local server).</summary>
+  public static bool OpenAIWire(string provider){return provider==OpenAI||IsLocal(provider);}
+  public static bool RequiresKey(string provider){return !IsLocal(provider);}
+  public static string Normalize(string provider){provider=(provider??"").Trim().ToLowerInvariant();return Providers.Contains(provider)?provider:Anthropic;}
+  public static string DefaultModel(string provider){return provider==OpenAI?DefaultOpenAIModel:IsLocal(provider)?"":DefaultAnthropicModel;}
+  public static string DefaultEndpoint(string provider){return provider==OpenAI?OpenAIEndpoint:provider==LmStudio?LmStudioEndpoint:provider==Ollama?OllamaEndpoint:AnthropicEndpoint;}
+  public static string ProviderLabel(string provider){return provider==OpenAI?"OpenAI (GPT / Codex)":provider==LmStudio?"LM Studio (local)":provider==Ollama?"Ollama (local)":"Anthropic (Claude)";}
+  /// <summary>Request timeout: local models on consumer hardware can legitimately take minutes per answer.</summary>
+  public static TimeSpan TimeoutFor(string provider){return IsLocal(provider)?TimeSpan.FromMinutes(10):TimeSpan.FromSeconds(120);}
   string EffectiveModel { get { return String.IsNullOrWhiteSpace(Model)?DefaultModel(Provider):Model.Trim(); } }
   string EffectiveEndpoint { get { return String.IsNullOrWhiteSpace(Endpoint)?DefaultEndpoint(Provider):Endpoint.Trim(); } }
 
-  /// <summary>Checks the key format so obvious paste mistakes are caught before a network call.</summary>
+  /// <summary>Checks the key format so obvious paste mistakes are caught before a network call. Local providers accept an empty key.</summary>
   public static string ValidateKey(string provider,string key,bool officialEndpoint=true){
    key=(key??"").Trim();
+   if(IsLocal(provider))return key!=""&&key.Any(ch=>Char.IsWhiteSpace(ch)||ch>126)?Core.L.T("API key chứa khoảng trắng hoặc ký tự lạ — hãy dán lại."):null;
    if(key=="")return Core.L.T("Chưa nhập API key.");
    if(key.Any(ch=>Char.IsWhiteSpace(ch)||ch>126))return Core.L.T("API key chứa khoảng trắng hoặc ký tự lạ — hãy dán lại.");
    if(!officialEndpoint)return null;
@@ -71,28 +86,82 @@ namespace TweekPro.AI {
    return null;
   }
 
-  static async Task<string> HttpTransport(string url,Dictionary<string,string> headers,string body){
-   try{
-    using(var request=new HttpRequestMessage(HttpMethod.Post,url)){
-     request.Content=new StringContent(body,Encoding.UTF8,"application/json");
-     foreach(var h in headers)request.Headers.TryAddWithoutValidation(h.Key,h.Value);
-     using(var response=await Http.SendAsync(request).ConfigureAwait(false)){
-      string text=await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-      if(!response.IsSuccessStatusCode)throw new IOException(ErrorText((int)response.StatusCode,text));
-      return text;
-     }
-    }
-   }catch(HttpRequestException e){throw new IOException(Core.L.T("Không kết nối được tới máy chủ API: ")+(e.InnerException??e).Message,e);}
-   catch(TaskCanceledException e){throw new IOException(Core.L.T("Máy chủ API không trả lời trong 120 giây."),e);}
+  async Task<string> HttpTransport(string url,Dictionary<string,string> headers,string body){
+   using(var request=new HttpRequestMessage(HttpMethod.Post,url)){
+    request.Content=new StringContent(body,Encoding.UTF8,"application/json");
+    return await SendHttp(request,headers).ConfigureAwait(false);
+   }
   }
 
-  /// <summary>Rejects endpoints that would send the key in clear text; localhost is allowed for compatible local servers.</summary>
-  public static string ValidateEndpoint(string endpoint){
+  async Task<string> HttpGet(string url,Dictionary<string,string> headers){
+   using(var request=new HttpRequestMessage(HttpMethod.Get,url))return await SendHttp(request,headers).ConfigureAwait(false);
+  }
+
+  async Task<string> SendHttp(HttpRequestMessage request,Dictionary<string,string> headers){
+   var timeout=TimeoutFor(Provider);
+   try{
+    foreach(var h in headers)request.Headers.TryAddWithoutValidation(h.Key,h.Value);
+    using(var cts=new System.Threading.CancellationTokenSource(timeout))
+    using(var response=await Http.SendAsync(request,cts.Token).ConfigureAwait(false)){
+     string text=await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+     if(!response.IsSuccessStatusCode)throw new IOException(ErrorText((int)response.StatusCode,text));
+     return text;
+    }
+   }catch(HttpRequestException e){throw new IOException((IsLocal(Provider)?Core.L.T("Không kết nối được tới máy chủ LLM cục bộ — hãy mở LM Studio/Ollama và bật Local Server: "):Core.L.T("Không kết nối được tới máy chủ API: "))+(e.InnerException??e).Message,e);}
+   catch(TaskCanceledException e){throw new IOException(Core.L.F("Máy chủ API không trả lời trong {0} giây.",(int)timeout.TotalSeconds),e);}
+  }
+
+  /// <summary>
+  /// Rejects endpoints that would send the key in clear text; localhost is always allowed, and local providers (which send no
+  /// key) may also use plain http on a private LAN address so a model on another machine in the house can be used.
+  /// </summary>
+  public static string ValidateEndpoint(string endpoint,string provider=Anthropic){
    endpoint=(endpoint??"").Trim();if(endpoint=="")return null;
    Uri uri;if(!Uri.TryCreate(endpoint,UriKind.Absolute,out uri))return Core.L.T("Điểm cuối API không phải URL hợp lệ.");
    if(uri.Scheme==Uri.UriSchemeHttps)return null;
-   if(uri.Scheme==Uri.UriSchemeHttp&&(uri.IsLoopback))return null;
-   return Core.L.T("Điểm cuối API phải dùng https:// (http:// chỉ cho localhost) để không lộ khóa.");
+   if(uri.Scheme==Uri.UriSchemeHttp&&(uri.IsLoopback||(IsLocal(provider)&&IsPrivateHost(uri.Host))))return null;
+   return IsLocal(provider)?Core.L.T("Máy chủ LLM cục bộ phải nằm ở localhost hoặc trong mạng nội bộ (10.x, 172.16–31.x, 192.168.x).") :Core.L.T("Điểm cuối API phải dùng https:// (http:// chỉ cho localhost) để không lộ khóa.");
+  }
+
+  /// <summary>RFC 1918 private ranges and .local names count as the home network.</summary>
+  public static bool IsPrivateHost(string host){
+   if(String.IsNullOrEmpty(host))return false;
+   if(host.EndsWith(".local",StringComparison.OrdinalIgnoreCase))return true;
+   IPAddress ip;if(!IPAddress.TryParse(host,out ip)||ip.AddressFamily!=System.Net.Sockets.AddressFamily.InterNetwork)return false;
+   byte[] b=ip.GetAddressBytes();
+   return b[0]==10||(b[0]==172&&b[1]>=16&&b[1]<=31)||(b[0]==192&&b[1]==168);
+  }
+
+  /// <summary>Base URL of an OpenAI-compatible server, derived from its chat-completions endpoint (…/v1).</summary>
+  public static string ModelsUrl(string chatEndpoint){
+   string e=(chatEndpoint??"").Trim().TrimEnd('/');
+   int i=e.LastIndexOf("/chat/completions",StringComparison.OrdinalIgnoreCase);
+   if(i>0)e=e.Substring(0,i);
+   return e+"/models";
+  }
+
+  /// <summary>Asks an OpenAI-compatible server which models it serves (LM Studio lists loaded and downloaded models, Ollama the pulled ones).</summary>
+  public async Task<List<string>> ListModels(){
+   string endpointProblem=ValidateEndpoint(EffectiveEndpoint,Provider);if(endpointProblem!=null)throw new IOException(endpointProblem);
+   if(!OpenAIWire(Provider))throw new IOException(Core.L.T("Chỉ máy chủ tương thích OpenAI mới hỗ trợ liệt kê model."));
+   string json=await GetTransport(ModelsUrl(EffectiveEndpoint),Headers()).ConfigureAwait(false);
+   return ParseModelList(json);
+  }
+
+  public static List<string> ParseModelList(string json){
+   var ids=new List<string>();
+   using(var doc=JsonDocument.Parse(json)){
+    JsonElement data;var root=doc.RootElement;
+    var array=root.ValueKind==JsonValueKind.Array?root:root.TryGetProperty("data",out data)&&data.ValueKind==JsonValueKind.Array?data:root.TryGetProperty("models",out data)&&data.ValueKind==JsonValueKind.Array?data:default(JsonElement);
+    if(array.ValueKind!=JsonValueKind.Array)return ids;
+    foreach(var m in array.EnumerateArray()){
+     JsonElement id;
+     if(m.ValueKind==JsonValueKind.String)ids.Add(m.GetString());
+     else if(m.TryGetProperty("id",out id)&&id.ValueKind==JsonValueKind.String)ids.Add(id.GetString());
+     else if(m.TryGetProperty("name",out id)&&id.ValueKind==JsonValueKind.String)ids.Add(id.GetString());
+    }
+   }
+   return ids.Where(i=>!String.IsNullOrWhiteSpace(i)).Distinct().OrderBy(i=>i,StringComparer.OrdinalIgnoreCase).ToList();
   }
 
   /// <summary>Extracts the human-readable message from an API error body.</summary>
@@ -112,18 +181,47 @@ namespace TweekPro.AI {
    return "HTTP "+status+": "+(detail.Length>400?detail.Substring(0,400)+"…":detail)+hint;
   }
 
-  /// <summary>Sends the conversation and returns the model's reply.</summary>
+  /// <summary>
+  /// Sends the conversation and returns the model's reply. When a local server rejects the request because the loaded model
+  /// has no tool support, the request is retried once without tools and the client remembers that for the session.
+  /// </summary>
   public async Task<AiReply> Send(string system,List<AiMessage> history,List<AiTool> tools){
-   string body=Provider==OpenAI?BuildOpenAIRequest(system,history,tools):BuildAnthropicRequest(system,history,tools);
-   var headers=Headers();
-   string response=await Transport(EffectiveEndpoint,headers,body).ConfigureAwait(false);
-   return Provider==OpenAI?ParseOpenAIReply(response):ParseAnthropicReply(response);
+   string endpointProblem=ValidateEndpoint(EffectiveEndpoint,Provider);if(endpointProblem!=null)throw new IOException(endpointProblem);
+   if(ToolsUnsupported)tools=null;
+   if(IsLocal(Provider)&&String.IsNullOrWhiteSpace(Model))throw new IOException(Core.L.T("Chưa chọn model cục bộ — bấm \"Tải danh sách model\" rồi chọn một model đã nạp trong LM Studio/Ollama."));
+   try{return await SendOnce(system,history,tools).ConfigureAwait(false);}
+   catch(IOException e){
+    if(!IsLocal(Provider)||tools==null||tools.Count==0||!LooksLikeToolRejection(e.Message))throw;
+    ToolsUnsupported=true;
+    return await SendOnce(system,history,null).ConfigureAwait(false);
+   }
+  }
+
+  async Task<AiReply> SendOnce(string system,List<AiMessage> history,List<AiTool> tools){
+   bool openai=OpenAIWire(Provider);
+   if(ToolsUnsupported){
+    system+=" Tools are unavailable for this model. Answer with guidance only; do not claim to inspect or change this PC.";
+    history=history.Select(m=>new AiMessage{Role=m.Role=="tool"?"user":m.Role,Text=m.Role=="tool"?"Previous tool result: "+m.Text:m.Text}).Where(m=>!String.IsNullOrEmpty(m.Text)).ToList();
+   }
+   string body=openai?BuildOpenAIRequest(system,history,tools):BuildAnthropicRequest(system,history,tools);
+   string response=await Transport(EffectiveEndpoint,Headers(),body).ConfigureAwait(false);
+   var reply=openai?ParseOpenAIReply(response):ParseAnthropicReply(response);
+   if(ToolsUnsupported){reply.ToolCalls.Clear();if(String.IsNullOrWhiteSpace(reply.Text))reply.Text=Core.L.T("Model này không hỗ trợ thao tác. Hãy chọn model có hỗ trợ gọi công cụ.");}
+   return reply;
+  }
+
+  /// <summary>Heuristic over the server's 400 text: LM Studio / llama.cpp / Ollama name "tools" or the prompt template when a model cannot call functions.</summary>
+  public static bool LooksLikeToolRejection(string message){
+   string m=(message??"").ToLowerInvariant();
+   if(!m.StartsWith("http 400")&&!m.StartsWith("http 422")&&!m.StartsWith("http 500"))return false;
+   return m.Contains("tool")||m.Contains("function")||m.Contains("template")||m.Contains("jinja");
   }
 
   public Dictionary<string,string> Headers(){
    var h=new Dictionary<string,string>();
-   if(Provider==OpenAI)h["Authorization"]="Bearer "+ApiKey.Trim();
-   else{h["x-api-key"]=ApiKey.Trim();h["anthropic-version"]="2023-06-01";}
+   string key=(ApiKey??"").Trim();
+   if(OpenAIWire(Provider)){if(key!=""||!IsLocal(Provider))h["Authorization"]="Bearer "+key;}
+   else{h["x-api-key"]=key;h["anthropic-version"]="2023-06-01";}
    return h;
   }
 

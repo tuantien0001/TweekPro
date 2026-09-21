@@ -23,7 +23,7 @@ namespace TweekPro {
    Branding.WriteIconFile(path);
    byte[] data=File.ReadAllBytes(path);
    Assert(BitConverter.ToUInt16(data,0)==0&&BitConverter.ToUInt16(data,2)==1,"ico header");
-   int count=BitConverter.ToUInt16(data,4);Assert(count==7,"ico has 7 sizes");
+   int count=BitConverter.ToUInt16(data,4);Assert(count==11,"approved ico has 11 sizes");
    var sizes=new List<int>();
    for(int i=0;i<count;i++){
     int entry=6+16*i;int width=data[entry]==0?256:data[entry];sizes.Add(width);
@@ -34,7 +34,8 @@ namespace TweekPro {
     Assert(data[offset]==0x89&&data[offset+1]==(byte)'P'&&data[offset+2]==(byte)'N'&&data[offset+3]==(byte)'G',"ico entry is PNG");
     using(var stream=new MemoryStream(data,offset,length))using(var image=Image.FromStream(stream))Assert(image.Width==width&&image.Height==width,"ico PNG dimensions");
    }
-   Assert(sizes.First()==16&&sizes.Last()==256,"ico covers 16..256");
+   Assert(sizes.SequenceEqual(new[]{16,20,24,32,40,48,64,96,128,192,256}),"approved icon frames cover Windows DPI sizes");
+   foreach(int size in new[]{16,32,48,256})using(var icon=Branding.AppIcon(size))Assert(icon.Width==size&&icon.Height==size,"runtime icon size");
   }
 
   public static void Run(){

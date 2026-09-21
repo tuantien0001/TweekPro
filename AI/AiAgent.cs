@@ -43,7 +43,10 @@ namespace TweekPro.AI {
     Tool("start_service","Start a stopped Windows service.",true,"name!","string","Service short name."),
     Tool("end_process","Terminate a process by PID. Core Windows processes and Tweek Pro itself are refused.",true,"pid!","integer","Process id."),
     Tool("disable_startup_entry","Disable a startup entry by its name; the registration is backed up to the Recovery Vault so it can be re-enabled.",true,"name!","string","Startup entry name as returned by list_startup_entries."),
-    Tool("uninstall_application","Open the official uninstaller of an installed application, then scan for leftovers. The user must confirm in Tweek Pro's dialogs; the uninstaller itself may ask again.",true,"name!","string","Application name as returned by list_applications (exact or unique substring)."),
+    Tool("uninstall_application","Uninstall an installed application: runs its official uninstaller (MSI packages silently, other uninstallers may show their own window), waits for it, then scans for leftovers (files, folders, registry, shortcuts) and, with clean_leftovers=true, moves them to the Recovery Vault. Never touches Windows, System32, Program Files or shared components.",true,"name!","string","Application name as returned by list_applications (exact or unique substring).","clean_leftovers","boolean","Also quarantine the leftovers found after the uninstaller finished (default true)."),
+    Tool("scan_leftovers","Read-only trace of what an application left behind (or would leave): folders in AppData/ProgramData/Program Files owned by it, registry keys, shortcuts, autorun entries. Works for installed apps and for apps uninstalled earlier through Tweek Pro. Results appear in the Leftovers tab.",false,"name","string","Application name (installed or in uninstall history); empty rescans the whole uninstall history.","deep","boolean","Deep scan: also walks Temp folders and fingerprints (slower, default false)."),
+    Tool("clean_leftovers","Move the leftover items currently listed in the Leftovers tab to the Recovery Vault (files/folders moved, registry keys exported then deleted). Review-only items and anything outside the allowed user/app data roots are skipped. Run scan_leftovers first.",true,"name","string","Only items belonging to this application; empty cleans every listed item."),
+    Tool("clean_junk","Clean junk (temp files, caches, logs, system junk) into the Recovery Vault. Locked rules and files in use are skipped; Windows core folders are never touched. Runs preview_junk internally when no preview exists.",true,"groups","string","Comma-separated rule groups or rule names to limit the clean; empty cleans every unlocked rule."),
     Tool("open_tab","Switch Tweek Pro to a tab so the user sees the data: overview | applications | windows_apps | leftovers | junk | empty | duplicates | analyzer | vault | startup | network | services | tools | log | ai.",false,"tab!","string","Tab key."),
    };
   }
@@ -61,12 +64,20 @@ namespace TweekPro.AI {
   }
 
   /// <summary>System prompt: who the assistant is, what it may do, and how to behave around destructive actions.</summary>
-  public static string SystemPrompt(string language,bool elevated){
+  static string ActionRule(string actionMode){
+   if(actionMode==Core.AiActionModes.ReadOnly)return "are currently disabled by the user: describe what you would do and how to do it manually in Tweek Pro.";
+   if(actionMode==Core.AiActionModes.Confirm)return "show the user a confirmation dialog inside Tweek Pro before running.";
+   return "run immediately without asking — the user chose automatic mode. When the user asks you to uninstall, clean, stop or kill something, just do it with the tools (uninstall_application with clean_leftovers=true traces and removes leftovers in one go), then report exactly what happened. Do not ask for permission or confirmation in your text.";
+  }
+
+  public static string SystemPrompt(string language,bool elevated){return SystemPrompt(language,elevated,Core.AiActionModes.Confirm);}
+
+  public static string SystemPrompt(string language,bool elevated,string actionMode){
    return "You are the built-in assistant of Tweek Pro, a Windows management app (uninstall & leftovers, junk cleaner, duplicates, empty folders, disk analyzer, recovery vault, startup, realtime network view, services with plain-language explanations, Windows Store apps). "
     +"You answer questions about this PC using the tools and can manage the app on the user's behalf. Rules: "
     +"(1) Prefer tools over guessing; call get_overview first for broad questions. "
-    +"(2) Read-only tools run immediately. Mutating tools (stop_service, start_service, end_process, disable_startup_entry, uninstall_application) show the user a confirmation dialog inside Tweek Pro; never claim an action happened unless the tool result says so. "
-    +"(3) Never suggest stopping core Windows services or deleting anything under Windows\\System32; Tweek Pro refuses those anyway. Explain risks briefly before proposing a change. "
+    +"(2) Read-only tools run immediately. Mutating tools (stop_service, start_service, end_process, disable_startup_entry, uninstall_application, clean_leftovers, clean_junk) "+ActionRule(actionMode)+" Never claim an action happened unless the tool result says so. "
+    +"(3) Hard limits you cannot override: Tweek Pro never deletes anything under the Windows folder (System32, SysWOW64, WinSxS, drivers…), Program Files, Common Files or Microsoft shared components, never stops core Windows services and never ends core processes; such requests are refused by the tools — tell the user why instead of retrying. Everything else that is removed goes to the Recovery Vault first. "
     +"(4) Be concise and concrete: use the actual names, PIDs, sizes returned by tools. Use short bullet lists for more than three items. "
     +"(5) Answer in "+(language=="en"?"English":"Vietnamese (tiếng Việt)")+" unless the user writes in another language. "
     +"The app is "+(elevated?"running as administrator.":"NOT running as administrator, so some actions may fail.")+" Today is "+DateTime.Now.ToString("yyyy-MM-dd")+".";
@@ -82,7 +93,9 @@ namespace TweekPro.AI {
   public readonly AiClient Client;public readonly IAiHost Host;
   public readonly List<AiMessage> History=new List<AiMessage>();
   public List<AiTool> Tools=AiTools.All();
-  public bool AllowActions=true;
+  /// <summary>readonly: mutating tools denied; confirm: host dialog per action; auto: mutating tools run at once.</summary>
+  public string ActionMode=Core.AiActionModes.Confirm;
+  public bool AllowActions { get { return ActionMode!=Core.AiActionModes.ReadOnly; } set { ActionMode=value?(ActionMode==Core.AiActionModes.ReadOnly?Core.AiActionModes.Confirm:ActionMode):Core.AiActionModes.ReadOnly; } }
   /// <summary>Progress callback: tool name and outcome text, for the transcript.</summary>
   public Action<string> Trace=delegate{};
   public int TotalInputTokens, TotalOutputTokens;
@@ -92,7 +105,8 @@ namespace TweekPro.AI {
   /// <summary>Appends the user's question, runs the tool loop and returns the final answer text.</summary>
   public async Task<string> Ask(string question){
    History.Add(AiMessage.User(question));
-   string system=AiTools.SystemPrompt(L.Lang,Elevation.IsElevated);
+   ActionMode=AiActionModes.Normalize(ActionMode);
+   string system=AiTools.SystemPrompt(L.Lang,Elevation.IsElevated,ActionMode);
    for(int round=0;round<MaxRounds;round++){
     var reply=await Client.Send(system,History.ToList(),Tools).ConfigureAwait(false);
     TotalInputTokens+=reply.InputTokens;TotalOutputTokens+=reply.OutputTokens;
@@ -117,12 +131,15 @@ namespace TweekPro.AI {
    var tool=AiTools.Find(call.Name);
    if(tool==null){Trace(call.Name+": "+L.T("công cụ không tồn tại"));return "Error: unknown tool "+call.Name;}
    JsonElement args;
-   try{args=JsonDocument.Parse(String.IsNullOrWhiteSpace(call.ArgumentsJson)?"{}":call.ArgumentsJson).RootElement.Clone();}
+   try{using(var doc=JsonDocument.Parse(String.IsNullOrWhiteSpace(call.ArgumentsJson)?"{}":call.ArgumentsJson))args=doc.RootElement.Clone();}
    catch(JsonException e){return "Error: arguments are not valid JSON: "+e.Message;}
    if(tool.Mutating){
-    if(!AllowActions){Trace(AiTools.Describe(call)+": "+L.T("bị chặn — thao tác thay đổi đang tắt"));return "Denied: the user disabled system-changing actions for the assistant. Explain what you would do instead.";}
-    bool ok=await Host.ConfirmAction(AiTools.Describe(call)).ConfigureAwait(false);
-    if(!ok){Trace(AiTools.Describe(call)+": "+L.T("người dùng từ chối"));return "Denied: the user declined this action in the confirmation dialog.";}
+    ActionMode=AiActionModes.Normalize(ActionMode);
+    if(ActionMode==Core.AiActionModes.ReadOnly){Trace(AiTools.Describe(call)+": "+L.T("bị chặn — thao tác thay đổi đang tắt"));return "Denied: the user disabled system-changing actions for the assistant. Explain what you would do instead.";}
+    if(ActionMode==Core.AiActionModes.Confirm){
+     bool ok=await Host.ConfirmAction(AiTools.Describe(call)).ConfigureAwait(false);
+     if(!ok){Trace(AiTools.Describe(call)+": "+L.T("người dùng từ chối"));return "Denied: the user declined this action in the confirmation dialog.";}
+    }else Trace(AiTools.Describe(call)+": "+L.T("tự động thực hiện"));
    }
    try{
     string result=await Host.RunTool(call.Name,args).ConfigureAwait(false)??"";

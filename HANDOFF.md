@@ -3,6 +3,16 @@
 Last updated: 2026-09-21, branch `cursor/integration-all-features-e772` (PR #7), commit after `54e9f8a`.
 Local working copy on the owner's PC: `C:\Users\ADMIN\TweekPro`. Refresh it with `powershell -ExecutionPolicy Bypass -File .\get-latest.ps1 -Run` from an elevated PowerShell.
 
+## Recovery update — 2026-09-21
+
+Recovered seven files from the owner's Cloud session and integrated them on the existing integration branch. LM Studio/Ollama support, model discovery, optional local key, Confirm/ReadOnly/explicit Auto modes and leftover/junk tools are restored. Fixed stale configuration reuse after validation failure, provider key carryover, ambiguous/traversal paths and tool-free fallback history. Default and unknown action modes require confirmation. The approved sample-2 T + PC icon is now embedded in the executable and used at runtime and by icon export.
+
+Validation on the owner's Windows PC: Release build 0 warnings/errors; full `--self-test` PASS (including recovered and extended AI tests); isolated UI + real localhost HTTP mock PASS for both local providers, model listing, connection checks, chat, tool rejection and invalid configuration. Preview rendered successfully. No real applications/services were removed or stopped. Real model inference and a fresh installer install were not tested.
+
+The original rescue sources remain untouched in `file đang dang dở chưa push`, excluded from compilation and Git; integrated versions are in `AI/` and `Core/Settings.cs`. Backup of the original rescue files and previous icon: `C:\Users\ADMIN\TweekPro-recovery-backup-20260921-171137`. That folder also contains the isolated UI/HTTP test scripts, results and preview. Do not copy the rescue files back over the integrated versions: the integrated files include fixes.
+
+The sections below describe the earlier baseline; their untested-on-Windows statement predates this recovery validation. Destructive live-app checks still require dedicated test applications or a VM.
+
 ## 1. Where things stand
 
 Everything below is implemented, builds with 0 warnings and passes the headless self-test on Linux (`--self-test junk`). It has been exercised as a live Mono WinForms window in a virtual display, but **not yet on a real Windows machine** since the last big changes. Section 4 lists what must be verified there first.
