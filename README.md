@@ -222,6 +222,7 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 ### 0.7.n (chưa phát hành)
 
 - Dòng mô tả trên thanh tiêu đề rút còn «Gỡ ứng dụng, dọn rác, theo dõi mạng • Mọi thao tác xóa đều được sao lưu và hoàn tác» và dừng trước nút ngôn ngữ / quyền, không còn bị che.
+- Nút ngôn ngữ trên thanh tiêu đề là lá cờ (Việt Nam khi đang tiếng Việt, Union Jack khi tiếng Anh) thay cho quả địa cầu kèm chữ VI/EN.
 
 ### 0.7.3 (21/09/2026)
 

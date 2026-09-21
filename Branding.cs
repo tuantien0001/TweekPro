@@ -23,31 +23,58 @@ namespace TweekPro {
   static readonly Color LogoTop=Color.FromArgb(56,132,255);
   static readonly Color LogoBottom=Color.FromArgb(29,78,216);
 
-  /// <summary>Compact header button: a globe glyph with the two-letter language code; clicking it switches the UI language.</summary>
+  /// <summary>Compact header button showing the current language as its flag; clicking it switches the UI language.</summary>
   public static Button LanguageButton(string code,string tooltip){
-   var b=new Button{Size=new Size(64,32),FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Color.FromArgb(51,65,85),ForeColor=Color.White,Text="",TabStop=false,UseVisualStyleBackColor=false};
-   b.FlatAppearance.BorderSize=0;b.FlatAppearance.MouseOverBackColor=Color.FromArgb(71,85,105);b.FlatAppearance.MouseDownBackColor=Color.FromArgb(30,41,59);
+   var b=new Button{Size=new Size(48,32),FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Theme.Header,ForeColor=Color.White,Text="",TabStop=false,UseVisualStyleBackColor=false};
+   b.FlatAppearance.BorderSize=0;b.FlatAppearance.MouseOverBackColor=Color.FromArgb(30,41,59);b.FlatAppearance.MouseDownBackColor=Color.FromArgb(51,65,85);
    b.Paint+=(s,e)=>DrawLanguageGlyph(e.Graphics,b.ClientRectangle,code,b.ForeColor);
    new ToolTip().SetToolTip(b,tooltip);
    b.AccessibleName=tooltip;
    return b;
   }
 
-  /// <summary>Draws a small globe (meridian + equator) followed by the language code, centered in r.</summary>
+  /// <summary>Draws the flag of the active language, centered in r: Vietnam (red, gold star) for VI and the Union Jack for EN.</summary>
   public static void DrawLanguageGlyph(Graphics g,Rectangle r,string code,Color color){
-   g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-   int d=Math.Min(r.Height-12,18);
-   using(var font=new Font("Segoe UI Semibold",9.5f))using(var brush=new SolidBrush(color))using(var pen=new Pen(color,1.6f)){
-    var text=g.MeasureString(code,font);
-    int total=d+6+(int)Math.Ceiling(text.Width);
-    int x=r.X+(r.Width-total)/2,y=r.Y+(r.Height-d)/2;
-    var globe=new Rectangle(x,y,d,d);
-    g.DrawEllipse(pen,globe);
-    g.DrawEllipse(pen,new RectangleF(x+d*0.3f,y,d*0.4f,d));
-    g.DrawLine(pen,x,y+d/2f,x+d,y+d/2f);
-    g.DrawLine(pen,x+d*0.12f,y+d*0.25f,x+d*0.88f,y+d*0.25f);
-    g.DrawLine(pen,x+d*0.12f,y+d*0.75f,x+d*0.88f,y+d*0.75f);
-    g.DrawString(code,font,brush,x+d+6,r.Y+(r.Height-text.Height)/2f);
+   g.SmoothingMode=SmoothingMode.AntiAlias;
+   float h=Math.Min(20,r.Height-10),w=h*1.6f;
+   var box=new RectangleF(r.X+(r.Width-w)/2f,r.Y+(r.Height-h)/2f,w,h);
+   var state=g.Save();
+   using(var clip=FlagOutline(box,2.5f)){g.SetClip(clip);if(String.Equals(code,"EN",StringComparison.OrdinalIgnoreCase))DrawUnionJack(g,box);else DrawVietnam(g,box);}
+   g.Restore(state);
+   using(var edge=new Pen(Color.FromArgb(190,color),1.2f))using(var clip=FlagOutline(box,2.5f))g.DrawPath(edge,clip);
+  }
+
+  static GraphicsPath FlagOutline(RectangleF box,float radius){
+   var path=new GraphicsPath();float d=radius*2;
+   path.AddArc(box.X,box.Y,d,d,180,90);path.AddArc(box.Right-d,box.Y,d,d,270,90);
+   path.AddArc(box.Right-d,box.Bottom-d,d,d,0,90);path.AddArc(box.X,box.Bottom-d,d,d,90,90);
+   path.CloseFigure();return path;
+  }
+
+  static void DrawVietnam(Graphics g,RectangleF box){
+   using(var red=new SolidBrush(Color.FromArgb(218,37,29)))g.FillRectangle(red,box);
+   float outer=box.Height*0.36f,inner=outer*0.4f,cx=box.X+box.Width/2f,cy=box.Y+box.Height/2f;
+   var pts=new PointF[10];
+   for(int i=0;i<10;i++){double a=-Math.PI/2+i*Math.PI/5;float rad=i%2==0?outer:inner;pts[i]=new PointF(cx+(float)(rad*Math.Cos(a)),cy+(float)(rad*Math.Sin(a)));}
+   using(var gold=new SolidBrush(Color.FromArgb(255,205,0)))g.FillPolygon(gold,pts);
+  }
+
+  /// <summary>Union Jack: navy field, white then counterchanged red saltire, then the St George cross.</summary>
+  static void DrawUnionJack(Graphics g,RectangleF box){
+   float x=box.X,y=box.Y,w=box.Width,h=box.Height;
+   var redInk=Color.FromArgb(200,16,46);
+   using(var navy=new SolidBrush(Color.FromArgb(1,33,105)))g.FillRectangle(navy,box);
+   using(var white=new Pen(Color.White,h/5.2f){StartCap=LineCap.Square,EndCap=LineCap.Square})
+   using(var red=new Pen(redInk,h/14f){StartCap=LineCap.Square,EndCap=LineCap.Square}){
+    g.DrawLine(white,x,y,x+w,y+h);g.DrawLine(white,x,y+h,x+w,y);
+    float o=h*0.09f;
+    g.DrawLine(red,x,y+o,x+w/2f,y+h/2f);g.DrawLine(red,x+w/2f,y+h/2f,x+w,y+h-o);
+    g.DrawLine(red,x+o*0.6f,y+h,x+w/2f,y+h/2f);g.DrawLine(red,x+w/2f,y+h/2f,x+w-o*0.6f,y);
+   }
+   float cross=h/3.6f,band=h/6.4f;
+   using(var white=new SolidBrush(Color.White))using(var red=new SolidBrush(redInk)){
+    g.FillRectangle(white,x,y+(h-cross)/2f,w,cross);g.FillRectangle(white,x+(w-cross)/2f,y,cross,h);
+    g.FillRectangle(red,x,y+(h-band)/2f,w,band);g.FillRectangle(red,x+(w-band)/2f,y,band,h);
    }
   }
 

@@ -1,10 +1,14 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 00:10 (Asia/Bangkok).
-Status: DONE (Cursor). Owner request 00:06: the header line about backed-up deletions is covered by the language/admin buttons and looks bad — shorten it.
+Updated: 2026-09-22 00:16 (Asia/Bangkok).
+Status: DONE (Cursor). Owner request 00:12: the VI/EN language control still looks bad — replace it with a colorful flag.
 Last editor: Cursor.
 
-## Current task (00:10)
+## Current task (00:16)
+
+H. DONE Language control is a flag (`Branding.DrawLanguageGlyph`): Vietnam (red field, gold star) while the UI is Vietnamese, Union Jack while English. The button background matches the header so only the flag shows; tooltip and accessible name still say which language a click switches to. Verified by drawing both flags and by `--preview health`.
+
+## Previous task (00:10)
 
 G. DONE Header subtitle shortened to "Gỡ ứng dụng, dọn rác, theo dõi mạng • Mọi thao tác xóa đều được sao lưu và hoàn tác" (EN pair in LangEn). `BuildHeaderActions` no longer AutoSize+Dock (that overlay let the label run under the buttons); the right cluster gets an explicit `PreferredSize` width so the subtitle stops before VI / Quyền quản trị viên. `PreviewHealth` sample update is current patch + 1 (was hardcoded 0.7.2, which rendered "0.7.2 is newer than 0.7.3"). Screenshots regenerated. Verification below.
 
