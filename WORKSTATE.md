@@ -7,7 +7,7 @@ Last editor: Cursor.
 ## Current task (00:16)
 
 H. DONE Language control is a flag (`Branding.DrawLanguageGlyph`): Vietnam (red field, gold star) while the UI is Vietnamese, Union Jack while English. The button background matches the header so only the flag shows; tooltip and accessible name still say which language a click switches to. Verified by drawing both flags and by `--preview health`.
-I. RELEASING v0.7.3 again (owner 00:17: same version, not 0.7.4). Pending changelog bullets folded into `### 0.7.3`. Tag `v0.7.3` moved onto this commit and force-pushed so Actions rebuilds Setup + zip and overwrites the existing Release assets (`overwrite_files` defaults true). In-app update check will not nag machines already on 0.7.3.
+I. DONE Republished v0.7.3 (owner 00:17, same version). Changelog bullets folded into `### 0.7.3` in `70cf586`; tag `v0.7.3` moved there (annotated object `6579557`). Actions run 35631213030 success; Release assets replaced 00:19 UTC+7: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.3 . In-app update check does not nag machines already on 0.7.3.
 
 ## Previous task (00:10)
 
