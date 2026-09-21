@@ -36,7 +36,7 @@ namespace TweekPro {
    emptySummary=new Label{Dock=DockStyle.Bottom,Height=34,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small};Theme.BorderTop(emptySummary);
    tab.Controls.Add(host);tab.Controls.Add(emptySummary);tab.Controls.Add(emptyStage);tab.Controls.Add(note);tab.Controls.Add(emptyRootLabel);tab.Controls.Add(bar);
    Theme.SetOverlay(emptyOverlay,"Chưa quét.\r\nChọn một thư mục rồi bấm Quét thư mục rỗng. Chưa có gì bị thay đổi cho đến khi bạn bấm Xóa thư mục đã chọn và xác nhận.",NoteKind.Info);
-   emptyRoot=DefaultEmptyRoot();emptyRootLabel.Text="Thư mục quét: "+(String.IsNullOrEmpty(emptyRoot)?"(chưa chọn)":emptyRoot);
+   emptyRoot=DefaultEmptyRoot();emptyRootLabel.Text=Core.L.T("Thư mục quét: ")+(String.IsNullOrEmpty(emptyRoot)?Core.L.T("(chưa chọn)"):emptyRoot);
    UpdateEmptySummary();
   }
 
@@ -46,10 +46,10 @@ namespace TweekPro {
   }
 
   void ChooseEmptyRoot(){
-   using(var dialog=new FolderBrowserDialog{Description="Chọn thư mục để tìm thư mục rỗng",ShowNewFolderButton=false}){
+   using(var dialog=new FolderBrowserDialog{Description=Core.L.T("Chọn thư mục để tìm thư mục rỗng"),ShowNewFolderButton=false}){
     if(!String.IsNullOrEmpty(emptyRoot)&&Directory.Exists(emptyRoot))dialog.SelectedPath=emptyRoot;
     if(dialog.ShowDialog(this)!=DialogResult.OK)return;
-    emptyRoot=dialog.SelectedPath;emptyRootLabel.Text="Thư mục quét: "+emptyRoot;
+    emptyRoot=dialog.SelectedPath;emptyRootLabel.Text=Core.L.T("Thư mục quét: ")+emptyRoot;
    }
   }
 
@@ -73,49 +73,49 @@ namespace TweekPro {
   List<string> CheckedEmpty(){return emptyList.CheckedItems.Cast<ListViewItem>().Select(i=>(string)i.Tag).ToList();}
 
   void UpdateEmptySummary(){
-   emptySummary.Text=emptyResult.Folders.Count+" nhánh thư mục rỗng  •  Đã chọn "+CheckedEmpty().Count+(emptyResult.Partial?"  •  (chưa đủ — đã chạm giới hạn)":"")+"  •  Nhấp đúp để mở vị trí.";
+   emptySummary.Text=Core.L.F("{0} nhánh thư mục rỗng  •  Đã chọn {1}",emptyResult.Folders.Count,CheckedEmpty().Count)+(emptyResult.Partial?Core.L.T("  •  (chưa đủ — đã chạm giới hạn)"):"")+Core.L.T("  •  Nhấp đúp để mở vị trí.");
   }
 
   /// <summary>Runs the read-only empty-folder scan on a worker thread and lists the results.</summary>
   async Task ScanEmpty(){
-   if(String.IsNullOrEmpty(emptyRoot))throw new IOException("Chọn một thư mục để quét trước.");
+   if(String.IsNullOrEmpty(emptyRoot))throw new IOException(Core.L.T("Chọn một thư mục để quét trước."));
    emptyCancellation=new CancellationTokenSource();var token=emptyCancellation.Token;
-   emptyStage.Visible=true;emptyStage.Text="Đang quét…";Theme.SetOverlay(emptyOverlay,null,NoteKind.Info);
-   Log("Thư mục rỗng: đang quét (chỉ đọc) "+emptyRoot+".");
+   emptyStage.Visible=true;emptyStage.Text=Core.L.T("Đang quét…");Theme.SetOverlay(emptyOverlay,null,NoteKind.Info);
+   Log(Core.L.F("Thư mục rỗng: đang quét (chỉ đọc) {0}.",emptyRoot));
    string root=emptyRoot;
    try{
     emptyResult=await Task.Run(()=>{var found=EmptyFolders.Find(root,token,ReportEmpty);emptySubCounts=found.Folders.ToDictionary(f=>f,CountSubdirectories,StringComparer.OrdinalIgnoreCase);return found;},token);
     RenderEmpty();
-    emptyStage.Text="Quét xong: "+emptyResult.Folders.Count+" nhánh rỗng trong "+emptyResult.Scanned.ToString("N0")+" thư mục đã duyệt"+(emptyResult.Partial?"  •  (chưa đủ)":"");
-    Log("Thư mục rỗng: tìm thấy "+emptyResult.Folders.Count+" nhánh rỗng.");
-   }catch(OperationCanceledException){emptyStage.Text="Đã dừng quét.";}
+    emptyStage.Text=Core.L.F("Quét xong: {0} nhánh rỗng trong {1} thư mục đã duyệt",emptyResult.Folders.Count,emptyResult.Scanned.ToString("N0"))+(emptyResult.Partial?Core.L.T("  •  (chưa đủ)"):"");
+    Log(Core.L.F("Thư mục rỗng: tìm thấy {0} nhánh rỗng.",emptyResult.Folders.Count));
+   }catch(OperationCanceledException){emptyStage.Text=Core.L.T("Đã dừng quét.");}
    finally{emptyCancellation.Dispose();emptyCancellation=null;}
   }
 
   void ReportEmpty(string current){
    if(IsDisposed||!IsHandleCreated)return;
-   try{BeginInvoke((Action)(()=>{if(!IsDisposed)emptyStage.Text="Đang quét   "+Presentation.ShortPath(current,70);}));}catch(InvalidOperationException){}
+   try{BeginInvoke((Action)(()=>{if(!IsDisposed)emptyStage.Text=Core.L.T("Đang quét")+"   "+Presentation.ShortPath(current,70);}));}catch(InvalidOperationException){}
   }
 
   /// <summary>Confirms and deletes the checked empty folders (each rechecked as empty at delete time).</summary>
   async Task RemoveEmpty(){
-   var selected=CheckedEmpty();if(selected.Count==0)throw new IOException("Quét rồi đánh dấu thư mục rỗng muốn xóa.");
-   if(!Confirm("Xóa "+selected.Count+" nhánh thư mục rỗng?\r\n\r\n"+String.Join("\r\n",selected.Take(10).Select(f=>Presentation.ShortPath(f,80)))+(selected.Count>10?"\r\n… và "+(selected.Count-10)+" mục khác":"")+"\r\n\r\nCác thư mục này không chứa tệp nào. Thao tác xóa thẳng (không sao lưu vì không có dữ liệu); Windows/ứng dụng có thể tự tạo lại khi cần."))return;
-   emptyCancellation=new CancellationTokenSource();var token=emptyCancellation.Token;emptyStage.Visible=true;emptyStage.Text="Đang xóa…";
+   var selected=CheckedEmpty();if(selected.Count==0)throw new IOException(Core.L.T("Quét rồi đánh dấu thư mục rỗng muốn xóa."));
+   if(!Confirm(Core.L.F("Xóa {0} nhánh thư mục rỗng?\r\n\r\n{1}\r\n\r\nCác thư mục này không chứa tệp nào. Thao tác xóa thẳng (không sao lưu vì không có dữ liệu); Windows/ứng dụng có thể tự tạo lại khi cần.",selected.Count,String.Join("\r\n",selected.Take(10).Select(f=>Presentation.ShortPath(f,80)))+(selected.Count>10?Core.L.F("\r\n… và {0} mục khác",selected.Count-10):""))))return;
+   emptyCancellation=new CancellationTokenSource();var token=emptyCancellation.Token;emptyStage.Visible=true;emptyStage.Text=Core.L.T("Đang xóa…");
    string root=emptyRoot;var folders=selected;
    EmptyFolderReport report;
    try{report=await Task.Run(()=>EmptyFolders.Remove(root,folders,token),token);}
-   catch(OperationCanceledException){emptyStage.Text="Đã dừng xóa.";return;}
+   catch(OperationCanceledException){emptyStage.Text=Core.L.T("Đã dừng xóa.");return;}
    finally{emptyCancellation.Dispose();emptyCancellation=null;}
-   string summary="Đã xóa "+report.Removed+" nhánh thư mục rỗng. Bỏ qua: "+report.Skipped+". Lỗi: "+report.Failed+".";
-   emptyStage.Text=summary;Log("Thư mục rỗng: "+summary);
-   foreach(string err in report.Errors.Take(20))Log("Thư mục rỗng lỗi: "+err);
-   MessageBox.Show(this,summary,"Kết quả dọn thư mục rỗng",MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
+   string summary=Core.L.F("Đã xóa {0} nhánh thư mục rỗng. Bỏ qua: {1}. Lỗi: {2}.",report.Removed,report.Skipped,report.Failed);
+   emptyStage.Text=summary;Log(Core.L.T("Thư mục rỗng: ")+summary);
+   foreach(string err in report.Errors.Take(20))Log(Core.L.T("Thư mục rỗng lỗi: ")+err);
+   MessageBox.Show(this,summary,Core.L.T("Kết quả dọn thư mục rỗng"),MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
    await ScanEmpty();
   }
 
   void OpenEmptyLocation(){
-   if(emptyList.SelectedItems.Count==0)throw new IOException("Chọn một thư mục.");
+   if(emptyList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một thư mục."));
    string folder=(string)emptyList.SelectedItems[0].Tag;
    if(Directory.Exists(folder))System.Diagnostics.Process.Start("explorer.exe","\""+folder+"\"");
   }
