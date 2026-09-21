@@ -49,6 +49,20 @@ namespace TweekPro.Network {
 
    Assert(NetworkStats.DirectionArrows("out")=="↑"&&NetworkStats.DirectionArrows("in")=="↓"&&NetworkStats.DirectionArrows("both")=="↑↓"&&NetworkStats.DirectionArrows("listen")=="◎"&&NetworkStats.DirectionArrows("idle")=="·","Direction arrows");
    Assert(NetworkStats.Rate(0)==""&&NetworkStats.Rate(2048)=="2.0 KB/s","Rate label");
+
+   Assert(NetworkStats.DirectionKey(p1)=="out","Process key follows dominant direction");
+   Assert(NetworkStats.DirectionKey(new ProcessNetworkSummary{Listening=2})=="listen","Listening-only process -> listen");
+   Assert(NetworkStats.DirectionKey(new ProcessNetworkSummary{Listening=1,Established=1})=="idle","Connected but silent process -> idle");
+   Assert(NetworkStats.DirectionKey(new ProcessNetworkSummary{Direction=TrafficDirection.Both})=="both","Two-way process -> both");
+   string saved=Core.L.Lang;
+   try{
+    Core.L.Lang="vi";Assert(NetworkStats.DirectionLabel("out")=="Đang gửi"&&NetworkStats.DirectionLabel("idle")=="Không hoạt động","Vietnamese direction labels");
+    Core.L.Lang="en";Assert(NetworkStats.DirectionLabel("in")=="Receiving"&&NetworkStats.DirectionLabel("both")=="Sending and receiving"&&NetworkStats.DirectionLabel("listen")=="Listening","English direction labels");
+   }finally{Core.L.Lang=saved;}
+   Assert(NetworkStats.BarFraction(0,1000)==0f&&NetworkStats.BarFraction(1000,0)==0f,"No bar without traffic or reference");
+   Assert(NetworkStats.BarFraction(1000,1000)==1f,"Busiest process fills the bar");
+   Assert(Math.Abs(NetworkStats.BarFraction(250,1000)-0.5f)<0.001f,"Square-root scale: a quarter of the max is half a bar");
+   Assert(NetworkStats.BarFraction(5000,1000)==1f,"Bar is clamped");
   }
  }
 }

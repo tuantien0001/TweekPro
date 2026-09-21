@@ -86,6 +86,8 @@ Each item follows the standard pattern (engine + safety + tests + tab/finding + 
 
 ## 6. Known limitations / gotchas
 
+- `ImageList.Images.Add` keeps a reference to the source bitmap until the ImageList handle exists (WinForms copies lazily). Always touch `imageList.Handle` before adding bitmaps you dispose afterwards — the Network tab crashed on Windows with "Parameter is not valid" for exactly this reason (invisible on Mono, which copies eagerly).
+
 - Mono on Linux: keyboard input crashes WinForms (`X11Keyboard.Xutf8LookupString`); use `MONO_WINFORMS_XIM_STYLE=disabled` and mouse only. `MessageBox` buttons render without labels under Mono (left = Yes, right = No). Neither affects Windows.
 - `Get-AppxPackage -AllUsers` needs elevation; the tab falls back to the current user when not elevated (should not happen now).
 - `Directory.Move` of a folder containing an open file fails with ERROR_ACCESS_DENIED, not a sharing violation, so the escalation ladder runs once before the reboot prompt is offered; that is intended.

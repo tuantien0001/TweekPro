@@ -178,6 +178,19 @@ namespace TweekPro.Core {
    {"Bản ghi bộ nhớ Windows tạo khi màn hình xanh hoặc lỗi kernel; chỉ cần khi đang gỡ lỗi.","Memory dumps Windows writes after a blue screen or kernel error; only needed while debugging."},
    {"Nhật ký do trình cài đặt Windows để lại sau khi nâng cấp phiên bản. Chỉ dọn tệp cũ hơn 7 ngày.","Logs left by Windows Setup after a version upgrade. Only files older than 7 days are cleaned."},
    {"Thư mục kế thừa của Internet Explorer; hầu như luôn trống hoặc chỉ còn tàn dư.","Legacy Internet Explorer folder; almost always empty or holding remnants only."},
+   // Network tab: application view
+   {"Hoạt động","Activity"},{"Kết nối","Connections"},{"Đã kết nối","Established"},{"Lắng nghe","Listening"},{"kết nối","connections"},
+   {"Đang gửi","Sending"},{"Đang nhận","Receiving"},{"Gửi và nhận","Sending and receiving"},{"Không hoạt động","Idle"},{"Gửi đi","Out"},{"Nhận về","In"},
+   {"Hiện tất cả kết nối","Show all connections"},{"Kết nối của tất cả ứng dụng — bấm một ứng dụng ở bảng trên để lọc","Connections of all applications — click an application above to filter"},{"Kết nối của: {0}","Connections of: {0}"},
+   {"Chọn một ứng dụng ở bảng trên để xem các kết nối của nó.","Select an application above to see its connections."},{"Ứng dụng đã chọn không còn kết nối nào.","The selected application has no connections left."},
+   {"Chỉ xem, không chặn: bảng trên là từng ứng dụng đang gửi (↑ xanh dương) hoặc nhận (↓ xanh lá) dữ liệu theo thời gian thực, thanh màu là tốc độ; bấm một ứng dụng để xem các kết nối của nó ở bảng dưới. Tốc độ và byte đo bằng ETW của Windows (tự bật khi có quyền quản trị).","View only, nothing is blocked: the upper table lists each application sending (↑ blue) or receiving (↓ green) data in realtime, the colored bar is its rate; click an application to see its connections below. Rates and bytes come from Windows ETW (started automatically when elevated)."},
+   {"Mạng: không tự bật được băng thông (ETW) — {0}","Network: could not auto-start bandwidth (ETW) — {0}"},
+   {"Đường dẫn:","Path:"},{"không đọc được (tiến trình được bảo vệ hoặc đã kết thúc)","unreadable (protected process or already exited)"},{"Nhà phát hành (chữ ký):","Publisher (signature):"},
+   {"{0} kết nối • {1} đã kết nối • {2} lắng nghe • {3} máy từ xa","{0} connections • {1} established • {2} listening • {3} remote hosts"},{"Gửi {0} ({1}) • Nhận {2} ({3})","Sent {0} ({1}) • Received {2} ({3})"},
+   {"Tweek Pro chỉ hiển thị; không chặn hay thay đổi kết nối.","Tweek Pro only displays; it never blocks or changes connections."},{"Chi tiết ứng dụng","Application details"},
+   {"Đang lắng nghe","Listening"},{"Đã đóng","Closed"},{"Đang đóng","Closing"},{"SYN đã gửi","SYN sent"},{"SYN đã nhận","SYN received"},
+   {"{0} kết nối hiển thị / {1} tổng  •  {2} tiến trình","{0} connections shown / {1} total  •  {2} processes"},{"Đã tạm dừng làm mới","Refresh paused"},{"Làm mới mỗi {0} giây","Refreshing every {0} s"},
+   {"ETW: {0} sự kiện","ETW: {0} events"},{", mất {0}",", {0} lost"},{"Tổng","Total"},{"Băng thông: chưa bật","Bandwidth: off"}
   };
  }
 }

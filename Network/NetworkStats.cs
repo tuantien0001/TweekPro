@@ -75,5 +75,33 @@ namespace TweekPro.Network {
 
   /// <summary>Formats a byte-per-second rate, or an empty string below one byte per second.</summary>
   public static string Rate(double bytesPerSecond){return bytesPerSecond<1?"":Presentation.BytesLabel((long)bytesPerSecond)+"/s";}
+
+  /// <summary>Image-list key for a whole process: its dominant traffic direction, else listening/idle from its sockets.</summary>
+  public static string DirectionKey(ProcessNetworkSummary s){
+   switch(s.Direction){
+    case TrafficDirection.Outbound:return "out";
+    case TrafficDirection.Inbound:return "in";
+    case TrafficDirection.Both:return "both";
+   }
+   return s.Listening>0&&s.Established==0?"listen":"idle";
+  }
+
+  /// <summary>Human label for a direction key, in the active language.</summary>
+  public static string DirectionLabel(string key){
+   switch(key){
+    case "out":return Core.L.T("Đang gửi");
+    case "in":return Core.L.T("Đang nhận");
+    case "both":return Core.L.T("Gửi và nhận");
+    case "listen":return Core.L.T("Lắng nghe");
+    default:return Core.L.T("Không hoạt động");
+   }
+  }
+
+  /// <summary>Bar length (0..1) for a rate relative to the busiest process; square-root scale keeps small talkers visible.</summary>
+  public static float BarFraction(double rate,double max){
+   if(rate<1||max<1)return 0f;
+   double f=Math.Sqrt(rate/max);
+   return (float)(f>1?1:f<0?0:f);
+  }
  }
 }

@@ -26,6 +26,9 @@ namespace TweekPro.Network {
   [DllImport("kernel32.dll",SetLastError=true,CharSet=CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr process,int flags,StringBuilder name,ref int size);
   [DllImport("kernel32.dll",SetLastError=true)] static extern bool GetProcessTimes(IntPtr process,out long creation,out long exit,out long kernel,out long user);
 
+  /// <summary>Pre-populates the cache with a synthetic identity (layout previews and tests on machines without those processes).</summary>
+  public static void Seed(ProcessIdentity identity){identity.StartTime=StartTimeOf(identity.Pid);cache[identity.Pid]=identity;}
+
   /// <summary>Returns identity for a PID, reusing the cache when the start time still matches.</summary>
   public static ProcessIdentity Resolve(int pid){
    if(pid==0)return new ProcessIdentity{Pid=0,Name="System Idle Process",Publisher="Windows"};
@@ -34,7 +37,7 @@ namespace TweekPro.Network {
    ProcessIdentity cached;
    if(cache.TryGetValue(pid,out cached)&&cached.StartTime==start)return cached;
    var identity=new ProcessIdentity{Pid=pid,StartTime=start};
-   IntPtr handle=OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,false,pid);
+   IntPtr handle=IsWindows?OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,false,pid):IntPtr.Zero;
    if(handle!=IntPtr.Zero){
     try{
      var buffer=new StringBuilder(1024);int size=buffer.Capacity;
@@ -49,7 +52,10 @@ namespace TweekPro.Network {
    return identity;
   }
 
+  static readonly bool IsWindows=Environment.OSVersion.Platform==PlatformID.Win32NT;
+
   static long StartTimeOf(int pid){
+   if(!IsWindows)return 0;
    IntPtr handle=OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,false,pid);
    if(handle==IntPtr.Zero)return 0;
    try{long creation,exit,kernel,user;return GetProcessTimes(handle,out creation,out exit,out kernel,out user)?creation:0;}

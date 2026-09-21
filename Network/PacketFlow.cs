@@ -30,8 +30,8 @@ namespace TweekPro.Network {
     int alpha=Math.Max(70,Math.Min(255,(int)(235*fade)));
     using(var b=new SolidBrush(Color.FromArgb(alpha,c)))g.FillRectangle(b,x-3f,y-3f,6f,6f);
    }
-   using(var ob=new SolidBrush(OutColor))g.DrawString("Ra ↑  "+RateText(outRate),LaneFont,ob,r.X+10,r.Y+4);
-   using(var ib=new SolidBrush(InColor))g.DrawString("Vào ↓  "+RateText(inRate),LaneFont,ib,mid+10,r.Y+4);
+   using(var ob=new SolidBrush(OutColor))g.DrawString(Core.L.T("Gửi đi")+" ↑  "+RateText(outRate),LaneFont,ob,r.X+10,r.Y+4);
+   using(var ib=new SolidBrush(InColor))g.DrawString(Core.L.T("Nhận về")+" ↓  "+RateText(inRate),LaneFont,ib,mid+10,r.Y+4);
    g.SmoothingMode=saved;
   }
 

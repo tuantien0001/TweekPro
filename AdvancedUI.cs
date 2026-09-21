@@ -68,6 +68,6 @@ namespace TweekPro {
    }catch(OperationCanceledException){PresentCandidates(all);Log("Đã dừng quét. Giữ kết quả các ứng dụng đã quét xong; ứng dụng đang quét chưa được cộng vào.");}
    finally{cancelScan.Visible=false;scanCancellation.Dispose();scanCancellation=null;}
   }
-  public void PreviewAdvanced(string mode){if(mode=="autorun"){ShowAutoruns(Advanced.Autoruns());tabs.SelectedTab=autorunTab;}else if(mode=="junk")tabs.SelectedTab=junkTab;else if(mode=="network")tabs.SelectedTab=netTab;else if(mode=="health")PreviewHealth();else if(mode=="store")PreviewStoreApps();else tabs.SelectedTab=toolsTab;}
+  public void PreviewAdvanced(string mode){if(mode=="autorun"){ShowAutoruns(Advanced.Autoruns());tabs.SelectedTab=autorunTab;}else if(mode=="junk")tabs.SelectedTab=junkTab;else if(mode=="network")PreviewNetwork();else if(mode=="health")PreviewHealth();else if(mode=="store")PreviewStoreApps();else tabs.SelectedTab=toolsTab;}
  }
 }
