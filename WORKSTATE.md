@@ -9,7 +9,7 @@ Last editor: Cursor.
 L. DONE Vault tab crash. Cause: the vault list is filled at startup (`LoadBackups` in `Reload`) before its tab is ever shown; when the tab is first selected the ListView handle is created, Windows sends LVN_ITEMCHANGED for every row (state image 0 → 1), WinForms raises `ItemChecked`, `UpdateBackupSummary` enumerates `backups.Items` and `Items[i]` returns null for rows not yet inserted natively → NRE inside `TabControl.SelectedIndex`, so the new page never became visible. Only bites with ≥2 backups (the owner now has autorun backups). Reproduced in a stand-alone WinForms harness (5 events, 10 null items) and confirmed the fix there (0 events during handle creation, user check still raises 1).
 - Fix: `Presentation.SmoothListView` overrides `OnHandleCreated`/`OnItemCheck`/`OnItemChecked` and drops both events while the handle is being created. Every list in the app is a `SmoothListView`, so remnants/junk/dupes/store/stale lists filled from another tab (AI tools) are covered too.
 - `Application.ThreadException` now logs `e.Exception.ToString()` (stack trace) instead of type + message.
-- README `### 0.7.5 (chưa phát hành)` bullet. Build 0 W / 0 E; elevated `--self-test` PASS 09:20.
+- README `### 0.7.5 (chưa phát hành)` bullet. Build 0 W / 0 E; elevated `--self-test` PASS 09:20. Commit `dca9a9f` on `origin/main`. Installed exe `C:\Program Files\Tweek Pro\TweekPro-0.7.4.exe` replaced (SHA-256 93AA77DD…8D2D) and relaunched 09:22; the session logged no errors (owner closed it 09:23). Not released: version string is still 0.7.4.
 
 ## Previous task (09:08)
 
