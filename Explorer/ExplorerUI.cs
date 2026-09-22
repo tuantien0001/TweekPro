@@ -52,6 +52,7 @@ namespace TweekPro {
    Add(fileBar,"Sao chép báo cáo",()=>{if(currentFile==null)throw new IOException(Core.L.T("Chưa có tệp nào được xem."));Clipboard.SetText(FileInspector.Report(currentFile));Log(Core.L.T("Đã sao chép báo cáo chi tiết tệp."));return Task.FromResult(0);});
    Add(fileBar,"Mở trong Explorer",()=>{var entry=SelectedEntry();string target=entry!=null?entry.Path:currentFile!=null?currentFile.Path:browserPath;if(String.IsNullOrEmpty(target))Process.Start("explorer.exe");else ExplorerShell.Reveal(target);return Task.FromResult(0);});
    Add(fileBar,"Thuộc tính Windows",()=>{var entry=SelectedEntry();string target=entry!=null?entry.Path:currentFile!=null?currentFile.Path:null;if(target==null)throw new IOException(Core.L.T("Chưa có tệp nào được xem."));ExplorerShell.ShowProperties(Handle,target);return Task.FromResult(0);});
+   Add(fileBar,"Xóa không phục hồi…",async()=>await ShredSelected(),ButtonStyle.Danger);
    browserOnlyHidden.Dock=DockStyle.Right;browserOnlyHidden.AutoSize=false;browserOnlyHidden.Width=230;browserOnlyHidden.Margin=Padding.Empty;browserOnlyHidden.Padding=new Padding(12,0,0,0);
    var pathPanel=new Panel{Dock=DockStyle.Top,Height=48,Padding=new Padding(16,8,16,8),BackColor=Theme.Surface};Theme.BorderBottom(pathPanel);
    fileIconBox=new PictureBox{Dock=DockStyle.Left,Width=40,SizeMode=PictureBoxSizeMode.CenterImage};
