@@ -10,7 +10,7 @@ namespace TweekPro.Core {
  public static class L {
   public const string Vietnamese="vi", EnglishCode="en";
   static string lang=Vietnamese;
-  static readonly Dictionary<string,string> table=Merge(LangEn.Table,Pup.PupLang.Table,Stale.StaleLang.Table,Update.UpdateLang.Table,Startup.StartupLang.Table,Explorer.ExplorerLang.Table,Network.FirewallLang.Table,Sizing.SizingLang.Table,Remnants.RemnantsLang.Table,Tracks.TracksLang.Table,RegClean.RegCleanLang.Table);
+  static readonly Dictionary<string,string> table=Merge(LangEn.Table,Pup.PupLang.Table,Stale.StaleLang.Table,Update.UpdateLang.Table,Startup.StartupLang.Table,Explorer.ExplorerLang.Table,Network.FirewallLang.Table,Sizing.SizingLang.Table,Remnants.RemnantsLang.Table,Tracks.TracksLang.Table,RegClean.RegCleanLang.Table,SysSpace.SystemSpaceLang.Table);
 
   /// <summary>Active language code ("vi" or "en"); anything else is treated as Vietnamese.</summary>
   public static string Lang { get { return lang; } set { lang=Normalize(value); } }

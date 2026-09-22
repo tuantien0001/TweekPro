@@ -188,6 +188,7 @@ namespace TweekPro {
      case "explorer":ExplorerGlyph(g,r,pen);break;
      case "footprints":Footprints(g,r,brush);break;
      case "registry":RegistryTree(g,r,pen,brush);break;
+     case "drive":Drive(g,r,pen,brush);break;
      default:g.FillEllipse(brush,r.X+r.Width/2-3,r.Y+r.Height/2-3,6,6);break;
     }
    }
@@ -206,6 +207,7 @@ namespace TweekPro {
    if(has("tải về cũ","Old Downloads"))return "download";
    if(has("Dấu vết","Tracks"))return "footprints";
    if(has("Registry","Registry"))return "registry";
+   if(has("Dung lượng hệ thống","System Space"))return "drive";
    if(has("rác","Junk"))return "trash";
    if(has("rỗng","Empty"))return "folder";
    if(has("Phân tích","Analyzer"))return "chart";
@@ -251,6 +253,13 @@ namespace TweekPro {
    g.DrawLine(pen,x,top,x,bottom);
    foreach(int y in new[]{r.Y+r.Height/4,r.Y+r.Height/2,r.Y+r.Height*3/4}){g.DrawLine(pen,x,y,x+r.Width/2,y);g.FillRectangle(brush,x+r.Width/2,y-2,5,5);}
    g.FillRectangle(brush,x-2,top-1,5,5);
+  }
+  /// <summary>Hard-disk outline with an activity dot: the System Space tab.</summary>
+  static void Drive(Graphics g,Rectangle r,Pen pen,Brush brush){
+   int h=Math.Max(6,r.Height*2/5);var body=new Rectangle(r.X+1,r.Y+r.Height-h-1,r.Width-2,h);
+   using(var path=Rounded(body,3))g.DrawPath(pen,path);
+   g.DrawLine(pen,r.X+3,r.Y+2,r.X+r.Width/2,body.Y-1);g.DrawLine(pen,r.Right-3,r.Y+2,r.X+r.Width/2,body.Y-1);
+   g.FillEllipse(brush,body.Right-7,body.Y+body.Height/2-2,4,4);
   }
   static void Download(Graphics g,Rectangle r,Pen pen){
    int cx=r.X+r.Width/2;int top=r.Y+1,tip=r.Bottom-5;
