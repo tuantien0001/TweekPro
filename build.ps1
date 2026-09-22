@@ -5,7 +5,7 @@ param(
   [switch]$SelfTest
 )
 $ErrorActionPreference = 'Stop'
-$version = '0.7.5'
+$version = '0.7.6'
 $project = Join-Path $PSScriptRoot 'TweekPro.csproj'
 
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
