@@ -1,10 +1,23 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 09:22 (Asia/Bangkok).
-Status: DONE (Cursor). Owner: clicking Kho khôi phục showed "Object reference not set to an instance of an object" and the page stayed on Phân tích ổ đĩa.
+Updated: 2026-09-22 10:55 (Asia/Bangkok).
+Status: DONE (Cursor). Owner: "làm mục 1, 5 6 7 8 9" of the roadmap (forced uninstall, tracks, registry, system space, browser extensions, shredder). Not released; version string is still 0.7.4, README has `### 0.7.5 (chưa phát hành)`.
 Last editor: Cursor.
 
-## Current task (09:22)
+## Current task (10:55)
+
+M. DONE Roadmap 1/5/6/7/8/9, one commit per feature on `main`:
+- 1 `Remnants/ForcedUninstall*.cs` + `RemnantsLang`: "Gỡ cưỡng bức…" button on Ứng dụng builds a synthetic `AppEntry` (name, optional publisher/folder/exe) and feeds `ReviewLeftovers`/deep scan; `ValidatePickedFolder` refuses Windows/Program Files roots/profile/drive roots; folders outside cleanable roots become review-only. Commit `5ad8000`.
+- 5 `Tracks/` tab Dấu vết: file rules (Recent, Jump Lists, ActivitiesCache) + HKCU registry rules (RunMRU, TypedPaths, RecentDocs, ComDlg32, WordWheelQuery, UserAssist) + browser history/cookies/form data; `TracksSafety` allow-list; vault `Kind=Tracks` (files moved; registry saved as `RegNode` tree, key emptied but parent kept, restore merges without overwriting newer values). Browser rules lock while the browser runs. Commit `1630746`.
+- 6 `RegClean/` tab Registry: orphan Uninstall keys, App Paths, Applications, MUICache, SharedDLLs, Shell Extensions Approved whose target file is verifiably absent; `RegCleanSafety` exact parent allow-list; vault `Kind=Registry`, restore only re-creates missing entries; "Mở trong Regedit". Commit `1fcaa4b`.
+- 7 `SysSpace/` tab Dung lượng hệ thống: measures Windows.old, WinSxS, Delivery Optimization, duplicate DriverStore packages (`Get-WindowsDriver`), hiberfil, pagefile, shadow storage, Recycle Bin; each reclaimed only via its Windows tool (cleanmgr sageset, DISM StartComponentCleanup, pnputil without /force, powercfg, vssadmin, cmdlets); no vault, confirm + elevation, tool output logged. `SystemSpace.Runner` injectable for tests. Commit `3200db8`.
+- 8 `Extensions/` tab Tiện ích trình duyệt (read-only): Chrome/Edge/Brave/Vivaldi/Opera/Firefox across profiles; Preferences/Secure Preferences/extensions.json read via copy; provenance (store / policy forcelist / unpacked / sideloaded), broad permissions, install time; CSV; open folder / manager page. Commit `cf04290`.
+- 9 `Shredder/`: "Xóa không phục hồi…" (Danger button) in the Explorer file pane; `FileShredder.Plan` (no reparse traversal, 20k cap) → `ShredConfirmForm` (ack checkbox unlocks; 1 or 3 passes; medium note) → `Shred` (WriteThrough overwrite, truncate, random rename, delete; links unlinked, folders removed bottom-up). `ShredSafety.Validate` refuses drive roots, system files at drive root, Windows, Program Files, ProgramData\Microsoft, profile/Users, vault, Tweek Pro folder, UNC, reparse points. Commit `c775448` (also removed duplicate "Chưa đo" key that broke `Core.L` at startup).
+- Wiring: `Core.L` merges Remnants/Tracks/RegClean/SystemSpace/Extensions/Shredder tables; `Engine.Restore` handles Tracks/Registry kinds; `Branding` glyphs footprints/registry/drive/puzzle; `LangTests` tab list; `App.PreviewModes` + `--preview all` (22 PNGs); `Tests07` runs all six test suites.
+- Verification: Release build 0 W / 0 E; elevated `--self-test` PASS 10:48 (`bin/Release/net48/test-results.txt`); `docs/screenshots/` regenerated 10:52 and tracks/registry/space/extensions/explorer PNGs reviewed. README tab table, gallery and 0.7.5 changelog updated.
+- NEXT: push README/screenshots commit; replace the installed exe `C:\Program Files\Tweek Pro\TweekPro-0.7.4.exe` with this build and relaunch; owner decides when to cut 0.7.5 (`release.ps1`).
+
+## Previous task (09:22)
 
 L. DONE Vault tab crash. Cause: the vault list is filled at startup (`LoadBackups` in `Reload`) before its tab is ever shown; when the tab is first selected the ListView handle is created, Windows sends LVN_ITEMCHANGED for every row (state image 0 → 1), WinForms raises `ItemChecked`, `UpdateBackupSummary` enumerates `backups.Items` and `Items[i]` returns null for rows not yet inserted natively → NRE inside `TabControl.SelectedIndex`, so the new page never became visible. Only bites with ≥2 backups (the owner now has autorun backups). Reproduced in a stand-alone WinForms harness (5 events, 10 null items) and confirmed the fix there (0 events during handle creation, user check still raises 1).
 - Fix: `Presentation.SmoothListView` overrides `OnHandleCreated`/`OnItemCheck`/`OnItemChecked` and drops both events while the handle is being created. Every list in the app is a `SmoothListView`, so remnants/junk/dupes/store/stale lists filled from another tab (AI tools) are covered too.
