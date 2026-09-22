@@ -47,6 +47,7 @@ namespace TweekPro {
    Add(bar,"Làm mới",async()=>await Reload());
    Add(bar,"Gỡ mục đã chọn",async()=>await Uninstall(),ButtonStyle.Primary);
    Add(bar,"Quét mục đang xem",async()=>await ScanSelected());
+   Add(bar,"Gỡ cưỡng bức…",async()=>await ForceUninstall());
    Add(bar,"Xuất CSV",()=>{ExportApps();return Task.FromResult(0);});
    deepMode.Text=Core.L.T("Quét sâu sau khi gỡ");deepMode.Checked=settings.DeepScanAfterUninstall;deepMode.CheckedChanged+=(s,e)=>settings.DeepScanAfterUninstall=deepMode.Checked;deepMode.AutoSize=true;deepMode.Margin=new Padding(12,8,16,0);deepMode.ForeColor=Theme.Text;bar.Controls.Add(deepMode);
    pupOnly.Text=Core.L.T("Chỉ hiện mục cảnh báo");pupOnly.AutoSize=true;pupOnly.Margin=new Padding(0,8,16,0);pupOnly.ForeColor=Theme.Text;pupOnly.CheckedChanged+=(s,e)=>Filter();bar.Controls.Add(pupOnly);
