@@ -10,15 +10,15 @@ using TweekPro.Tracks;
 
 namespace TweekPro {
  public partial class MainForm {
-  ListView tracksList=new SmoothListView();Label tracksOverlay,tracksSummary,tracksStage;TabPage tracksTab;
-  List<TrackResult> tracksResults=new List<TrackResult>();CancellationTokenSource tracksCancellation;
+  ListView tracksList=new SmoothListView();Label tracksOverlay,tracksSummary,tracksStage;TabPage tracksTab;CheckBox tracksExit;
+  List<TrackResult> tracksResults=new List<TrackResult>();CancellationTokenSource tracksCancellation;bool tracksExitDone,tracksMeasured,tracksRendering;
 
   /// <summary>Builds the Privacy Tracks tab: one row per trace rule with count, size and lock state; cleaning always goes to the vault.</summary>
   void BuildTracksTab(){
    var tab=tracksTab=new TabPage(Core.L.T("Dấu vết"));tabs.TabPages.Add(tab);
    SetupList(tracksList,new[]{"Dấu vết","Số mục","Dung lượng","Trạng thái","Vị trí","Mô tả"},new[]{300,80,100,220,300,380},true,true);
    tracksList.ItemCheck+=(s,e)=>{var r=(TrackResult)tracksList.Items[e.Index].Tag;if(r.Locked||r.Count==0)e.NewValue=CheckState.Unchecked;};
-   tracksList.ItemChecked+=(s,e)=>UpdateTracksSummary();
+   tracksList.ItemChecked+=(s,e)=>{UpdateTracksSummary();RememberTracksExitRules();};
    tracksList.DoubleClick+=(s,e)=>ShowTrackDetails();
    var host=Theme.ListHost(tracksList,out tracksOverlay);
    var bar=Bar();
@@ -26,8 +26,13 @@ namespace TweekPro {
    Add(bar,"Chọn mặc định",()=>{SetTracksChecks(true);return Task.FromResult(0);});
    Add(bar,"Bỏ chọn",()=>{SetTracksChecks(false);return Task.FromResult(0);});
    Add(bar,"Dọn dấu vết đã chọn (vào kho)",async()=>await CleanTracks(),ButtonStyle.Danger);
+   Add(bar,"Cookie giữ lại…",()=>{EditCookieKeep();return Task.FromResult(0);});
    Add(bar,"Xem mục",()=>{ShowTrackDetails();return Task.FromResult(0);});
-   var note=Theme.Note("Dấu vết là dữ liệu Windows và trình duyệt ghi lại thói quen dùng máy: tệp mở gần đây, Jump List, lịch sử Run, hộp Mở/Lưu, từ khóa tìm, lịch sử duyệt web. Chỉ những khóa HKCU và thư mục trong danh sách cho phép mới được dọn; không đụng mật khẩu, dấu trang, tiện ích. Mọi thứ đi vào Kho khôi phục: tệp được chuyển đi, giá trị Registry được lưu rồi xóa và có thể ghi lại. Cookie đăng nhập mặc định không chọn.",NoteKind.Warning);
+   tracksExit=new CheckBox{Text=Core.L.T("Dọn khi thoát Tweek Pro"),AutoSize=true,Margin=new Padding(12,8,16,0),ForeColor=Theme.Text,Checked=settings.TracksCleanOnExit};
+   tracksExit.CheckedChanged+=(s,e)=>{settings.TracksCleanOnExit=tracksExit.Checked;RememberTracksExitRules();SaveSettings();if(tracksExit.Checked)Log(Core.L.T("Dấu vết: các loại đang đánh dấu sẽ được dọn (vào Kho) mỗi khi đóng Tweek Pro; trình duyệt đang chạy sẽ được bỏ qua."));};
+   bar.Controls.Add(tracksExit);
+   TracksCleaner.CookieKeep=TracksCleaner.ParseKeep(settings.TracksCookieKeep);
+   var note=Theme.Note("Dấu vết là dữ liệu Windows và trình duyệt ghi lại thói quen dùng máy: tệp mở gần đây, Jump List, lịch sử Run, hộp Mở/Lưu, từ khóa tìm, Office/Acrobat gần đây, Remote Desktop, PowerShell, lịch sử duyệt web. Chỉ những khóa HKCU và thư mục trong danh sách cho phép mới được dọn; không đụng mật khẩu, dấu trang, tiện ích. Mọi thứ đi vào Kho khôi phục. Cookie mặc định không chọn; «Cookie giữ lại» giữ đăng nhập của các trang bạn nêu tên. «Dọn khi thoát» dọn lại các loại đang đánh dấu mỗi lần đóng Tweek Pro.",NoteKind.Warning);
    tracksStage=new Label{Dock=DockStyle.Top,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
    tracksSummary=new Label{Dock=DockStyle.Bottom,Height=34,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small};Theme.BorderTop(tracksSummary);
    tab.Controls.Add(host);tab.Controls.Add(tracksSummary);tab.Controls.Add(tracksStage);tab.Controls.Add(note);tab.Controls.Add(bar);
@@ -37,19 +42,49 @@ namespace TweekPro {
   }
 
   void RenderTracks(bool measured){
+   var remembered=TracksRemembered;tracksMeasured=measured;tracksRendering=true;
    tracksList.BeginUpdate();tracksList.Items.Clear();tracksList.Groups.Clear();
    foreach(var r in tracksResults){
-    string state=Core.L.T(r.Locked?"Bị khóa":!measured?"Chưa xem trước":r.Count==0?"Không có gì để dọn":"Có thể dọn")+(r.Rule.Sensitive?Core.L.T("  •  nhạy cảm"):"");
+    string state=Core.L.T(r.Locked?"Bị khóa":!measured?"Chưa xem trước":r.Count==0?"Không có gì để dọn":"Có thể dọn")+(r.Rule.Sensitive?Core.L.T("  •  nhạy cảm"):"")+(r.Sql?Core.L.T("  •  xóa theo dòng (SQL)"):"");
     var row=new ListViewItem(new[]{Core.L.T(r.Rule.Name),measured?r.Count.ToString("N0"):"…",r.Rule.Source==TrackSource.Registry?"—":measured?Presentation.BytesLabel(r.Bytes):"…",state,r.Roots.Count>0?String.Join(" | ",r.Roots.Select(p=>Presentation.ShortPath(p,60))):String.Join(" | ",r.Rule.Paths),Core.L.T(r.Rule.Description)}){Tag=r,ToolTipText=Core.L.T(r.Rule.Description)+"\r\n"+String.Join("\r\n",r.Rule.Paths)+(r.LockReason==""?"":"\r\n\r\n"+Core.L.T(r.LockReason))+(r.Note==""?"":"\r\n"+Core.L.T(r.Note))};
     if(r.Locked)row.ForeColor=Theme.Danger;else if(r.Rule.Sensitive)row.ForeColor=Theme.Warning;else if(measured&&r.Count==0)row.ForeColor=Theme.Muted;
     Theme.AssignGroup(tracksList,row,(Array.IndexOf(new[]{"Windows","Explorer","Ứng dụng","Trình duyệt"},r.Rule.Group)+1)+"-"+r.Rule.Group,Core.L.T(r.Rule.Group));
     Theme.StripeRow(row,tracksList.Items.Count);tracksList.Items.Add(row);
-    row.Checked=measured&&!r.Locked&&r.Count>0&&r.Rule.DefaultChecked;
+    row.Checked=measured&&!r.Locked&&r.Count>0&&(remembered!=null?remembered.Contains(r.Rule.Id):r.Rule.DefaultChecked);
    }
-   tracksList.EndUpdate();UpdateTracksSummary();
+   tracksList.EndUpdate();tracksRendering=false;UpdateTracksSummary();RememberTracksExitRules();
   }
 
-  void SetTracksChecks(bool value){tracksList.BeginUpdate();foreach(ListViewItem item in tracksList.Items){var r=(TrackResult)item.Tag;item.Checked=value&&!r.Locked&&r.Count>0&&r.Rule.DefaultChecked;}tracksList.EndUpdate();UpdateTracksSummary();}
+  /// <summary>Rule ids remembered for clean-on-exit, or null when the feature is off (default checks apply then).</summary>
+  HashSet<string> TracksRemembered { get { return settings.TracksCleanOnExit&&!String.IsNullOrWhiteSpace(settings.TracksExitRules)?new HashSet<string>(settings.TracksExitRules.Split(','),StringComparer.OrdinalIgnoreCase):null; } }
+
+  void SetTracksChecks(bool value){tracksRendering=true;tracksList.BeginUpdate();foreach(ListViewItem item in tracksList.Items){var r=(TrackResult)item.Tag;item.Checked=value&&!r.Locked&&r.Count>0&&r.Rule.DefaultChecked;}tracksList.EndUpdate();tracksRendering=false;UpdateTracksSummary();RememberTracksExitRules();}
+
+  /// <summary>While clean-on-exit is on and a preview has run, the checked rule ids are persisted so the exit run uses the user's latest selection.</summary>
+  void RememberTracksExitRules(){
+   if(tracksRendering||!tracksMeasured||tracksExit==null||!tracksExit.Checked||tracksList.Items.Count==0)return;
+   string ids=String.Join(",",tracksList.CheckedItems.Cast<ListViewItem>().Select(i=>((TrackResult)i.Tag).Rule.Id));
+   if(ids!=settings.TracksExitRules){settings.TracksExitRules=ids;SaveSettings();}
+  }
+
+  /// <summary>Runs the remembered rules once while the window closes; skipped in preview mode, when nothing is remembered, or when already done.</summary>
+  void RunTracksOnExit(){
+   if(tracksExitDone||!settings.TracksCleanOnExit||String.IsNullOrWhiteSpace(settings.TracksExitRules))return;
+   tracksExitDone=true;
+   try{TracksCleaner.CookieKeep=TracksCleaner.ParseKeep(settings.TracksCookieKeep);string line=TracksCleaner.CleanOnExit(settings.TracksExitRules.Split(','));Core.Log.Info(line);}
+   catch(Exception e){Core.Log.Warn("Dọn khi thoát lỗi: "+e.Message);}
+  }
+
+  /// <summary>Edits the cookie whitelist (hosts kept when the cookie rules run) and re-previews so the note reflects it.</summary>
+  void EditCookieKeep(){
+   using(var form=new CookieKeepForm(settings.TracksCookieKeep)){
+    if(form.ShowDialog(this)!=DialogResult.OK)return;
+    settings.TracksCookieKeep=form.Text2;TracksCleaner.CookieKeep=TracksCleaner.ParseKeep(form.Text2);SaveSettings();
+    Log(Core.L.F("Dấu vết: giữ cookie của {0} trang: {1}",TracksCleaner.CookieKeep.Count,String.Join(", ",TracksCleaner.CookieKeep.Take(10))));
+    foreach(var r in tracksResults)if(r.Rule.SqlTable!=null){r.Sql=r.Rule.SqlCapable&&Core.WinSqlite.Available&&TracksCleaner.CookieKeep.Count>0;r.Note=r.Sql?"Giữ cookie của: "+String.Join(", ",TracksCleaner.CookieKeep.Take(6)):"";}
+    RenderTracks(tracksResults.Any(r=>r.Roots.Count>0));
+   }
+  }
   List<TrackResult> CheckedTracks(){return tracksList.CheckedItems.Cast<ListViewItem>().Select(i=>(TrackResult)i.Tag).Where(r=>!r.Locked&&r.Count>0).ToList();}
 
   void UpdateTracksSummary(){
@@ -106,6 +141,25 @@ namespace TweekPro {
    tracksResults=rules.Select(r=>{var res=new TrackResult{Rule=r};int n=rnd[i++%rnd.Length];for(int k=0;k<n;k++)res.Items.Add(new TrackItem{Path=r.Source==TrackSource.Files?@"C:\Users\ADMIN\AppData\Roaming\Microsoft\Windows\Recent\item"+k+".lnk":"HKCU\\"+r.Paths[0]+" :: "+(char)('a'+k%26),Bytes=r.Source==TrackSource.Files?2048+k*311:0});res.Bytes=res.Items.Sum(x=>x.Bytes);res.Roots.Add(r.Source==TrackSource.Files?Environment.ExpandEnvironmentVariables(r.Paths[0]):"HKCU\\"+r.Paths[0]);return res;}).ToList();
    var cookies=tracksResults.First(r=>r.Rule.Id=="chromium-history");cookies.Locked=true;cookies.LockReason="Đang chạy: chrome — đóng trình duyệt rồi xem trước lại.";
    RenderTracks(true);Theme.SetOverlay(tracksOverlay,null,NoteKind.Info);if(show)tabs.SelectedTab=tracksTab;
+  }
+ }
+
+ /// <summary>Multi-line editor for the cookie whitelist; Text2 returns the raw text (parsed by TracksCleaner.ParseKeep).</summary>
+ public class CookieKeepForm:Form {
+  TextBox box;
+  public string Text2 { get { return box.Text; } }
+  public CookieKeepForm(string current){
+   Text=Core.L.T("Cookie giữ lại");Size=new Size(640,520);MinimumSize=new Size(520,400);StartPosition=FormStartPosition.CenterParent;ShowIcon=false;
+   Font=Theme.Body;BackColor=Theme.Canvas;ForeColor=Theme.Text;AutoScaleMode=AutoScaleMode.Dpi;
+   var header=Theme.HeaderBand(Core.L.T("Cookie giữ lại"),Core.L.T("Mỗi dòng một tên miền (ví dụ google.com giữ cả mail.google.com). Khi dọn cookie, chỉ các trang này còn đăng nhập; cookie khác bị xóa theo dòng bằng SQL và bản sao đầy đủ nằm trong Kho."),96);
+   box=new TextBox{Multiline=true,ScrollBars=ScrollBars.Vertical,Dock=DockStyle.Fill,Font=Theme.Mono,AcceptsReturn=true,Text=(current??"").Replace("\n","\r\n").Replace("\r\r","\r"),BackColor=Theme.Surface,ForeColor=Theme.Text,BorderStyle=BorderStyle.FixedSingle};
+   var host=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Canvas};host.Controls.Add(box);
+   var hint=Theme.Note(Core.WinSqlite.Available?"Danh sách áp dụng cho Chrome / Edge / Brave và Firefox. Để trống = xóa toàn bộ cookie (chuyển cả tệp vào Kho).":"Máy này không có winsqlite3.dll (Windows 10+), nên danh sách chưa dùng được: cookie sẽ bị dọn toàn bộ.",Core.WinSqlite.Available?NoteKind.Info:NoteKind.Warning);
+   var buttons=new FlowLayoutPanel{Dock=DockStyle.Bottom,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(16,0,16,12),AutoSize=true,BackColor=Theme.Canvas};
+   var cancel=Theme.Button("Hủy",ButtonStyle.Secondary);cancel.Click+=(s,e)=>{DialogResult=DialogResult.Cancel;Close();};
+   var ok=Theme.Button("Lưu",ButtonStyle.Primary);ok.Click+=(s,e)=>{var parsed=TracksCleaner.ParseKeep(box.Text);box.Text=String.Join("\r\n",parsed);DialogResult=DialogResult.OK;Close();};
+   buttons.Controls.Add(cancel);buttons.Controls.Add(ok);
+   Controls.Add(host);Controls.Add(hint);Controls.Add(buttons);Controls.Add(header);AcceptButton=null;CancelButton=cancel;
   }
  }
 

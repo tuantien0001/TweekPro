@@ -32,6 +32,11 @@ namespace TweekPro.Core {
   [DataMember(Name="aiEndpoint")] public string AiEndpoint="";
   [DataMember(Name="aiKeyProtected")] public string AiKeyProtected="";
   [DataMember(Name="aiDenyActions")] public bool AiDenyActions=false;
+  /// <summary>Cookie hosts the Tracks tab keeps when cleaning browser cookies (one per line).</summary>
+  [DataMember(Name="tracksCookieKeep")] public string TracksCookieKeep="";
+  /// <summary>Run the Tracks rules listed in TracksExitRules when Tweek Pro closes.</summary>
+  [DataMember(Name="tracksCleanOnExit")] public bool TracksCleanOnExit=false;
+  [DataMember(Name="tracksExitRules")] public string TracksExitRules="";
   /// <summary>How the assistant may change the system: "readonly" (never), "confirm" (dialog per action) or "auto" (acts at once; engine safety limits still apply).</summary>
   [DataMember(Name="aiActionMode")] public string AiActionMode=AiActionModes.Confirm;
   public bool AiAllowActions { get { return AiActionMode!=AiActionModes.ReadOnly; } }
@@ -52,6 +57,7 @@ namespace TweekPro.Core {
    Language=L.Normalize(Language);
    AiProvider=AI.AiClient.Normalize(AiProvider);
    if(AiModel==null)AiModel="";if(AiEndpoint==null)AiEndpoint="";if(AiKeyProtected==null)AiKeyProtected="";
+   if(TracksCookieKeep==null)TracksCookieKeep="";if(TracksExitRules==null)TracksExitRules="";
    AiActionMode=AiActionModes.Normalize(AiActionMode,AiDenyActions);AiDenyActions=AiActionMode==AiActionModes.ReadOnly;
    if(WindowWidth<0)WindowWidth=0;if(WindowHeight<0)WindowHeight=0;
   }
