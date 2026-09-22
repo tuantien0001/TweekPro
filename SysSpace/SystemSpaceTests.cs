@@ -12,9 +12,10 @@ namespace TweekPro.SysSpace {
 
   public static void Run(){
    var items=SystemSpace.Catalog();
-   Assert(items.Count==8&&items.Select(i=>i.Id).Distinct().Count()==8&&items.All(i=>!String.IsNullOrEmpty(i.ToolCommand)&&!String.IsNullOrEmpty(i.ToolLabel)),"catalog complete");
+   Assert(items.Count==9&&items.Select(i=>i.Id).Distinct().Count()==9&&items.All(i=>!String.IsNullOrEmpty(i.ToolCommand)&&!String.IsNullOrEmpty(i.ToolLabel)),"catalog complete");
    Assert(items.Where(i=>!i.Info).All(i=>!String.IsNullOrEmpty(i.Warning)),"every action item carries a warning");
-   foreach(var it in items){var cmds=SystemSpace.Commands(it,new[]{new DriverPackage{Published="oem12.inf"}});Assert(cmds.Count>=1,"command for "+it.Id);}
+   foreach(var it in items.Where(i=>!i.Vaulted)){var cmds=SystemSpace.Commands(it,new[]{new DriverPackage{Published="oem12.inf"}});Assert(cmds.Count>=1,"command for "+it.Id);}
+   Assert(items.Count(i=>i.Vaulted)==1&&SystemSpace.Commands(items.First(i=>i.Vaulted)).Count==0,"the vaulted item has no external command");
    Assert(SystemSpace.Commands(items.First(i=>i.Id=="windows-old"))[0].Value=="/sagerun:"+SystemSpace.SageSet,"cleanmgr sageset");
    Assert(SystemSpace.Commands(items.First(i=>i.Id=="winsxs"))[0].Value=="/Online /Cleanup-Image /StartComponentCleanup","DISM never uses /ResetBase");
    var pnp=SystemSpace.Commands(items.First(i=>i.Id=="driver-store"),new[]{new DriverPackage{Published="oem12.inf"},new DriverPackage{Published="nvhda.inf"},new DriverPackage{Published="oem7.inf; & del"}});
@@ -48,9 +49,45 @@ namespace TweekPro.SysSpace {
     Assert(hib.Available&&hib.Bytes==4096,"single-file item measured");
     var store=new SpaceItem{Id="driver-store"};SystemSpace.Measure(store,TimeSpan.FromSeconds(1),drivers);
     Assert(store.Available&&store.Details.Count==2&&store.Note.StartsWith("2 "),"driver-store item summarizes older packages from supplied list");
+    Assert(old.Reclaim==old.Bytes&&hib.Reclaim==4096&&store.Reclaim==store.Bytes,"reclaim estimate equals the measured size for whole-folder items");
     Assert(SystemSpace.Tail(new ToolResult{Output="a\r\nb\r\n\r\nc",Error="d"},2)=="c\r\nd","tail keeps the last lines");
+    var lines=new List<string>();string all=SystemSpace.ReadLines(new StringReader("Deployment Image\r\n[====   10.0%   ]\r[====   55.5%   ]\r\nThe operation completed successfully.\n"),lines.Add);
+    Assert(lines.Count==4&&lines[1]=="[====   10.0%   ]"&&lines[2]=="[====   55.5%   ]"&&all.Split('\n').Length==5,"CR-separated progress surfaces as separate lines: "+lines.Count);
+    var dism=SystemSpace.ParseAnalyze("Deployment Image Servicing and Management tool\r\nVersion: 10.0.22621.1\r\n\r\nImage Version: 10.0.22631.4317\r\n\r\n[==========================100.0%==========================]\r\n\r\nComponent Store (WinSxS) information:\r\n\r\nWindows Explorer Reported Size of Component Store : 8.02 GB\r\n\r\nActual Size of Component Store : 7.81 GB\r\n\r\n    Shared with Windows : 6.49 GB\r\n    Backups and Disabled Features : 1.31 GB\r\n    Cache and Temporary Data :  0 bytes\r\n\r\nDate of Last Cleanup : 2024-01-01 10:00:00\r\n\r\nNumber of Reclaimable Packages : 3\r\nComponent Store Cleanup Recommended : Yes\r\n\r\nThe operation completed successfully.");
+    Assert(dism.Count==5&&Math.Abs(dism[0]-8.02*1024*1024*1024)<2&&Math.Abs(dism[3]-1.31*1024*1024*1024)<2&&dism[4]==0,"DISM analysis sizes parsed in order: "+String.Join(",",dism));
+    var dismVi=SystemSpace.ParseAnalyze("Kích cỡ theo Explorer : 8,02 GB\r\nKích cỡ thực : 7,81 GB\r\n    Chia sẻ với Windows : 6,49 GB\r\n    Bản sao lưu và tính năng đã tắt : 512 MB\r\n    Bộ đệm và dữ liệu tạm : 12 KB\r\n");
+    Assert(dismVi.Count==5&&dismVi[3]==512L*1024*1024&&dismVi[4]==12*1024,"localized labels and decimal commas still parse");
+    InstallerOrphans(fixture);
     if(Environment.OSVersion.Platform!=PlatformID.Win32NT)MustFail(()=>SystemSpace.Run(old,null,CancellationToken.None),"tools never run off Windows");
    }finally{try{Directory.Delete(fixture,true);}catch(Exception){}}
+  }
+
+  /// <summary>Orphan detection on a fixture "Installer" folder (referenced, fresh, non-package and nested files are all kept), then the vault move and restore of the orphans.</summary>
+  static void InstallerOrphans(string fixture){
+   string installer=Path.Combine(fixture,"Installer");Directory.CreateDirectory(Path.Combine(installer,"{GUID}"));
+   var oldTime=DateTime.Now.AddDays(-30);
+   foreach(string name in new[]{"kept.msi","orphan1.msi","orphan2.msp","fresh.msi","notes.txt"}){string p=Path.Combine(installer,name);File.WriteAllBytes(p,new byte[name.StartsWith("orphan1")?4096:1024]);if(name!="fresh.msi"){File.SetLastWriteTime(p,oldTime);File.SetCreationTime(p,oldTime);}}
+   string nested=Path.Combine(installer,"{GUID}","nested.msi");File.WriteAllBytes(nested,new byte[512]);File.SetLastWriteTime(nested,oldTime);File.SetCreationTime(nested,oldTime);
+   var referenced=new HashSet<string>(StringComparer.OrdinalIgnoreCase){Path.Combine(installer,"KEPT.MSI").ToUpperInvariant()};
+   var orphans=SystemSpace.Orphans(installer,referenced,DateTime.Now-SystemSpace.InstallerMinAge);
+   Assert(orphans.Count==2&&orphans[0].Name=="orphan1.msi"&&orphans[1].Name=="orphan2.msp","only unreferenced, old, top-level .msi/.msp files are orphans (largest first): "+String.Join(",",orphans.Select(o=>o.Name)));
+   Assert(SystemSpace.Orphans(installer,new HashSet<string>(StringComparer.OrdinalIgnoreCase),DateTime.Now.AddDays(-60)).Count==0,"nothing older than 60 days");
+   if(Environment.OSVersion.Platform!=PlatformID.Win32NT)return;
+   string originalVault=Engine.Vault;Engine.Vault=Path.Combine(fixture,"Vault");
+   try{
+    var item=new SpaceItem{Id="installer-orphans",Name="Installer",Location=installer};item.Paths.AddRange(orphans.Select(o=>o.FullName));
+    item.Paths.Add(Path.Combine(installer,"notes.txt"));item.Paths.Add(Path.Combine(fixture,"outside.msi"));
+    int products;var live=SystemSpace.ReferencedPackages(out products);
+    if(products==0){Core.Log.Warn("SystemSpaceTests: no MSI products readable, vault move skipped.");return;}
+    Assert(live.All(p=>p.IndexOf('\\')>0),"referenced packages are full paths");
+    var backup=SystemSpace.MoveOrphans(item,CancellationToken.None);
+    Assert(backup.Kind==SystemSpace.InstallerBackupKind&&backup.State=="NeedsReview"&&backup.Error.Contains("notes.txt")&&backup.Bytes==4096+1024,"orphans moved; the .txt and the outside file were refused and reported: "+backup.Error);
+    Assert(!File.Exists(Path.Combine(installer,"orphan1.msi"))&&!File.Exists(Path.Combine(installer,"orphan2.msp"))&&File.Exists(Path.Combine(installer,"kept.msi"))&&File.Exists(Path.Combine(installer,"fresh.msi"))&&File.Exists(Path.Combine(installer,"notes.txt")),"only the orphans left the folder");
+    var listed=Engine.Backups().First(b=>b.Id==backup.Id);
+    SystemSpace.RestoreInstaller(listed);
+    Assert(listed.State=="Restored"&&File.Exists(Path.Combine(installer,"orphan1.msi"))&&File.Exists(Path.Combine(installer,"orphan2.msp")),"orphans restored into the Installer folder");
+    var bogus=new Backup{Id=backup.Id,Kind="Junk"};MustFail(()=>SystemSpace.RestoreInstaller(bogus),"restore refuses other kinds");
+   }finally{Engine.Vault=originalVault;}
   }
  }
 }
