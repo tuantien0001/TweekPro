@@ -12,7 +12,7 @@ namespace TweekPro.Extensions {
 
  /// <summary>One installed extension, read-only.</summary>
  public class BrowserExtension {
-  public string Browser, Profile, Id, Name, Version, Description, Folder, Source, Warning=""; public bool Enabled=true, Policy, FromStore=true; public int Location;
+  public string Browser, Profile, ProfileFolder, Id, Name, Version, Description, Folder, Source, Warning=""; public bool Enabled=true, Policy, FromStore=true; public int Location;
   public long Bytes=-1; public DateTime Installed=DateTime.MinValue; public List<string> Permissions=new List<string>();
   public string Key { get { return Browser+"|"+Profile+"|"+Id; } }
  }
@@ -79,7 +79,7 @@ namespace TweekPro.Extensions {
      string versionDir=null;try{versionDir=Directory.EnumerateDirectories(idDir).Where(d=>File.Exists(Path.Combine(d,"manifest.json"))).OrderByDescending(d=>Path.GetFileName(d),StringComparer.OrdinalIgnoreCase).FirstOrDefault();}catch(IOException){}
      if(versionDir==null)continue;
      var e=FromManifest(Path.Combine(versionDir,"manifest.json"));if(e==null)continue;
-     e.Browser=p.Browser;e.Profile=p.Name;e.Id=id;e.Folder=versionDir;seen.Add(id);
+     e.Browser=p.Browser;e.Profile=p.Name;e.ProfileFolder=p.Folder;e.Id=id;e.Folder=versionDir;seen.Add(id);
      JsonElement s;if(settings.TryGetValue(id,out s))Enrich(e,s);
      Finish(e,forced);list.Add(e);
     }
@@ -88,7 +88,7 @@ namespace TweekPro.Extensions {
      if(seen.Contains(pair.Key)||pair.Key.Length!=32)continue;JsonElement path,manifest;
      if(!pair.Value.TryGetProperty("manifest",out manifest)||manifest.ValueKind!=JsonValueKind.Object)continue;
      var e=FromManifestElement(manifest,null);if(e==null)continue;
-     e.Browser=p.Browser;e.Profile=p.Name;e.Id=pair.Key;e.Folder=pair.Value.TryGetProperty("path",out path)&&path.ValueKind==JsonValueKind.String?path.GetString():"";
+     e.Browser=p.Browser;e.Profile=p.Name;e.ProfileFolder=p.Folder;e.Id=pair.Key;e.Folder=pair.Value.TryGetProperty("path",out path)&&path.ValueKind==JsonValueKind.String?path.GetString():"";
      if(e.Folder!=""&&!Path.IsPathRooted(e.Folder))e.Folder=Path.Combine(p.Folder,"Extensions",e.Folder);
      Enrich(e,pair.Value);if(e.Location==5||e.Location==10)continue;
      Finish(e,forced);list.Add(e);
@@ -162,7 +162,7 @@ namespace TweekPro.Extensions {
      string location=a.TryGetProperty("location",out v)&&v.ValueKind==JsonValueKind.String?v.GetString():"";
      if(location.StartsWith("app-builtin")||location=="app-system-defaults"||location=="app-system-addons")continue;
      if(type!="extension"&&type!="theme"&&type!="dictionary"&&type!="locale")continue;
-     var e=new BrowserExtension{Browser=p.Browser,Profile=p.Name};
+     var e=new BrowserExtension{Browser=p.Browser,Profile=p.Name,ProfileFolder=p.Folder};
      e.Id=a.TryGetProperty("id",out v)&&v.ValueKind==JsonValueKind.String?v.GetString():"";
      JsonElement dl;e.Name=a.TryGetProperty("defaultLocale",out dl)&&dl.TryGetProperty("name",out v)&&v.ValueKind==JsonValueKind.String?v.GetString():e.Id;
      e.Description=dl.ValueKind==JsonValueKind.Object&&dl.TryGetProperty("description",out v)&&v.ValueKind==JsonValueKind.String?v.GetString():"";

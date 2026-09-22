@@ -277,6 +277,8 @@ namespace TweekPro {
    if(b.Kind==Stale.StaleFinder.BackupKind){Stale.StaleFinder.Restore(b);return;}
    if(b.Kind==Tracks.TracksCleaner.BackupKind){Tracks.TracksCleaner.Restore(b);return;}
    if(b.Kind==RegClean.RegistryCleaner.BackupKind){RegClean.RegistryCleaner.Restore(b);return;}
+   if(b.Kind==Extensions.ExtensionRemoval.BackupKind){Extensions.ExtensionRemoval.Restore(b);return;}
+   if(b.Kind==SysSpace.SystemSpace.InstallerBackupKind){SysSpace.SystemSpace.RestoreInstaller(b);return;}
    if(b.Kind=="Store"){Store.WindowsApps.Restore(b);return;}
    if(b.Kind=="Service"){Network.ProcessControl.Restore(b);return;}
    if(b.Kind==Startup.StartupSources.BackupKind){Startup.StartupSources.Restore(b);return;}

@@ -128,7 +128,7 @@ namespace TweekPro {
    Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
    Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
    if(!preview) Shown+=async(s,e)=>{await Guard(async()=>await Reload());await AutoCheckForUpdates();};
-   FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,Core.L.T("Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất."));}};
+   FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,Core.L.T("Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất."));return;}if(!preview)RunTracksOnExit();};
    ResumeLayout(true);
    try{if(File.Exists(sessions))history=Engine.Load<List<AppEntry>>(sessions);}catch(Exception e){Log(Core.L.T("Không đọc được lịch sử: ")+e.Message);}
   }
@@ -306,7 +306,7 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary+Core.L.T("\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng."),Core.L.T("Kết quả dọn"),MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
   static string StateLabel(Backup b){return Core.L.T(b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":b.State=="PendingReboot"?"Hẹn xóa khi khởi động lại":"Cần kiểm tra");}
-  static string KindLabel(Backup b){return b.Kind==Explorer.ExplorerTweaks.BackupKind?"Explorer":b.Kind==Network.FirewallBlock.BackupKind?Core.L.T("Chặn mạng"):b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind==Startup.StartupSources.BackupKind?Core.L.T("Khởi động ứng dụng"):b.Purpose==Startup.StartupInspector.ApprovalPurpose?Core.L.T("Cờ khởi động"):b.Kind=="Junk"?Core.L.T("Rác"):b.Kind==Stale.StaleFinder.BackupKind?Stale.StaleFinder.BackupKindLabel():b.Kind==Tracks.TracksCleaner.BackupKind?Tracks.TracksCleaner.BackupKindLabel():b.Kind==RegClean.RegistryCleaner.BackupKind?RegClean.RegistryCleaner.BackupKindLabel():b.Kind=="Duplicate"?Core.L.T("Bản trùng"):b.Kind=="Folder"?Core.L.T("Thư mục"):b.Kind=="File"?Core.L.T("Tệp"):b.Kind=="RegistryValue"?Core.L.T("Giá trị Registry"):b.Kind=="Registry"?Core.L.T("Khóa Registry"):b.Kind;}
+  static string KindLabel(Backup b){return b.Kind==Explorer.ExplorerTweaks.BackupKind?"Explorer":b.Kind==Network.FirewallBlock.BackupKind?Core.L.T("Chặn mạng"):b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind==Startup.StartupSources.BackupKind?Core.L.T("Khởi động ứng dụng"):b.Purpose==Startup.StartupInspector.ApprovalPurpose?Core.L.T("Cờ khởi động"):b.Kind=="Junk"?Core.L.T("Rác"):b.Kind==Stale.StaleFinder.BackupKind?Stale.StaleFinder.BackupKindLabel():b.Kind==Tracks.TracksCleaner.BackupKind?Tracks.TracksCleaner.BackupKindLabel():b.Kind==RegClean.RegistryCleaner.BackupKind?RegClean.RegistryCleaner.BackupKindLabel():b.Kind==Extensions.ExtensionRemoval.BackupKind?Extensions.ExtensionRemoval.BackupKindLabel():b.Kind==SysSpace.SystemSpace.InstallerBackupKind?Core.L.T("Gói Installer"):b.Kind=="Duplicate"?Core.L.T("Bản trùng"):b.Kind=="Folder"?Core.L.T("Thư mục"):b.Kind=="File"?Core.L.T("Tệp"):b.Kind=="RegistryValue"?Core.L.T("Giá trị Registry"):b.Kind=="Registry"?Core.L.T("Khóa Registry"):b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){

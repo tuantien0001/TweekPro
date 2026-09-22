@@ -20,10 +20,12 @@ namespace TweekPro {
    var host=Theme.ListHost(extList,out extOverlay);
    var bar=Bar();
    Add(bar,"Làm mới",async()=>await LoadExtensions(),ButtonStyle.Primary);
+   Add(bar,"Gỡ tiện ích đã chọn (vào Kho)",async()=>await RemoveExtensions(),ButtonStyle.Danger);
+   Add(bar,"Dọn Forcelist (ép cài)…",async()=>await CleanForcelist(),ButtonStyle.Danger);
    Add(bar,"Mở thư mục tiện ích",()=>{OpenExtensionFolder();return Task.FromResult(0);});
    Add(bar,"Mở trang quản lý của trình duyệt",()=>{OpenExtensionManager();return Task.FromResult(0);});
    Add(bar,"Xuất CSV",()=>{ExportExtensions();return Task.FromResult(0);});
-   var note=Theme.Note("Chỉ đọc: liệt kê tiện ích của Chrome, Edge, Brave, Vivaldi, Opera và Firefox trong mọi hồ sơ, kèm nguồn cài (cửa hàng, ép cài bằng chính sách, cài ngoài) và quyền rộng. Gỡ tiện ích bằng trang quản lý của chính trình duyệt để trạng thái đồng bộ đúng; tiện ích «ép cài bằng chính sách» trên máy cá nhân thường là phần mềm không mong muốn — kiểm tra khóa ExtensionInstallForcelist.",NoteKind.Info);
+   var note=Theme.Note("Liệt kê tiện ích của Chrome, Edge, Brave, Vivaldi, Opera và Firefox trong mọi hồ sơ, kèm nguồn cài (cửa hàng, ép cài bằng chính sách, cài ngoài) và quyền rộng. «Gỡ» chỉ chạy khi trình duyệt đã đóng: thư mục tiện ích, mục cấu hình trong Preferences, nguồn cài trong Registry và giá trị ExtensionInstallForcelist đều được lưu vào Kho rồi mới xóa. «Dọn Forcelist» gỡ toàn bộ chính sách ép cài (HKLM + HKCU) — trên máy cá nhân, đó gần như luôn là phần mềm không mong muốn.",NoteKind.Warning);
    extSummary=new Label{Dock=DockStyle.Bottom,Height=34,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small};Theme.BorderTop(extSummary);
    tab.Controls.Add(host);tab.Controls.Add(extSummary);tab.Controls.Add(note);tab.Controls.Add(bar);
    Theme.SetOverlay(extOverlay,"Chưa tải.\r\nBấm Làm mới để liệt kê tiện ích của các trình duyệt đã cài.",NoteKind.Info);
@@ -52,6 +54,48 @@ namespace TweekPro {
   }
 
   BrowserExtension SelectedExtension(){if(extList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một tiện ích."));return (BrowserExtension)extList.SelectedItems[0].Tag;}
+
+  /// <summary>Confirms, makes sure the browser is closed (offering to close it), then removes every selected extension through the vault.</summary>
+  async Task RemoveExtensions(){
+   var selected=extList.SelectedItems.Cast<ListViewItem>().Select(i=>(BrowserExtension)i.Tag).ToList();
+   if(selected.Count==0)throw new IOException(Core.L.T("Chọn một hoặc nhiều tiện ích để gỡ."));
+   var refused=selected.Select(e=>new{e,reason=ExtensionRemoval.RefuseReason(e)}).Where(x=>x.reason!=null).ToList();
+   if(refused.Count>0)throw new IOException(String.Join("\r\n",refused.Take(5).Select(x=>x.e.Name+": "+Core.L.T(x.reason))));
+   string list=String.Join("\r\n",selected.Take(12).Select(e=>"• "+e.Name+" — "+e.Browser+" / "+e.Profile+(e.Policy?Core.L.T("  (ép cài — sẽ gỡ cả Forcelist)"):"")))+(selected.Count>12?"\r\n… +"+(selected.Count-12):"");
+   if(!Confirm(Core.L.F("Gỡ {0} tiện ích vào Kho khôi phục?\r\n\r\n{1}\r\n\r\nTrình duyệt phải đóng. Thư mục tiện ích, mục cấu hình và chính sách liên quan được lưu lại; khôi phục từ tab Kho khôi phục (nếu trình duyệt từ chối mục cấu hình cũ, cài lại từ cửa hàng).",selected.Count,list)))return;
+   foreach(string browser in selected.Select(e=>e.Browser).Distinct())await EnsureBrowserClosed(browser);
+   int done=0,failed=0;var errors=new List<string>();
+   foreach(var e in selected){
+    var current=e;
+    try{await Task.Run(()=>ExtensionRemoval.Remove(current,current.ProfileFolder));done++;Log(Core.L.F("Đã gỡ tiện ích {0} ({1} / {2}) vào Kho.",current.Name,current.Browser,current.Profile));}
+    catch(Exception ex){failed++;errors.Add(current.Name+": "+ex.Message);Log(Core.L.T("Gỡ tiện ích lỗi: ")+current.Name+": "+ex.Message);}
+   }
+   LoadBackups();
+   string summary=Core.L.F("Đã gỡ {0} tiện ích, {1} lỗi.",done,failed);
+   MessageBox.Show(this,summary+(errors.Count>0?"\r\n\r\n"+String.Join("\r\n",errors.Take(5)):"")+Core.L.T("\r\n\r\nMở lại trình duyệt để kiểm tra; khôi phục trong tab Kho khôi phục."),Core.L.T("Gỡ tiện ích"),MessageBoxButtons.OK,failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
+   await LoadExtensions();
+  }
+
+  /// <summary>Throws when the browser is still running after the user declined or the graceful close timed out.</summary>
+  async Task EnsureBrowserClosed(string browser){
+   if(ExtensionRemoval.Running(browser).Count==0)return;
+   if(!Confirm(Core.L.F("{0} đang chạy. Đóng {0} ngay để gỡ tiện ích? (Tab đang mở được trình duyệt lưu vào phiên; tệp chưa lưu trên web có thể mất.)",browser)))throw new IOException(Core.L.F("Đóng {0} rồi thử lại.",browser));
+   bool closed=await Task.Run(()=>ExtensionRemoval.CloseBrowser(browser,TimeSpan.FromSeconds(15)));
+   if(!closed)throw new IOException(Core.L.F("{0} vẫn còn chạy (có thể đang hỏi lưu). Đóng bằng tay rồi thử lại.",browser));
+  }
+
+  /// <summary>Lists every ExtensionInstallForcelist value with the extension name when known, then removes the chosen ones through the vault.</summary>
+  async Task CleanForcelist(){
+   var entries=await Task.Run(()=>ExtensionRemoval.ForcelistEntries());
+   if(entries.Count==0){MessageBox.Show(this,Core.L.T("Không có chính sách ExtensionInstallForcelist nào trong HKLM/HKCU. Máy này không bị ép cài tiện ích."),Core.L.T("Dọn Forcelist"),MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+   var names=extItems.GroupBy(e=>e.Browser+"|"+e.Id,StringComparer.OrdinalIgnoreCase).ToDictionary(g=>g.Key,g=>g.First().Name,StringComparer.OrdinalIgnoreCase);
+   string list=String.Join("\r\n",entries.Take(15).Select(f=>{string n;return "• "+f.Browser+"  "+f.Id+(names.TryGetValue(f.Browser+"|"+f.Id,out n)?"  («"+n+"»)":Core.L.T("  (không có trong hồ sơ nào)"))+"  —  "+f.Hive+"\\"+f.Key;}))+(entries.Count>15?"\r\n… +"+(entries.Count-15):"");
+   if(!Confirm(Core.L.F("Tìm thấy {0} giá trị ép cài tiện ích:\r\n\r\n{1}\r\n\r\nXóa toàn bộ (lưu vào Kho trước)? Trình duyệt sẽ tự gỡ các tiện ích này ở lần mở sau; nếu máy thuộc tổ chức có quản trị, hãy hỏi IT trước.",entries.Count,list)))return;
+   var backup=await Task.Run(()=>ExtensionRemoval.RemoveForcelist(entries));
+   LoadBackups();Log(Core.L.F("Đã xóa {0} giá trị ExtensionInstallForcelist (bản sao lưu {1}).",entries.Count,backup.Id.Substring(0,8)));
+   MessageBox.Show(this,Core.L.F("Đã xóa {0} giá trị Forcelist. Mở lại trình duyệt để nó gỡ tiện ích bị ép cài; nếu chính sách xuất hiện lại, một tác vụ nền đang ghi lại nó — kiểm tra tab Khởi động và Dịch vụ.",entries.Count),Core.L.T("Dọn Forcelist"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+   await LoadExtensions();
+  }
   void OpenExtensionFolder(){var e=SelectedExtension();if(String.IsNullOrEmpty(e.Folder)||!Directory.Exists(e.Folder))throw new IOException(Core.L.T("Tiện ích này không có thư mục trên đĩa (được nhúng trong hồ sơ)."));System.Diagnostics.Process.Start("explorer.exe","\""+e.Folder+"\"");}
   void OpenExtensionManager(){var e=SelectedExtension();var info=BrowserExtensions.ManagerPage(e.Browser);if(info==null)throw new IOException(Core.L.F("Không tìm thấy tệp chạy của {0}; mở trang tiện ích bằng tay trong trình duyệt.",e.Browser));System.Diagnostics.Process.Start(info);}
 
