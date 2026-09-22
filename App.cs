@@ -127,7 +127,7 @@ namespace TweekPro {
    Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nTweek Pro đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
    Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
    Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
-   if(!preview) Shown+=async(s,e)=>{await Guard(async()=>await Reload());await AutoCheckForUpdates();};
+   if(!preview) Shown+=async(s,e)=>{await Guard(async()=>await Reload());await Guard(async()=>await AutoHealthCheck());await AutoCheckForUpdates();};
    FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,Core.L.T("Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất."));return;}if(!preview)RunTracksOnExit();};
    ResumeLayout(true);
    try{if(File.Exists(sessions))history=Engine.Load<List<AppEntry>>(sessions);}catch(Exception e){Log(Core.L.T("Không đọc được lịch sử: ")+e.Message);}

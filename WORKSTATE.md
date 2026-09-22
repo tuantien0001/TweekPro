@@ -1,10 +1,16 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 12:30 (Asia/Bangkok).
-Status: DONE (Cursor). Owner (12:17): "thay exe tại chỗ hoặc và release.ps1 để cắt 0.7.6".
+Updated: 2026-09-22 17:10 (Asia/Bangkok).
+Status: DONE (Cursor), not released. Owner (16:56): Overview needs drive rings + auto-run the health check on launch.
 Last editor: Cursor.
 
-## Current task (12:30)
+## Current task (17:10)
+
+Q. DONE Overview: drive rings + auto check. `Health/HealthCheck.cs`: `DriveGauge` (Name/Free/Total, `UsedFraction` clamped, `Level`), `HealthCheck.DriveLevel` (shared with the Disk finding), `ReadDrives` (fixed + ready, letter order, never throws), `DriveLabel`. `Health/HealthGauge.cs`: `HealthRenderer.Draw(..., drives)` puts one 72 px ring per drive on the right of the card (`DrivesThatFit` keeps ≥360 px for the text block), two-line caption "{0} trống" / "/ total"; `HealthGaugePanel.Drives`. `Health/HealthUI.cs`: `RefreshDriveRings`, `AutoHealthCheck` (rings, then `RunHealthCheck` if `settings.HealthAutoCheck`), rings re-read inside every check, "Tự kiểm tra khi mở" checkbox saves `Settings.HealthAutoCheck` (default true, restored in `Defaults`), list overlay says "Đang kiểm tra…" during the first run and reverts if stopped. `App.cs` Shown: Reload → `Guard(AutoHealthCheck)` → `AutoCheckForUpdates`. LangEn pairs added; gauge idle text now says the check runs on launch. Tests in `HealthTests` (levels, fraction clamps, label, live drives, slot fitting). README tab row + `### 0.7.7 (chưa phát hành)`; screenshots regenerated 17:05 (health.png shows C:/D:/E: rings).
+- Verification: build 0 W / 0 E; elevated `--self-test` PASS 17:08. Version string still 0.7.6.
+- NEXT: install this build over `C:\Program Files\Tweek Pro\TweekPro-0.7.6.exe` (owner's habit) or cut 0.7.7 on request.
+
+## Previous task (12:30)
 
 P. DONE Release v0.7.6. `release.ps1 -Version 0.7.6` elevated → build 0 W / 0 E, self-test PASS 12:18, commit `b8c2235` "Release v0.7.6", tag `v0.7.6` (`5b9640d`), both on origin. Actions run 35690206135 success; Release published 12:19 UTC+7 with `TweekPro-0.7.6-Setup.exe` (5.5 MB) + portable zip: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.6 . Setup installed (`/VERYSILENT /CLOSEAPPLICATIONS /NORESTART`, exit 0) → `C:\Program Files\Tweek Pro\TweekPro-0.7.6.exe` 0.7.6.0 running since 12:29 (PID 30868). README `### 0.7.6` finalized by the script; next changelog heading will be `### 0.7.7 (chưa phát hành)`. Note: this shell has no git identity/`gh`; commit with `git -c user.name='Cursor Agent' -c user.email=cursoragent@cursor.com`, poll Actions via api.github.com.
 

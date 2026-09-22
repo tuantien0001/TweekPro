@@ -25,6 +25,13 @@ namespace TweekPro.Health {
   public int PupCount; public int PupHigh; public bool PupMeasured=true;
  }
 
+ /// <summary>Free and total bytes of one fixed drive, drawn as a ring on the Overview card.</summary>
+ public class DriveGauge {
+  public string Name; public long FreeBytes; public long TotalBytes; public string Label;
+  public double UsedFraction { get { return TotalBytes<=0?0:Math.Min(1.0,Math.Max(0.0,1.0-(double)FreeBytes/TotalBytes)); } }
+  public HealthSeverity Level { get { return HealthCheck.DriveLevel(FreeBytes,TotalBytes); } }
+ }
+
  /// <summary>Score, grade and the ordered list of findings produced by one health check.</summary>
  public class HealthReport {
   public List<HealthFinding> Findings=new List<HealthFinding>();
@@ -131,11 +138,36 @@ namespace TweekPro.Health {
    return f;
   }
 
+  /// <summary>Free-space severity shared by the system-drive finding and the drive rings: 20% good, 10% low, 5% medium, else high.</summary>
+  public static HealthSeverity DriveLevel(long free,long total){
+   if(total<=0)return HealthSeverity.Good;
+   double ratio=(double)free/total;
+   return ratio>=0.20?HealthSeverity.Good:ratio>=0.10?HealthSeverity.Low:ratio>=0.05?HealthSeverity.Medium:HealthSeverity.High;
+  }
+
+  /// <summary>Ready fixed drives in letter order with a "free / total" label; drives that cannot report a size are skipped, never thrown.</summary>
+  public static List<DriveGauge> ReadDrives(){
+   var list=new List<DriveGauge>();
+   System.IO.DriveInfo[] drives;
+   try{drives=System.IO.DriveInfo.GetDrives();}catch(Exception){return list;}
+   foreach(var d in drives){
+    try{
+     if(d.DriveType!=System.IO.DriveType.Fixed||!d.IsReady||d.TotalSize<=0)continue;
+     var g=new DriveGauge{Name=d.Name.TrimEnd('\\','/'),FreeBytes=d.AvailableFreeSpace,TotalBytes=d.TotalSize};
+     g.Label=DriveLabel(g);list.Add(g);
+    }catch(Exception){}
+   }
+   return list.OrderBy(g=>g.Name,StringComparer.OrdinalIgnoreCase).ToList();
+  }
+
+  /// <summary>"38 GB trống / 476 GB" for a drive ring caption.</summary>
+  public static string DriveLabel(DriveGauge g){return L.F("{0} trống / {1}",Presentation.BytesLabel(g.FreeBytes),Presentation.BytesLabel(g.TotalBytes));}
+
   static HealthFinding Disk(HealthInputs i){
    var f=new HealthFinding{Area=L.T("Dung lượng trống"),Tab=TabAnalyzer,Measured=i.DiskMeasured&&i.DiskTotalBytes>0};
    if(!f.Measured){Unmeasured(f);return f;}
    double ratio=(double)i.DiskFreeBytes/i.DiskTotalBytes;
-   f.Severity=ratio>=0.20?HealthSeverity.Good:ratio>=0.10?HealthSeverity.Low:ratio>=0.05?HealthSeverity.Medium:HealthSeverity.High;
+   f.Severity=DriveLevel(i.DiskFreeBytes,i.DiskTotalBytes);
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Còn đủ chỗ trống":f.Severity==HealthSeverity.Low?"Chỗ trống bắt đầu ít":f.Severity==HealthSeverity.Medium?"Sắp đầy":"Gần như đầy");
    f.Detail=L.F("{0} còn trống {1} / {2} ({3}%).",String.IsNullOrEmpty(i.DiskName)?L.T("Ổ hệ thống"):i.DiskName,Presentation.BytesLabel(i.DiskFreeBytes),Presentation.BytesLabel(i.DiskTotalBytes),(ratio*100).ToString("N0"));
    return f;

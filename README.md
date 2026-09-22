@@ -55,7 +55,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 
 | Tab | Chức năng | An toàn |
 |---|---|---|
-| **Tổng quan** | Kiểm tra sức khỏe một nút: điểm 0–100, hạng A–E, 7 khu vực (rác, phần còn sót, thư mục rỗng, Kho, khởi động, ổ trống, phần mềm không mong muốn), dung lượng giải phóng được; bấm đúp mở tab xử lý; sao chép báo cáo; dải thông báo cập nhật | Chỉ đọc; khu vực không đo được không bị trừ điểm |
+| **Tổng quan** | Kiểm tra sức khỏe **tự chạy khi mở** (tắt được bằng «Tự kiểm tra khi mở»): điểm 0–100, hạng A–E, 7 khu vực (rác, phần còn sót, thư mục rỗng, Kho, khởi động, ổ trống, phần mềm không mong muốn), dung lượng giải phóng được; **vòng tròn dung lượng cho từng ổ đĩa cố định** (C:, D:, …) tô màu theo mức trống còn lại; bấm đúp mở tab xử lý; sao chép báo cáo; dải thông báo cập nhật | Chỉ đọc; khu vực không đo được không bị trừ điểm |
 | **Ứng dụng** | Ứng dụng desktop (HKLM/HKCU), gỡ theo hàng đợi, quét phần còn sót sau khi gỡ, cột **Cảnh báo** PUP/bloatware với lý do bằng lời thường, lọc «Chỉ hiện mục cảnh báo», CSV, chuột phải; **Gỡ cưỡng bức…** cho chương trình không còn trong danh sách (nhập tên + thư mục/.exe → quét sâu → Phần còn sót). **Dung lượng** lấy từ bộ cài; thiếu thì đọc sổ Steam (`libraryfolders.vdf`, kể cả thư viện ở ổ khác) hoặc đo thư mục cài / thư mục trình gỡ | Không dùng Win32_Product; chặn lệnh gỡ qua cmd/PowerShell; nhà phát hành cốt lõi (Microsoft, Google, Mozilla, NVIDIA, Intel, AMD…) không bao giờ bị đánh dấu; không đo Program Files, Windows hay gốc ổ đĩa |
 | **Ứng dụng Windows** | Gói Appx/MSIX cài sẵn và Microsoft Store với logo thật; cột **Dung lượng** đo từ thư mục gói (game Xbox chuyển sang ổ khác được theo dõi qua liên kết `WindowsApps`); nhóm Gỡ được / Cần cân nhắc / Được bảo vệ; gỡ cho tài khoản hiện tại hoặc mọi tài khoản; mở trang Store, thư mục gói | Framework, gói `NonRemovable`, Start/Search/Settings/Windows Security/Edge và `Microsoft.Windows.*` bị khóa trong mã; Store/App Installer/Photos hỏi hai lần; Kho `Kind=Store` đăng ký lại từ thư mục gói |
 | **Phần còn sót** | Kết quả quét nhanh/sâu chờ duyệt; xem, chọn, xóa có sao lưu; hẹn xóa khi khởi động lại cho tệp bị giữ. Quét sâu dò thêm **dấu vết mở rộng** (`TraceHunter`): tên biến thể của ứng dụng, MUICache, AppCompat, FeatureUsage, quy tắc Firewall, SharedDLLs, StartupApproved (dọn được qua Kho) và đăng ký kiểu tệp/COM, RegisteredApplications, PATH, Event Log, Windows Installer, Tracing, CrashDumps, WER, Prefetch, Gần đây, Start Menu, thư mục tài liệu (Chỉ xem) | Từ chối dọn khi ứng dụng còn đăng ký; mục Chỉ xem không tích được; chỉ các vị trí giá trị trong danh sách cho phép mới xóa được; tên ngắn/chung chỉ vào Chỉ xem |
@@ -230,6 +230,11 @@ Tài liệu kèm theo: `AGENTS.md` (quy ước cho agent), `HANDOFF.md` (kiến 
 Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ), hay tự tải và cài bản mới im lặng (Kiểm tra cập nhật chỉ báo và mở trang tải). Không xác định được mọi dấu vết của mọi ứng dụng. Băng thông theo tiến trình chỉ tính từ khi bật ETW. Bản phân phối là một thư mục (exe + DLL). Chuỗi giao diện nằm trong mã (chưa `.resx`); một số thông báo nhật ký còn tiếng Việt khi chọn tiếng Anh.
 
 ## Lịch sử phiên bản
+
+### 0.7.7 (chưa phát hành)
+
+- **Tổng quan tự kiểm tra khi mở**: sau khi đọc xong danh sách ứng dụng, Tweek Pro tự chạy kiểm tra sức khỏe (chỉ đọc) nên điểm số và các khu vực cần chú ý hiện ra ngay, không cần bấm Kiểm tra ngay; nút Dừng kiểm tra vẫn dùng được trong lúc đo. Ô «Tự kiểm tra khi mở» (`healthAutoCheck`, mặc định bật) tắt hành vi này cho máy chậm.
+- **Vòng tròn dung lượng ổ đĩa** trên thẻ Tổng quan: mỗi ổ cố định (C:, D:, E:, …) một vòng, phần tô là dung lượng đã dùng, màu theo mức trống còn lại (≥20 % xanh, ≥10 % vàng, ≥5 % cam, dưới đó đỏ — cùng ngưỡng với mục «Dung lượng trống»), ghi «còn trống / tổng» bên dưới; đọc ở luồng nền khi mở và sau mỗi lần kiểm tra; số vòng tự co theo bề rộng cửa sổ để không che phần chữ. Kiểm thử: ngưỡng `DriveLevel`, phần trăm dùng kẹp trong [0, 1], nhãn, danh sách ổ sống có kích thước và sắp theo chữ cái, số vòng vừa khung.
 
 ### 0.7.6 (22/09/2026)
 

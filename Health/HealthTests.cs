@@ -89,6 +89,17 @@ namespace TweekPro.Health {
    Assert(HealthCheck.Headline(100,0,0).StartsWith("Máy đang sạch"),"clean headline");
    Assert(HealthCheck.Headline(50,HealthCheck.GB,3).Contains("Nên dọn ngay"),"low score urges cleanup");
 
+   // Drive rings: same thresholds as the system-drive finding, used share clamped to [0,1], label "free / total", ReadDrives never throws.
+   Assert(HealthCheck.DriveLevel(200*HealthCheck.GB,500*HealthCheck.GB)==HealthSeverity.Good&&HealthCheck.DriveLevel(50*HealthCheck.GB,500*HealthCheck.GB)==HealthSeverity.Low&&HealthCheck.DriveLevel(30*HealthCheck.GB,500*HealthCheck.GB)==HealthSeverity.Medium&&HealthCheck.DriveLevel(10*HealthCheck.GB,500*HealthCheck.GB)==HealthSeverity.High&&HealthCheck.DriveLevel(0,0)==HealthSeverity.Good,"drive levels");
+   var ring=new DriveGauge{Name="C:",FreeBytes=38*HealthCheck.GB,TotalBytes=476*HealthCheck.GB};
+   Assert(Math.Abs(ring.UsedFraction-(1.0-38.0/476.0))<0.0001&&ring.Level==HealthSeverity.Medium,"used fraction and level (8% free is medium)");
+   Assert(new DriveGauge{FreeBytes=-5,TotalBytes=10}.UsedFraction==1.0&&new DriveGauge{FreeBytes=50,TotalBytes=10}.UsedFraction==0.0&&new DriveGauge{TotalBytes=0}.UsedFraction==0.0,"fraction clamps");
+   Assert(HealthCheck.DriveLabel(ring)=="38.0 GB trống / 476.0 GB"||HealthCheck.DriveLabel(ring).Contains("trống / "),"drive label: "+HealthCheck.DriveLabel(ring));
+   var drives=HealthCheck.ReadDrives();
+   Assert(drives.All(d=>d.TotalBytes>0&&!String.IsNullOrEmpty(d.Name)&&!String.IsNullOrEmpty(d.Label)),"live drives have size, name and label");
+   Assert(drives.Select(d=>d.Name).SequenceEqual(drives.Select(d=>d.Name).OrderBy(n=>n,StringComparer.OrdinalIgnoreCase)),"drives sorted by letter");
+   Assert(HealthRenderer.DrivesThatFit(1200,5)==5&&HealthRenderer.DrivesThatFit(1200,9)==5&&HealthRenderer.DrivesThatFit(700,3)==1&&HealthRenderer.DrivesThatFit(600,3)==0&&HealthRenderer.DrivesThatFit(1200,0)==0,"drive slots never squeeze the text block");
+
    // Renderer colors follow the score.
    Assert(HealthRenderer.ScoreColor(90)==Theme.Success&&HealthRenderer.ScoreColor(20)==Theme.Danger,"score colors");
    Assert(HealthRenderer.SeverityColor(HealthSeverity.Good)==Theme.Success&&HealthRenderer.SeverityColor(HealthSeverity.High)==Theme.Danger,"severity colors");

@@ -12,7 +12,7 @@ using TweekPro.Health;
 namespace TweekPro {
  public partial class MainForm {
   ListView healthList=new SmoothListView();Label healthOverlay,healthStage;TabPage healthTab;HealthGaugePanel healthGauge=new HealthGaugePanel();
-  HealthReport healthReport;CancellationTokenSource healthCancellation;Button healthStop;
+  HealthReport healthReport;CancellationTokenSource healthCancellation;Button healthStop;CheckBox healthAuto;
 
   /// <summary>Builds the Overview tab: one read-only health check that scores the machine and points to the tab that fixes each finding.</summary>
   void BuildHealthTab(){
@@ -29,6 +29,8 @@ namespace TweekPro {
    // Deliberately not registered through Add(): it must stay enabled while Guard disables every other action.
    healthStop=Theme.Button("Dừng kiểm tra",ButtonStyle.Secondary);healthStop.Margin=new Padding(0,0,8,8);healthStop.Visible=false;
    healthStop.Click+=(s,e)=>{if(healthCancellation!=null)healthCancellation.Cancel();};bar.Controls.Add(healthStop);
+   healthAuto=new CheckBox{Text=Core.L.T("Tự kiểm tra khi mở"),AutoSize=true,Margin=new Padding(8,8,12,0),ForeColor=Theme.Text,Checked=settings.HealthAutoCheck};
+   healthAuto.CheckedChanged+=(s,e)=>{settings.HealthAutoCheck=healthAuto.Checked;SaveSettings();};bar.Controls.Add(healthAuto);
 
    healthGauge.Dock=DockStyle.Top;healthGauge.Height=176;
    healthStage=new Label{Dock=DockStyle.Top,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
@@ -37,9 +39,22 @@ namespace TweekPro {
    Theme.SetOverlay(healthOverlay,"Chưa kiểm tra.\r\nBấm Kiểm tra ngay để chấm điểm máy. Mỗi dòng kết quả chỉ ra tab có thể dọn an toàn.",NoteKind.Info);
   }
 
+  /// <summary>Reads the fixed drives off the UI thread and shows them as rings; called at startup and after every check.</summary>
+  async Task RefreshDriveRings(){
+   var drives=await Task.Run(()=>HealthCheck.ReadDrives());
+   if(!IsDisposed)healthGauge.Drives=drives;
+  }
+
+  /// <summary>Startup hook: drive rings first, then the full check unless the user turned it off.</summary>
+  async Task AutoHealthCheck(){
+   await RefreshDriveRings();
+   if(settings.HealthAutoCheck)await RunHealthCheck();
+  }
+
   /// <summary>Runs every probe on a worker thread, then scores and renders the report.</summary>
   async Task RunHealthCheck(){
    healthStage.Visible=true;healthGauge.Report=null;healthGauge.BusyText=Core.L.T("Đang kiểm tra…");
+   if(healthReport==null)Theme.SetOverlay(healthOverlay,"Đang kiểm tra sức khỏe máy…\r\nKết quả từng khu vực sẽ hiện ở đây; bấm Dừng kiểm tra nếu muốn bỏ qua.",NoteKind.Info);
    var inputs=new HealthInputs{LeftoverCandidates=candidates.Count};
    bool elevated=Core.Elevation.IsElevated;int minAge=settings.JunkMinAgeHours;int purgeDays=settings.PurgeDefaultDays;
    var desktopSnapshot=inventory.ToList();var storeSnapshot=storeLoaded?storeApps.ToList():null;
@@ -72,13 +87,14 @@ namespace TweekPro {
     stage(Core.L.T("Đang đọc dung lượng trống…"));
     try{var drive=new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory));inputs.DiskName=Core.L.F("Ổ {0}",drive.Name.TrimEnd('\\','/'));inputs.DiskFreeBytes=drive.AvailableFreeSpace;inputs.DiskTotalBytes=drive.TotalSize;}
     catch(Exception e){inputs.DiskMeasured=false;Core.Log.Warn("Health: disk probe failed: "+e.Message);}
+    var rings=HealthCheck.ReadDrives();try{BeginInvoke((Action)(()=>healthGauge.Drives=rings));}catch(InvalidOperationException){}
     token.ThrowIfCancellationRequested();
     stage(Core.L.T("Đang phân loại phần mềm không mong muốn…"));
     // Desktop inventory is already in memory; Store packages only count when that tab has loaded them (no PowerShell here).
     try{var verdicts=Pup.PupDetector.Scan(desktopSnapshot,storeSnapshot);inputs.PupCount=verdicts.Count;inputs.PupHigh=verdicts.Count(v=>v.Severity==Pup.PupSeverity.High);}
     catch(Exception e){inputs.PupMeasured=false;Core.Log.Warn("Health: pup probe failed: "+e.Message);}
    },token);
-   }catch(OperationCanceledException){if(!IsDisposed){healthGauge.Report=healthReport;Log(Core.L.T("Đã dừng kiểm tra sức khỏe."));}return;}
+   }catch(OperationCanceledException){if(!IsDisposed){healthGauge.Report=healthReport;if(healthReport==null)Theme.SetOverlay(healthOverlay,"Chưa kiểm tra.\r\nBấm Kiểm tra ngay để chấm điểm máy. Mỗi dòng kết quả chỉ ra tab có thể dọn an toàn.",NoteKind.Info);Log(Core.L.T("Đã dừng kiểm tra sức khỏe."));}return;}
    finally{healthCancellation.Dispose();healthCancellation=null;if(!IsDisposed){healthStage.Visible=false;healthStop.Visible=false;healthGauge.BusyText=null;}}
    if(IsDisposed)return;
    healthReport=HealthCheck.Evaluate(inputs);
@@ -119,6 +135,9 @@ namespace TweekPro {
    var parts=Version.Split('.');int patch;string newer=parts.Length==3&&int.TryParse(parts[2],out patch)?parts[0]+"."+parts[1]+"."+(patch+1):Version;
    ShowUpdateBanner(new TweekPro.Update.UpdateInfo{UpdateAvailable=true,Latest=newer,Current=Version,PageUrl=TweekPro.Update.UpdateCheck.ReleasesPage});
    var sample=new HealthInputs{JunkBytes=730L*HealthCheck.MB,JunkFiles=4812,JunkLockedRules=1,LeftoverCandidates=3,EmptyFolders=17,EmptyRoot=@"C:\Users\ADMIN\Downloads",VaultBackups=9,VaultBytes=2200L*HealthCheck.MB,VaultStale=4,VaultStaleBytes=640L*HealthCheck.MB,AutorunEntries=12,DiskName="Ổ C:",DiskFreeBytes=38L*HealthCheck.GB,DiskTotalBytes=476L*HealthCheck.GB,PupCount=3,PupHigh=1};
+   var drives=new List<DriveGauge>{new DriveGauge{Name="C:",FreeBytes=38L*HealthCheck.GB,TotalBytes=476L*HealthCheck.GB},new DriveGauge{Name="D:",FreeBytes=610L*HealthCheck.GB,TotalBytes=931L*HealthCheck.GB},new DriveGauge{Name="E:",FreeBytes=120L*HealthCheck.GB,TotalBytes=1863L*HealthCheck.GB}};
+   foreach(var d in drives)d.Label=HealthCheck.DriveLabel(d);
+   healthGauge.Drives=drives;
    healthReport=HealthCheck.Evaluate(sample);healthGauge.Report=healthReport;RenderHealth();tabs.SelectedTab=healthTab;
   }
 
