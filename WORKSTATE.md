@@ -1,10 +1,15 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 17:48 (Asia/Bangkok).
-Status: DONE (Cursor). Owner (17:33): "push 0.7.7".
+Updated: 2026-09-22 18:20 (Asia/Bangkok).
+Status: DONE (Cursor). Owner (18:00): "Mục ứng dụng đang ít thông tin quá, thêm Uninstall String giống Revo…" + "xếp hạng các ứng dụng dung lượng cao nhất lên đầu".
 Last editor: Cursor.
 
-## Current task (17:48)
+## Current task (18:20)
+
+T. DONE Applications tab: Revo-style info + largest-first order. `Engine.cs`: `AppEntry` gains `QuietCommand`, `Website` (URLInfoAbout → HelpLink → URLUpdateInfo), `Comments`, `TypeLabel` ("64-bit"/"32-bit" + " • MSI"); `Inventory` reads them. New `AppSort.Order(list,column,descending)` (size/date numeric, text case-insensitive, tie on name). `App.cs`: 12 columns (adds Loại, Thư mục cài, Lệnh gỡ, Trang web, Ghi chú), `appSortColumn=3`/`appSortDescending=true` default so the biggest installs are on top and re-sort after `MeasureSizes`; `ColumnClick` toggles/changes sort; `AppDetails()` details pane (uninstall, quiet uninstall, registry key with WOW6432Node, website, comments, PUP verdict); search also matches Comments; CSV exports Type/InstallDate/Quiet/Website/Comments/RegistryKey in the current order; appCount 26 px, details 84/96 px so one row still fits in the 1280×820 preview with the horizontal scrollbar. `ContextMenus.cs`: "Sao chép lệnh gỡ im lặng", "Mở trang web nhà phát hành" (`OpenWebsite`, http/https only), "Mở khóa Registry trong Regedit" (`OpenRegedit(hive,view,key)`). LangEn pairs added. Test in `Tests07.Run()` (AppSort + TypeLabel). Build 0 W / 0 E; elevated self-test PASS 18:10; `--preview all` regenerated docs/screenshots (apps.png shows Counter-Strike 2 66.67 GB first). README tab table + `### 0.7.8 (chưa phát hành)`.
+- NEXT: commit + push to main, replace `C:\Program Files\Tweek Pro\TweekPro-0.7.7.exe` in place (owner's habit) or cut 0.7.8 when asked.
+
+## Previous task (17:48)
 
 S. DONE Release v0.7.7. `release.ps1 -Version 0.7.7` elevated → build 0 W / 0 E, self-test PASS 17:34, commit `1d78f41` "Release v0.7.7", tag `v0.7.7` (`9f78cbf`), both on origin. Actions run 35716739058 success — the ISCC step accepted the new ngen `[Run]`/`[UninstallRun]` lines. Release published 17:35 UTC+7 with `TweekPro-0.7.7-Setup.exe` (5.2 MB) + portable zip: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.7 . Setup installed (`/VERYSILENT /CLOSEAPPLICATIONS /NORESTART`, exit 0, 10 s incl. ngen); `ngen display` lists `TweekPro-0.7.7, Version=0.7.7.0` so the native image is in the NIC. `C:\Program Files\Tweek Pro\TweekPro-0.7.7.exe` 0.7.7.0 running since 17:47. README `### 0.7.7` finalized by the script; next changelog heading will be `### 0.7.8 (chưa phát hành)`.
 

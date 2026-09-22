@@ -11,10 +11,30 @@ using Microsoft.Win32;
 namespace TweekPro {
  public class AppEntry {
   public string Name, Publisher, Version, Location, Command, Key, Hive, View, InstallDate, DisplayIcon;
+  /// <summary>Extra Uninstall-key values shown in the Applications tab: QuietUninstallString, URLInfoAbout/HelpLink/URLUpdateInfo, Comments.</summary>
+  public string QuietCommand="", Website="", Comments="";
   public bool Msi; public long Size; public List<string> KnownExecutables=new List<string>();
+  /// <summary>"64-bit" / "32-bit" from the registry view, plus MSI when Windows Installer owns the entry.</summary>
+  public string TypeLabel { get { return (View=="32"?"32-bit":"64-bit")+(Msi?" • MSI":""); } }
   /// <summary>Size came from Steam bookkeeping or a folder walk rather than the installer's EstimatedSize; Partial means the walk hit its budget.</summary>
   public bool SizeMeasured, SizePartial;
   public string Id { get { return Hive+"|"+View+"|"+Key; } }
+ }
+
+ /// <summary>Ordering for the Applications list. Column indexes follow the tab: 0 name, 1 version, 2 publisher, 3 size, 4 scope, 5 date, 6 warning, 7 type, 8 folder, 9 uninstall command, 10 website, 11 comments.</summary>
+ public static class AppSort {
+  public const int SizeColumn=3, DateColumn=5;
+  /// <summary>Size and date compare numerically, everything else as case-insensitive text; ties fall back to the name so the order is stable.</summary>
+  public static IEnumerable<AppEntry> Order(IEnumerable<AppEntry> list,int column,bool descending){
+   IOrderedEnumerable<AppEntry> ordered;
+   if(column==SizeColumn)ordered=descending?list.OrderByDescending(a=>a.Size):list.OrderBy(a=>a.Size);
+   else if(column==DateColumn)ordered=descending?list.OrderByDescending(a=>a.InstallDate??""):list.OrderBy(a=>a.InstallDate??"");
+   else{
+    Func<AppEntry,string> key=a=>(column==1?a.Version:column==2?a.Publisher:column==4?a.Hive:column==6?(Pup.PupDetector.Classify(a)==null?"":"!"):column==7?a.TypeLabel:column==8?a.Location:column==9?a.Command:column==10?a.Website:column==11?a.Comments:a.Name)??"";
+    ordered=descending?list.OrderByDescending(key,StringComparer.CurrentCultureIgnoreCase):list.OrderBy(key,StringComparer.CurrentCultureIgnoreCase);
+   }
+   return ordered.ThenBy(a=>a.Name??"",StringComparer.CurrentCultureIgnoreCase);
+  }
  }
  public class Candidate {
   public string Kind, Path, Hive, View, Reason, AppId, AppName, ValueName, ExpectedHash; public bool ReviewOnly;
@@ -56,7 +76,8 @@ namespace TweekPro {
      foreach(string name in r.GetSubKeyNames()) { try { using(var k=r.OpenSubKey(name)) {
       if(k==null||Read(k,"DisplayName")==""||Read(k,"SystemComponent")=="1"||Read(k,"ParentKeyName")!="")continue;
       long size;long.TryParse(Read(k,"EstimatedSize"),out size);
-      list.Add(new AppEntry{Name=Read(k,"DisplayName"),Publisher=Read(k,"Publisher"),Version=Read(k,"DisplayVersion"),Location=Read(k,"InstallLocation").Trim().Trim('"'),Command=Read(k,"UninstallString"),Key=Uninstall+"\\"+name,Hive=h,View=v,Msi=Read(k,"WindowsInstaller")=="1",Size=size,InstallDate=Read(k,"InstallDate"),DisplayIcon=Read(k,"DisplayIcon")});
+      string site=Read(k,"URLInfoAbout");if(site=="")site=Read(k,"HelpLink");if(site=="")site=Read(k,"URLUpdateInfo");
+      list.Add(new AppEntry{Name=Read(k,"DisplayName"),Publisher=Read(k,"Publisher"),Version=Read(k,"DisplayVersion"),Location=Read(k,"InstallLocation").Trim().Trim('"'),Command=Read(k,"UninstallString"),QuietCommand=Read(k,"QuietUninstallString"),Website=site.Trim(),Comments=Read(k,"Comments").Trim(),Key=Uninstall+"\\"+name,Hive=h,View=v,Msi=Read(k,"WindowsInstaller")=="1",Size=size,InstallDate=Read(k,"InstallDate"),DisplayIcon=Read(k,"DisplayIcon")});
      }}catch(System.Security.SecurityException){}catch(UnauthorizedAccessException){} }
     }
    }

@@ -14,6 +14,8 @@ namespace TweekPro {
  public partial class MainForm:Form {
   ListView apps=new SmoothListView(),remnants=new SmoothListView(),backups=new SmoothListView();
   TextBox search=new TextBox(),details=new TextBox(),log=new TextBox();
+  /// <summary>Applications list order: column index (3 = size) and direction; largest first by default so the heaviest installs are on top.</summary>
+  int appSortColumn=3;bool appSortDescending=true;
   Label selectionSummary=new Label(),backupSummary=new Label();Label status=Theme.StatusBar();TabControl tabs=new TabControl();TabStrip tabStrip;
   Label appsOverlay,remnantsOverlay,backupsOverlay;TabPage remnantsTab;
   List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
@@ -42,7 +44,8 @@ namespace TweekPro {
    var installed=new TabPage(Core.L.T("Ứng dụng"));var clean=new TabPage(Core.L.T("Phần còn sót"));var vault=new TabPage(Core.L.T("Kho khôi phục"));var logs=new TabPage(Core.L.T("Nhật ký"));
    tabs.TabPages.AddRange(new[]{installed,clean,vault,logs});
 
-   SetupList(apps,new[]{"Ứng dụng","Phiên bản","Nhà phát hành","Dung lượng *","Phạm vi","Ngày cài / cập nhật","Cảnh báo"},new[]{320,120,220,110,100,150,230},true);
+   SetupList(apps,new[]{"Ứng dụng","Phiên bản","Nhà phát hành","Dung lượng *","Phạm vi","Ngày cài / cập nhật","Cảnh báo","Loại","Thư mục cài","Lệnh gỡ","Trang web","Ghi chú"},new[]{300,110,200,105,95,130,200,90,260,320,200,220},true);
+   apps.ColumnClick+=(s,e)=>{if(e.Column==appSortColumn)appSortDescending=!appSortDescending;else{appSortColumn=e.Column;appSortDescending=e.Column==3||e.Column==5;}Filter();};
    var appsHost=Theme.ListHost(apps,out appsOverlay);
    var bar=Bar();
    Add(bar,"Làm mới",async()=>await Reload());
@@ -55,11 +58,11 @@ namespace TweekPro {
    var searchLabel=new Label{Text=Core.L.T("Tìm kiếm"),AutoSize=true,Margin=new Padding(8,9,4,0),ForeColor=Theme.Muted};
    search.Width=240;search.Height=28;search.Margin=new Padding(0,4,0,0);search.Font=Theme.Body;search.BorderStyle=BorderStyle.FixedSingle;search.ForeColor=Theme.Text;search.TextChanged+=(s,e)=>Filter();
    bar.Controls.Add(searchLabel);bar.Controls.Add(search);
-   details.Dock=DockStyle.Bottom;details.Height=92;details.Multiline=true;details.ReadOnly=true;details.ScrollBars=ScrollBars.Vertical;details.BackColor=Theme.Stripe;details.ForeColor=Theme.Muted;details.BorderStyle=BorderStyle.None;details.Font=Theme.Small;
-   var detailsWrap=new Panel{Dock=DockStyle.Bottom,Height=104,Padding=new Padding(16,10,16,10),BackColor=Theme.Stripe};Theme.BorderTop(detailsWrap);details.Dock=DockStyle.Fill;detailsWrap.Controls.Add(details);
+   details.Dock=DockStyle.Bottom;details.Height=84;details.Multiline=true;details.ReadOnly=true;details.ScrollBars=ScrollBars.Vertical;details.BackColor=Theme.Stripe;details.ForeColor=Theme.Muted;details.BorderStyle=BorderStyle.None;details.Font=Theme.Small;
+   var detailsWrap=new Panel{Dock=DockStyle.Bottom,Height=96,Padding=new Padding(16,6,16,6),BackColor=Theme.Stripe};Theme.BorderTop(detailsWrap);details.Dock=DockStyle.Fill;detailsWrap.Controls.Add(details);
    details.Text=Core.L.T("Chọn một ứng dụng để xem thông tin. Dùng ô tìm kiếm để lọc theo tên hoặc nhà phát hành.");
-   apps.SelectedIndexChanged+=(s,e)=>{var a=Selected();var verdict=a==null?null:Pup.PupDetector.Classify(a);details.Text=a==null?Core.L.T("Chọn một ứng dụng để xem thông tin."):a.Name+"  •  "+a.Version+"\r\n"+a.Publisher+"  |  "+Presentation.SizeLabel(a.Size)+"  |  "+Presentation.DateLabel(a.InstallDate)+"\r\n"+Core.L.T("Thư mục: ")+(String.IsNullOrWhiteSpace(a.Location)?Core.L.T("Chưa được ứng dụng khai báo"):a.Location)+"\r\n"+Core.L.T("Ngày do bộ cài cung cấp, có thể là ngày cập nhật. Giá trị gốc: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("không có"):a.InstallDate)+(verdict==null?"":"\r\n"+Core.L.T("Đánh giá: ")+verdict.Badge+" — "+Pup.PupDetector.SeverityLabel(verdict.Severity)+". "+verdict.Reason);};
-   appCount.Dock=DockStyle.Top;appCount.Height=34;appCount.Padding=new Padding(16,0,16,0);appCount.TextAlign=ContentAlignment.MiddleLeft;appCount.BackColor=Theme.Surface;appCount.ForeColor=Theme.Muted;appCount.Font=Theme.Small;Theme.BorderBottom(appCount);
+   apps.SelectedIndexChanged+=(s,e)=>{var a=Selected();details.Text=a==null?Core.L.T("Chọn một ứng dụng để xem thông tin."):AppDetails(a);};
+   appCount.Dock=DockStyle.Top;appCount.Height=26;appCount.Padding=new Padding(16,0,16,0);appCount.TextAlign=ContentAlignment.MiddleLeft;appCount.BackColor=Theme.Surface;appCount.ForeColor=Theme.Muted;appCount.Font=Theme.Small;Theme.BorderBottom(appCount);
    var pupNote=Theme.Note("Cột Cảnh báo đánh dấu phần mềm khớp quy tắc PUP/bloatware (thanh công cụ, quảng cáo, tối ưu tiếp thị, bảo mật cài sẵn, đi kèm, cài sẵn theo máy). Chỉ là gợi ý chỉ đọc: Tweek Pro không tự gỡ; bạn gỡ bằng nút Gỡ mục đã chọn như mọi ứng dụng khác.",NoteKind.Info);
    installed.Controls.Add(appsHost);installed.Controls.Add(detailsWrap);installed.Controls.Add(appCount);installed.Controls.Add(pupNote);installed.Controls.Add(bar);
 
@@ -189,8 +192,8 @@ namespace TweekPro {
   /// <summary>Representative applications for layout previews on systems without a Windows registry.</summary>
   static List<AppEntry> SampleInventory(){
    return new List<AppEntry>{
-    new AppEntry{Name="Adobe Acrobat (64-bit)",Version="26.002.21931",Publisher="Adobe",Size=2662400,Location=@"C:\Program Files\Adobe\Acrobat DC\",Command=@"C:\Program Files\Adobe\Acrobat DC\Acrobat\Setup.exe /uninstall",Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Acrobat",InstallDate="20260918"},
-    new AppEntry{Name="Brave",Version="153.1.95.104",Publisher="Brave Software Inc",Size=551600,Location=@"C:\Program Files\BraveSoftware\Brave-Browser\Application",Command=@"C:\Program Files\BraveSoftware\Brave-Browser\Application\153.1.95.104\Installer\setup.exe --uninstall",Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\BraveSoftware Brave-Browser",InstallDate="20260919"},
+    new AppEntry{Name="Adobe Acrobat (64-bit)",Version="26.002.21931",Publisher="Adobe",Size=2662400,Location=@"C:\Program Files\Adobe\Acrobat DC\",Command=@"C:\Program Files\Adobe\Acrobat DC\Acrobat\Setup.exe /uninstall",Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Acrobat",InstallDate="20260918",Website="https://www.adobe.com/",Comments="Acrobat DC"},
+    new AppEntry{Name="Brave",Version="153.1.95.104",Publisher="Brave Software Inc",Size=551600,Location=@"C:\Program Files\BraveSoftware\Brave-Browser\Application",Command=@"C:\Program Files\BraveSoftware\Brave-Browser\Application\153.1.95.104\Installer\setup.exe --uninstall",Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\BraveSoftware Brave-Browser",InstallDate="20260919",QuietCommand=@"C:\Program Files\BraveSoftware\Brave-Browser\Application\153.1.95.104\Installer\setup.exe --uninstall --force-uninstall",Website="https://brave.com/"},
     new AppEntry{Name="CapCut",Version="9.4.0.4015",Publisher="Bytedance Pte. Ltd.",Size=0,Location="",Command=@"C:\Users\ADMIN\AppData\Local\CapCut\Apps\uninstall.exe",Hive="HKCU",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\CapCut",InstallDate=""},
     new AppEntry{Name="MySQL Server 8.0",Version="8.0.39",Publisher="Oracle Corporation",Size=612300,Location=@"C:\Program Files\MySQL\MySQL Server 8.0\",Command="MsiExec.exe /X{1A2B3C4D-0000-0000-0000-000000000001}",Msi=true,Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1A2B3C4D-0000-0000-0000-000000000001}",InstallDate="20260701"},
     new AppEntry{Name="McAfee LiveSafe",Version="16.0 R70",Publisher="McAfee, LLC",Size=1048576,Location=@"C:\Program Files\McAfee\",Command=@"C:\Program Files\McAfee\MSC\mcuihost.exe /body:misp://MSCJsRes.dll::uninstall.html",Hive="HKLM",View="64",Key=@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MSC",InstallDate="20260101"},
@@ -213,6 +216,21 @@ namespace TweekPro {
     throw;
    }
   }
+  /// <summary>Text for the details pane: identity, size/date, folder, uninstall commands, registry key, website and PUP verdict.</summary>
+  static string AppDetails(AppEntry a){
+   var verdict=Pup.PupDetector.Classify(a);var sb=new StringBuilder();
+   sb.Append(a.Name).Append("  •  ").Append(a.Version).Append("  •  ").Append(a.TypeLabel).Append("\r\n");
+   sb.Append(a.Publisher).Append("  |  ").Append(Presentation.SizeLabel(a.Size)).Append("  |  ").Append(Presentation.DateLabel(a.InstallDate)).Append(String.IsNullOrWhiteSpace(a.InstallDate)?"":"  ("+Core.L.T("giá trị gốc: ")+a.InstallDate+")").Append("\r\n");
+   sb.Append(Core.L.T("Thư mục: ")).Append(String.IsNullOrWhiteSpace(a.Location)?Core.L.T("Chưa được ứng dụng khai báo"):a.Location).Append("\r\n");
+   sb.Append(Core.L.T("Lệnh gỡ: ")).Append(String.IsNullOrWhiteSpace(a.Command)?Core.L.T("không có"):a.Command).Append("\r\n");
+   if(!String.IsNullOrWhiteSpace(a.QuietCommand))sb.Append(Core.L.T("Lệnh gỡ im lặng: ")).Append(a.QuietCommand).Append("\r\n");
+   sb.Append(Core.L.T("Khóa Registry: ")).Append(a.Hive).Append(a.View=="32"?@"\WOW6432Node ":" ").Append(a.Key);
+   if(!String.IsNullOrWhiteSpace(a.Website))sb.Append("\r\n").Append(Core.L.T("Trang web: ")).Append(a.Website);
+   if(!String.IsNullOrWhiteSpace(a.Comments))sb.Append("\r\n").Append(Core.L.T("Ghi chú: ")).Append(a.Comments);
+   if(verdict!=null)sb.Append("\r\n").Append(Core.L.T("Đánh giá: ")).Append(verdict.Badge).Append(" — ").Append(Pup.PupDetector.SeverityLabel(verdict.Severity)).Append(". ").Append(verdict.Reason);
+   return sb.ToString();
+  }
+  static IEnumerable<AppEntry> SortApps(IEnumerable<AppEntry> list,int column,bool descending){return AppSort.Order(list,column,descending);}
   /// <summary>Fills missing install sizes on a low-priority worker and re-renders only if the inventory has not been replaced meanwhile.</summary>
   async Task MeasureSizes(List<AppEntry> measured){
    try{
@@ -228,12 +246,12 @@ namespace TweekPro {
     Theme.SetOverlay(appsOverlay,Core.L.F("Không đọc được danh sách ứng dụng.\r\n{0}\r\n\r\nBấm Làm mới để thử lại. Nếu khóa HKLM bị chặn, chạy Tweek Pro với quyền quản trị cùng tài khoản Windows.",inventoryError),NoteKind.Error);
     return;
    }
-   var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();bool onlyPup=pupOnly.Checked;int flagged=0;foreach(var a in inventory.Where(a=>(a.Name+" "+a.Publisher).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0)){
+   var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();bool onlyPup=pupOnly.Checked;int flagged=0;foreach(var a in SortApps(inventory.Where(a=>(a.Name+" "+a.Publisher+" "+a.Comments).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0),appSortColumn,appSortDescending)){
    var verdict=Pup.PupDetector.Classify(a);if(verdict!=null)flagged++;if(onlyPup&&verdict==null)continue;
    string location=String.IsNullOrWhiteSpace(a.Location)?Core.L.T("Chưa được ứng dụng khai báo thư mục cài"):a.Location;
    string flag=verdict==null?"":verdict.Badge+" • "+Pup.PupDetector.SeverityLabel(verdict.Severity);
    string sizeNote=!a.SizeMeasured?"":Sizing.SteamLibrary.AppIdOf(a.Key,a.Command)>0?"\r\n"+Core.L.T("Dung lượng do Steam ghi nhận; thư mục thật: ")+a.Location:"\r\n"+Core.L.T(a.SizePartial?"Dung lượng đo chưa đủ — thư mục quá lớn hoặc đọc quá lâu.":"Dung lượng đo từ thư mục cài (bộ cài không khai báo).")+(String.IsNullOrWhiteSpace(a.Location)?" "+Sizing.InstallSize.FolderOf(a):"");
-   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size)+(a.SizePartial?"+":""),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate),flag}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+sizeNote+"\r\n"+Core.L.T("Ngày bộ cài khai báo: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("Không có"):a.InstallDate)+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
+   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size)+(a.SizePartial?"+":""),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate),flag,a.TypeLabel,a.Location??"",a.Command??"",a.Website??"",a.Comments??""}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+sizeNote+"\r\n"+Core.L.T("Ngày bộ cài khai báo: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("Không có"):a.InstallDate)+(String.IsNullOrWhiteSpace(a.Command)?"":"\r\n"+Core.L.T("Lệnh gỡ: ")+a.Command)+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
    if(verdict!=null)item.ForeColor=verdict.Severity==Pup.PupSeverity.High?Theme.Danger:Theme.Warning;
    Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
   }apps.EndUpdate();appCount.Text=Core.L.F("{0} ứng dụng hiển thị  /  {1} ứng dụng trên máy",apps.Items.Count,inventory.Count)+(flagged>0?"  •  "+Core.L.F("{0} mục nghi không mong muốn",flagged):"");
@@ -367,7 +385,7 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary,Core.L.T("Kết quả dọn kho"),MessageBoxButtons.OK,failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
   }
   string SavePath(string name){using(var dialog=new SaveFileDialog{Filter="CSV UTF-8|*.csv",FileName=name})return dialog.ShowDialog(this)==DialogResult.OK?dialog.FileName:null;}
-  void ExportApps(){string p=SavePath("TweekPro-applications.csv");if(p==null)return;var lines=new List<string>{"Name,Version,Publisher,SizeKB,RegistryView,InstallLocation,UninstallCommand"};lines.AddRange(inventory.Select(a=>String.Join(",",new[]{a.Name,a.Version,a.Publisher,a.Size.ToString(),a.Hive+"/"+a.View,a.Location,a.Command}.Select(Engine.Csv))));File.WriteAllLines(p,lines, new UTF8Encoding(true));Log(Core.L.T("Đã xuất danh sách: ")+p);}
+  void ExportApps(){string p=SavePath("TweekPro-applications.csv");if(p==null)return;var lines=new List<string>{"Name,Version,Publisher,SizeKB,RegistryView,Type,InstallDate,InstallLocation,UninstallCommand,QuietUninstallCommand,Website,Comments,RegistryKey"};lines.AddRange(SortApps(inventory,appSortColumn,appSortDescending).Select(a=>String.Join(",",new[]{a.Name,a.Version,a.Publisher,a.Size.ToString(),a.Hive+"/"+a.View,a.TypeLabel,a.InstallDate,a.Location,a.Command,a.QuietCommand,a.Website,a.Comments,a.Key}.Select(Engine.Csv))));File.WriteAllLines(p,lines, new UTF8Encoding(true));Log(Core.L.T("Đã xuất danh sách: ")+p);}
   void ExportCandidates(){string p=SavePath("TweekPro-review.csv");if(p==null)return;var lines=new List<string>{"App,Kind,Path,Hive,View,Reason"};lines.AddRange(candidates.Select(c=>String.Join(",",new[]{c.AppName,c.Kind,Presentation.CandidatePath(c),c.Hive,c.View,(c.ReviewOnly?Core.L.T("CHỈ XEM: "):"")+c.Reason}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new UTF8Encoding(true));Log(Core.L.T("Đã xuất báo cáo: ")+p);}
  }
  public static class Program {

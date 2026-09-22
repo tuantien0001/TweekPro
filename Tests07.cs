@@ -56,6 +56,18 @@ namespace TweekPro {
     age();
     var rule=new JunkRule{Id="fixture",Name="Fixture",Group="Test",Paths=new List<string>{junkRoot},Patterns=new List<string>{"*"},Recurse=true,MinAgeHours=windows?24:0};
 
+    // Applications list ordering: largest first by default, text columns case-insensitive, stable tie-break on name, TypeLabel from view + MSI flag.
+    var big=new AppEntry{Name="zeta",Size=5000,View="64",Msi=true,InstallDate="20240101",Publisher="B"};
+    var small=new AppEntry{Name="alpha",Size=10,View="32",InstallDate="20250101",Publisher="a"};
+    var none=new AppEntry{Name="Mid",Size=0,View="64",InstallDate="",Publisher="c"};
+    var bySize=AppSort.Order(new[]{small,none,big},AppSort.SizeColumn,true).Select(a=>a.Name).ToArray();
+    Assert(bySize[0]=="zeta"&&bySize[1]=="alpha"&&bySize[2]=="Mid","largest install must be listed first");
+    Assert(AppSort.Order(new[]{small,none,big},AppSort.SizeColumn,false).First().Name=="Mid","ascending size puts unknown (0) first");
+    Assert(AppSort.Order(new[]{small,none,big},AppSort.DateColumn,true).First().Name=="alpha","newest install date first when descending");
+    Assert(String.Join(",",AppSort.Order(new[]{small,none,big},2,false).Select(a=>a.Publisher))=="a,B,c","publisher sort ignores case");
+    Assert(String.Join(",",AppSort.Order(new[]{small,none,big},0,false).Select(a=>a.Name))=="alpha,Mid,zeta","name sort ignores case");
+    Assert(big.TypeLabel=="64-bit • MSI"&&small.TypeLabel=="32-bit","TypeLabel reflects registry view and MSI flag");
+
     // Platform-neutral suites added alongside the 0.7 line; each restores any global state it touches.
     Dupes.DupeTests.Run();
     Analyzer.AnalyzerTests.Run();

@@ -31,6 +31,20 @@ namespace TweekPro {
    try{Clipboard.SetText(text);}catch(System.Runtime.InteropServices.ExternalException){}
   }
 
+  /// <summary>Opens an http(s) URL from an Uninstall key in the default browser; anything else is refused so a registry value cannot launch a program.</summary>
+  static void OpenWebsite(string url){
+   Uri uri;if(!Uri.TryCreate((url??"").Trim(),UriKind.Absolute,out uri)||(uri.Scheme!=Uri.UriSchemeHttp&&uri.Scheme!=Uri.UriSchemeHttps))throw new IOException(Core.L.T("Địa chỉ web không hợp lệ: ")+url);
+   Process.Start(new ProcessStartInfo(uri.AbsoluteUri){UseShellExecute=true});
+  }
+
+  /// <summary>Points Regedit's LastKey at the entry (WOW6432Node for 32-bit views on 64-bit Windows) and launches it.</summary>
+  static void OpenRegedit(string hive,string view,string key){
+   string sub=view=="32"&&Environment.Is64BitOperatingSystem?System.Text.RegularExpressions.Regex.Replace(key,"^SOFTWARE\\\\","SOFTWARE\\WOW6432Node\\",System.Text.RegularExpressions.RegexOptions.IgnoreCase):key;
+   string full=(hive=="HKLM"?"HKEY_LOCAL_MACHINE\\":"HKEY_CURRENT_USER\\")+sub;
+   using(var k=Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Applets\Regedit"))k.SetValue("LastKey",full);
+   Process.Start(new ProcessStartInfo("regedit.exe"){UseShellExecute=true});
+  }
+
   static void OpenInExplorer(string path){
    if(String.IsNullOrWhiteSpace(path))return;
    if(File.Exists(path))Process.Start(new ProcessStartInfo("explorer.exe","/select,\""+path+"\""){UseShellExecute=true});
@@ -49,6 +63,9 @@ namespace TweekPro {
     MenuItem(menu,"Mở thư mục cài",()=>{OpenInExplorer(a.Location);return Task.FromResult(0);},hasFolder,"chưa khai báo thư mục cài");
     MenuItem(menu,"Sao chép thư mục cài",()=>{CopyText(a.Location);return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Location));
     MenuItem(menu,"Sao chép lệnh gỡ",()=>{CopyText(a.Command??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Command));
+    MenuItem(menu,"Sao chép lệnh gỡ im lặng",()=>{CopyText(a.QuietCommand??"");return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.QuietCommand),"bộ cài không khai báo");
+    MenuItem(menu,"Mở trang web nhà phát hành",()=>{OpenWebsite(a.Website);return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.Website),"bộ cài không khai báo");
+    MenuItem(menu,"Mở khóa Registry trong Regedit",()=>{OpenRegedit(a.Hive,a.View,a.Key);return Task.FromResult(0);});
     menu.Items.Add(new ToolStripSeparator());
     int checkedCount=apps.CheckedItems.Count;
     MenuItem(menu,"Bỏ đánh dấu tất cả",()=>{foreach(ListViewItem i in apps.Items)i.Checked=false;return Task.FromResult(0);},checkedCount>0);

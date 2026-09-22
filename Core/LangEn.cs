@@ -212,6 +212,8 @@ namespace TweekPro.Core {
    // Right-click menus on lists
    {"Gỡ ứng dụng này","Uninstall this application"},{"Quét phần còn sót của ứng dụng này","Scan this application's leftovers"},{"Mở thư mục cài","Open install folder"},{"chưa khai báo thư mục cài","no install folder declared"},
    {"Sao chép thư mục cài","Copy install folder"},{"Sao chép lệnh gỡ","Copy uninstall command"},{"Bỏ đánh dấu tất cả","Uncheck all"},{"Đường dẫn không còn tồn tại: ","Path no longer exists: "},
+   {"Lệnh gỡ","Uninstall command"},{"Trang web","Website"},{"giá trị gốc: ","raw value: "},{"Lệnh gỡ: ","Uninstall command: "},{"Lệnh gỡ im lặng: ","Quiet uninstall: "},{"Khóa Registry: ","Registry key: "},{"Trang web: ","Website: "},{"Ghi chú: ","Comments: "},
+   {"Sao chép lệnh gỡ im lặng","Copy quiet uninstall command"},{"Mở trang web nhà phát hành","Open publisher website"},{"Mở khóa Registry trong Regedit","Open registry key in Regedit"},{"bộ cài không khai báo","not provided by the installer"},{"Địa chỉ web không hợp lệ: ","Invalid web address: "},
    {"Gỡ gói này","Remove this package"},{"thành phần được bảo vệ","protected component"},{"Sao chép tên gói","Copy package name"},
    {"Tắt mục khởi động (sao lưu)","Disable startup entry (backed up)"},{"đã nằm trong kho","already in the vault"},{"vẫn đang có đăng ký","still registered"},{"Sao chép lệnh","Copy command"},
    {"Khôi phục mục này","Restore this item"},{"đã khôi phục","already restored"},{"Xóa vĩnh viễn mục này","Delete this item permanently"},{"Mở thư mục sao lưu","Open backup folder"},{"Mở vị trí gốc","Open original location"},{"Sao chép đường dẫn gốc","Copy original path"},
