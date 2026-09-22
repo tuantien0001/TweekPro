@@ -46,6 +46,8 @@ namespace TweekPro {
   }
   public static RegistryKey Base(string hive,string view){return RegistryKey.OpenBaseKey(hive=="HKLM"?RegistryHive.LocalMachine:RegistryHive.CurrentUser,view=="64"?RegistryView.Registry64:RegistryView.Registry32);}
   public static string Read(RegistryKey k,string n){return Convert.ToString(k.GetValue(n,""));}
+  /// <summary>Expands environment variables and trims quotes/whitespace from a registry path value.</summary>
+  public static string ExpandTrim(string raw){return Environment.ExpandEnvironmentVariables((raw??"").Trim().Trim('"')).Trim();}
   public static List<AppEntry> Inventory(){
    var list=new List<AppEntry>();
    foreach(string h in new[]{"HKLM","HKCU"}) foreach(string v in (Environment.Is64BitOperatingSystem?new[]{"64","32"}:new[]{"32"})) {
@@ -274,6 +276,7 @@ namespace TweekPro {
    if(b.Kind=="Duplicate"){Dupes.DuplicateFinder.Restore(b);return;}
    if(b.Kind==Stale.StaleFinder.BackupKind){Stale.StaleFinder.Restore(b);return;}
    if(b.Kind==Tracks.TracksCleaner.BackupKind){Tracks.TracksCleaner.Restore(b);return;}
+   if(b.Kind==RegClean.RegistryCleaner.BackupKind){RegClean.RegistryCleaner.Restore(b);return;}
    if(b.Kind=="Store"){Store.WindowsApps.Restore(b);return;}
    if(b.Kind=="Service"){Network.ProcessControl.Restore(b);return;}
    if(b.Kind==Startup.StartupSources.BackupKind){Startup.StartupSources.Restore(b);return;}

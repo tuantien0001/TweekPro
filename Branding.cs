@@ -187,6 +187,7 @@ namespace TweekPro {
      case "spark":Spark(g,r,brush);break;
      case "explorer":ExplorerGlyph(g,r,pen);break;
      case "footprints":Footprints(g,r,brush);break;
+     case "registry":RegistryTree(g,r,pen,brush);break;
      default:g.FillEllipse(brush,r.X+r.Width/2-3,r.Y+r.Height/2-3,6,6);break;
     }
    }
@@ -204,6 +205,7 @@ namespace TweekPro {
    if(has("trùng","Duplicates"))return "duplicate";
    if(has("tải về cũ","Old Downloads"))return "download";
    if(has("Dấu vết","Tracks"))return "footprints";
+   if(has("Registry","Registry"))return "registry";
    if(has("rác","Junk"))return "trash";
    if(has("rỗng","Empty"))return "folder";
    if(has("Phân tích","Analyzer"))return "chart";
@@ -242,6 +244,13 @@ namespace TweekPro {
    float w=r.Width,h=r.Height;
    g.FillEllipse(brush,r.X+w*0.08f,r.Y+h*0.05f,w*0.34f,h*0.5f);g.FillEllipse(brush,r.X+w*0.14f,r.Y+h*0.6f,w*0.24f,h*0.24f);
    g.FillEllipse(brush,r.X+w*0.58f,r.Y+h*0.25f,w*0.34f,h*0.5f);g.FillEllipse(brush,r.X+w*0.64f,r.Y+h*0.78f,w*0.24f,h*0.22f);
+  }
+  /// <summary>Key tree (trunk with three branches ending in small nodes): the Registry tab.</summary>
+  static void RegistryTree(Graphics g,Rectangle r,Pen pen,Brush brush){
+   int x=r.X+3;int top=r.Y+2,bottom=r.Bottom-3;
+   g.DrawLine(pen,x,top,x,bottom);
+   foreach(int y in new[]{r.Y+r.Height/4,r.Y+r.Height/2,r.Y+r.Height*3/4}){g.DrawLine(pen,x,y,x+r.Width/2,y);g.FillRectangle(brush,x+r.Width/2,y-2,5,5);}
+   g.FillRectangle(brush,x-2,top-1,5,5);
   }
   static void Download(Graphics g,Rectangle r,Pen pen){
    int cx=r.X+r.Width/2;int top=r.Y+1,tip=r.Bottom-5;

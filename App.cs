@@ -104,6 +104,7 @@ namespace TweekPro {
    BuildDuplicateTab();
    BuildStaleTab();
    BuildTracksTab();
+   BuildRegCleanTab();
    BuildAnalyzerTab();
    BuildNetworkTab();
    BuildStoreTab();
@@ -113,7 +114,7 @@ namespace TweekPro {
    BuildListMenus();
    // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics → AI assistant last.
    remnantsTab=clean;
-   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,staleTab,tracksTab,analyzerTab,vault,autorunTab,explorerTab,netTab,servicesTab,toolsTab,logs,aiTab};
+   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,staleTab,tracksTab,regTab,analyzerTab,vault,autorunTab,explorerTab,netTab,servicesTab,toolsTab,logs,aiTab};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(tabStrip);Controls.Add(header);Controls.Add(status);
@@ -303,7 +304,7 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary+Core.L.T("\r\n\r\nCó thể khôi phục trong Kho khôi phục. File trong kho vẫn chiếm dung lượng."),Core.L.T("Kết quả dọn"),MessageBoxButtons.OK,MessageBoxIcon.Information);
   }
   static string StateLabel(Backup b){return Core.L.T(b.State=="BackedUp"?"Đã sao lưu":b.State=="Restored"?"Đã khôi phục":b.State=="PendingReboot"?"Hẹn xóa khi khởi động lại":"Cần kiểm tra");}
-  static string KindLabel(Backup b){return b.Kind==Explorer.ExplorerTweaks.BackupKind?"Explorer":b.Kind==Network.FirewallBlock.BackupKind?Core.L.T("Chặn mạng"):b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind==Startup.StartupSources.BackupKind?Core.L.T("Khởi động ứng dụng"):b.Purpose==Startup.StartupInspector.ApprovalPurpose?Core.L.T("Cờ khởi động"):b.Kind=="Junk"?Core.L.T("Rác"):b.Kind==Stale.StaleFinder.BackupKind?Stale.StaleFinder.BackupKindLabel():b.Kind==Tracks.TracksCleaner.BackupKind?Tracks.TracksCleaner.BackupKindLabel():b.Kind=="Duplicate"?Core.L.T("Bản trùng"):b.Kind=="Folder"?Core.L.T("Thư mục"):b.Kind=="File"?Core.L.T("Tệp"):b.Kind=="RegistryValue"?Core.L.T("Giá trị Registry"):b.Kind=="Registry"?Core.L.T("Khóa Registry"):b.Kind;}
+  static string KindLabel(Backup b){return b.Kind==Explorer.ExplorerTweaks.BackupKind?"Explorer":b.Kind==Network.FirewallBlock.BackupKind?Core.L.T("Chặn mạng"):b.Kind=="Store"?Core.L.T("App Windows"):b.Kind=="Service"?Core.L.T("Dịch vụ"):b.Kind==Startup.StartupSources.BackupKind?Core.L.T("Khởi động ứng dụng"):b.Purpose==Startup.StartupInspector.ApprovalPurpose?Core.L.T("Cờ khởi động"):b.Kind=="Junk"?Core.L.T("Rác"):b.Kind==Stale.StaleFinder.BackupKind?Stale.StaleFinder.BackupKindLabel():b.Kind==Tracks.TracksCleaner.BackupKind?Tracks.TracksCleaner.BackupKindLabel():b.Kind==RegClean.RegistryCleaner.BackupKind?RegClean.RegistryCleaner.BackupKindLabel():b.Kind=="Duplicate"?Core.L.T("Bản trùng"):b.Kind=="Folder"?Core.L.T("Thư mục"):b.Kind=="File"?Core.L.T("Tệp"):b.Kind=="RegistryValue"?Core.L.T("Giá trị Registry"):b.Kind=="Registry"?Core.L.T("Khóa Registry"):b.Kind;}
   int backupsLoadToken;
   /// <summary>Lists both vaults, then measures sizes on a worker thread and fills the size column as results arrive.</summary>
   void LoadBackups(){
@@ -397,9 +398,9 @@ namespace TweekPro {
   }
   /// <summary>Renders a form off-screen into a PNG next to the executable so the layout can be reviewed without interaction.</summary>
   /// <summary>Every tab in display order; --preview all renders one PNG per entry for the README gallery.</summary>
-  public static readonly string[] PreviewModes={"health","apps","store","remnants","junk","empty","dupes","stale","tracks","analyzer","vault","autorun","explorer","tweaks","network","services","tools","logs","ai"};
+  public static readonly string[] PreviewModes={"health","apps","store","remnants","junk","empty","dupes","stale","tracks","registry","analyzer","vault","autorun","explorer","tweaks","network","services","tools","logs","ai"};
   static void ApplyPreview(MainForm form,string mode){
-   if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode=="stale")form.PreviewStale();else if(mode=="tracks")form.PreviewTracks(true);else if(mode=="explorer"||mode=="tweaks")form.PreviewExplorer(mode=="tweaks");else if(mode=="empty"||mode=="dupes"||mode=="analyzer"||mode=="vault"||mode=="logs")form.PreviewTab(mode);else if(mode!="")form.PreviewRemnants();
+   if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode=="stale")form.PreviewStale();else if(mode=="tracks")form.PreviewTracks(true);else if(mode=="registry")form.PreviewRegistry();else if(mode=="explorer"||mode=="tweaks")form.PreviewExplorer(mode=="tweaks");else if(mode=="empty"||mode=="dupes"||mode=="analyzer"||mode=="vault"||mode=="logs")form.PreviewTab(mode);else if(mode!="")form.PreviewRemnants();
   }
   static void Snapshot(Form form,string fileName,Size? size=null){
    form.ShowInTaskbar=false;form.Opacity=0;form.Show();Application.DoEvents();if(size.HasValue){form.Size=size.Value;Application.DoEvents();}
