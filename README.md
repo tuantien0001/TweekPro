@@ -231,7 +231,7 @@ Chưa có theo dõi cài đặt (install monitor), gỡ/tắt tiện ích trình
 
 ## Lịch sử phiên bản
 
-### 0.7.5 (chưa phát hành)
+### 0.7.5 (22/09/2026)
 
 - **Gỡ cưỡng bức** (`Remnants/ForcedUninstall`): nút **Gỡ cưỡng bức…** ở tab Ứng dụng cho chương trình không còn trong danh sách (bộ cài hỏng, portable, gỡ dở) — nhập tên, tùy chọn nhà phát hành / thư mục cài / tệp .exe; Tweek Pro dựng một mục ảo và chạy quét sâu như bình thường, kết quả vào **Phần còn sót** để duyệt và xóa qua Kho. Tên ngắn/chung bắt buộc kèm thư mục hoặc .exe; thư mục Windows, Program Files gốc, hồ sơ người dùng, gốc ổ đĩa bị từ chối; thư mục ngoài vùng dọn được chỉ vào Chỉ xem.
 - **Tab Dấu vết** (`Tracks/`): dọn dấu vết riêng tư của Windows (Gần đây, Jump Lists, RunMRU, TypedPaths, RecentDocs, ComDlg32, WordWheelQuery, UserAssist, ActivitiesCache.db) và trình duyệt (lịch sử, cookie, dữ liệu biểu mẫu của Chrome/Edge/Brave/Firefox). Xem trước theo quy tắc với số mục và dung lượng; tệp vào Kho (`Kind=Tracks`), khóa Registry lưu nguyên cây và khôi phục kiểu gộp — mục đã sinh mới sau khi dọn không bị ghi đè. `TracksSafety` chỉ cho các khóa HKCU và thư mục trong danh sách; quy tắc trình duyệt khóa khi trình duyệt còn chạy.
