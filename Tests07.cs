@@ -70,6 +70,7 @@ namespace TweekPro {
     Core.LangTests.Run();
     Core.StubbornTests.Run();
     Store.WindowsAppsTests.Run();
+    Sizing.InstallSizeTests.Run();
     Pup.PupTests.Run();
     Stale.StaleTests.Run();
     Startup.StartupTests.Run();

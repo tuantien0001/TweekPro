@@ -17,7 +17,7 @@ namespace TweekPro {
   void BuildStoreTab(){
    var tab=storeTab=new TabPage(Core.L.T("Ứng dụng Windows"));
    storeIcons.ColorDepth=ColorDepth.Depth32Bit;storeIcons.ImageSize=new Size(28,28);storeList.SmallImageList=storeIcons;
-   SetupList(storeList,new[]{"Ứng dụng","Gói","Nhà phát hành","Phiên bản","Nguồn","Tình trạng","Cảnh báo","Vị trí"},new[]{230,280,170,100,80,120,190,300},true,true);
+   SetupList(storeList,new[]{"Ứng dụng","Gói","Nhà phát hành","Phiên bản","Dung lượng","Nguồn","Tình trạng","Cảnh báo","Vị trí"},new[]{230,260,160,100,95,80,120,180,300},true,true);
    storeList.ItemChecked+=(s,e)=>{var a=e.Item.Tag as WindowsApp;if(a!=null&&a.Status==AppxStatus.Protected&&e.Item.Checked)e.Item.Checked=false;UpdateStoreSummary();};
    storeList.DoubleClick+=async(s,e)=>await Guard(()=>{OpenStoreLocation();return Task.FromResult(0);});
    var host=Theme.ListHost(storeList,out storeOverlay);
@@ -50,6 +50,20 @@ namespace TweekPro {
    SwapStoreData(apps,logos);
    RenderStoreApps();
    Log(Core.L.F("Ứng dụng Windows: {0} gói, {1} gỡ được, {2} được bảo vệ.",storeApps.Count,storeApps.Count(a=>a.Status!=AppxStatus.Protected),storeApps.Count(a=>a.Status==AppxStatus.Protected)));
+   Log(Core.L.T("Đang đo dung lượng gói…"));
+   await Task.Run(()=>MeasureStoreSizes(apps,TimeSpan.FromSeconds(25)));
+   if(ReferenceEquals(apps,storeApps))RenderStoreApps();
+  }
+
+  /// <summary>Measures each package folder within the overall budget; packages moved to another drive are junctions under WindowsApps and are followed at the root only.</summary>
+  static void MeasureStoreSizes(List<WindowsApp> apps,TimeSpan budget){
+   var watch=System.Diagnostics.Stopwatch.StartNew();
+   foreach(var a in apps){
+    if(watch.Elapsed>budget)break;
+    if(String.IsNullOrWhiteSpace(a.InstallLocation))continue;
+    bool partial;long bytes=Sizing.FolderSize.Measure(a.InstallLocation,Sizing.InstallSize.PerFolder,out partial);
+    a.Bytes=bytes;a.BytesPartial=partial;
+   }
   }
 
   Dictionary<string,Bitmap> storeLogoCache=new Dictionary<string,Bitmap>(StringComparer.OrdinalIgnoreCase);bool storeLoaded;
@@ -82,7 +96,8 @@ namespace TweekPro {
     if(a.Status==AppxStatus.Protected&&!showProtected)continue;
     string status=Core.L.T(a.Status==AppxStatus.Removable?"Gỡ được":a.Status==AppxStatus.Caution?"Cần cân nhắc":"Được bảo vệ");
     var verdict=Pup.PupDetector.Classify(a);string flag=verdict==null?"":verdict.Badge+" • "+Pup.PupDetector.SeverityLabel(verdict.Severity);
-    var row=new ListViewItem(new[]{a.DisplayName,a.Name,a.PublisherName,a.Version,Core.L.T(a.Origin=="System"?"Hệ thống":a.Origin=="Store"?"Store":"Khác"),status,flag,Presentation.ShortPath(a.InstallLocation,60)}){Tag=a,ImageKey=a.FullName,ToolTipText=a.FullName+"\r\n"+a.InstallLocation+"\r\n\r\n"+a.StatusReason+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
+    string size=a.Bytes<0?"":Presentation.SizeLabel(Sizing.InstallSize.ToKB(a.Bytes))+(a.BytesPartial?"+":"");
+    var row=new ListViewItem(new[]{a.DisplayName,a.Name,a.PublisherName,a.Version,size,Core.L.T(a.Origin=="System"?"Hệ thống":a.Origin=="Store"?"Store":"Khác"),status,flag,Presentation.ShortPath(a.InstallLocation,60)}){Tag=a,ImageKey=a.FullName,ToolTipText=a.FullName+"\r\n"+a.InstallLocation+(a.Bytes<0?"":"\r\n"+Core.L.T("Dung lượng gói đo từ thư mục cài; gói ở ổ khác được theo dõi qua liên kết của Windows."))+"\r\n\r\n"+a.StatusReason+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
     if(a.Status==AppxStatus.Protected)row.ForeColor=Theme.Muted;else if(a.Status==AppxStatus.Caution||verdict!=null)row.ForeColor=Theme.Warning;
     Theme.AssignGroup(storeList,row,((int)a.Status).ToString(),Core.L.T(a.Status==AppxStatus.Removable?"Gỡ được":a.Status==AppxStatus.Caution?"Cần cân nhắc":"Được bảo vệ (chỉ xem)"));
     Theme.StripeRow(row,storeList.Items.Count);storeList.Items.Add(row);
@@ -132,6 +147,7 @@ namespace TweekPro {
   /// <summary>Fills the tab with the sample package list for --preview store so the layout can be reviewed off Windows.</summary>
   public void PreviewStoreApps(){
    var apps=WindowsApps.Parse(WindowsAppsTests.SampleJsonForPreview);
+   for(int i=0;i<apps.Count;i++)apps[i].Bytes=(i%7+1)*23L*1024*1024+(i*911L*1024);
    SwapStoreData(apps,LoadStoreIcons(apps));storeShowProtected.Checked=true;RenderStoreApps();tabs.SelectedTab=storeTab;
   }
  }

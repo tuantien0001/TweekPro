@@ -30,6 +30,8 @@ namespace TweekPro.Store {
   public bool NonRemovable { get { return nonRemovable??false; } set { nonRemovable=value; } }
   public int SignatureKind { get { return signatureKind??0; } set { signatureKind=value; } }
   [DataMember(Name="Architecture")] public string Architecture="";
+  /// <summary>Bytes under InstallLocation as measured after listing; -1 until measured or when unreadable. Not part of the JSON.</summary>
+  [IgnoreDataMember] public long Bytes=-1; [IgnoreDataMember] public bool BytesPartial;
 
   public string DisplayName { get { return WindowsApps.FriendlyName(Name); } }
   public string PublisherName { get { return WindowsApps.PublisherLabel(Publisher); } }

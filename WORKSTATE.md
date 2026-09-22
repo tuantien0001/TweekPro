@@ -1,10 +1,19 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 01:48 (Asia/Bangkok).
-Status: DONE (Cursor). Owner asked to cut release 0.7.4.
+Updated: 2026-09-22 09:08 (Asia/Bangkok).
+Status: DONE (Cursor). Owner: Store/Xbox games (GTA V) and Steam games show no size while Revo shows everything; games were moved to D: via the Xbox app and Steam settings.
 Last editor: Cursor.
 
-## Current task (01:48)
+## Current task (09:08)
+
+K. DONE Sizes like Revo (`Sizing/InstallSize.cs`, `Sizing/InstallSizeTests.cs`, wired in `Tests07`, `SizingLang` in `Core.L`). Not released; version stays 0.7.4, README has `### 0.7.5 (chưa phát hành)`.
+- `SteamLibrary`: appid from the Uninstall key name `Steam App <id>` or `steam://uninstall/<id>`; reads `<steam>\steamapps\libraryfolders.vdf` (also `config\`) and `appmanifest_<id>.acf`; returns library, installdir, SizeOnDisk. On this machine PUBG/CS2/AoE IV live in `D:\SteamLibrary` while the registry still says `C:\…\Steam\steamapps\common\…`; `Apply` swaps `Location` to the real folder only when the registry folder does not exist.
+- `FolderSize.Measure`: bounded walk (6 s per folder, 250k files), skips nested reparse points but follows the root (WindowsApps package folders are junctions to `D:\WindowsApps\…` for Xbox games; GTA V Enhanced measures 103 GB).
+- `InstallSize.FolderOf`: InstallLocation, else the uninstaller's folder, else DisplayIcon's folder (never Temp). `Measurable` refuses drive roots, Program Files, ProgramData, user profile, AppData, Windows tree, `Users\<name>`. Live result: 41 of 42 size-less desktop apps filled in 3 s; only the MSI AppCompat Fix Database stays unknown.
+- UI: Ứng dụng tab measures after the first render (20 s budget) and re-filters; tooltip says where the size came from; `+` suffix = partial. Ứng dụng Windows tab has a new Dung lượng column measured after render (25 s budget). Preview: store sample gets synthetic bytes, apps preview runs Apply.
+- Verification: build 0 W / 0 E; elevated `--self-test` PASS 09:05; screenshots regenerated 09:05 (apps.png, store.png show the column).
+
+## Previous task (01:48)
 
 J. DONE Release v0.7.4 (owner 01:41). `release.ps1 -Version 0.7.4` → commit `0e15ded`, annotated tag `v0.7.4`. Self-test PASS 01:42. Actions run 35640168638 success; branch run skipped because the message starts with "Release v". Release published 01:43 UTC+7 with Setup + portable zip: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.4 . Setup installed (`/VERYSILENT /CLOSEAPPLICATIONS`, exit 0); `C:\Program Files\Tweek Pro\TweekPro-0.7.4.exe` file version 0.7.4.0 and relaunched.
 

@@ -12,6 +12,8 @@ namespace TweekPro {
  public class AppEntry {
   public string Name, Publisher, Version, Location, Command, Key, Hive, View, InstallDate, DisplayIcon;
   public bool Msi; public long Size; public List<string> KnownExecutables=new List<string>();
+  /// <summary>Size came from Steam bookkeeping or a folder walk rather than the installer's EstimatedSize; Partial means the walk hit its budget.</summary>
+  public bool SizeMeasured, SizePartial;
   public string Id { get { return Hive+"|"+View+"|"+Key; } }
  }
  public class Candidate {

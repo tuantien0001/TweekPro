@@ -173,7 +173,7 @@ namespace TweekPro {
   bool Confirm(string text){return MessageBox.Show(this,text,Core.L.T("Xác nhận thao tác"),MessageBoxButtons.YesNo,MessageBoxIcon.Warning,MessageBoxDefaultButton.Button2)==DialogResult.Yes;}
   AppEntry Selected(){return apps.SelectedItems.Count==0?null:(AppEntry)apps.SelectedItems[0].Tag;}
   List<AppEntry> CheckedApps(){var list=apps.CheckedItems.Cast<ListViewItem>().Select(i=>(AppEntry)i.Tag).ToList();if(list.Count==0&&Selected()!=null)list.Add(Selected());return list;}
-  public void PopulateForPreview(){inventory=Engine.Inventory();if(inventory.Count==0)inventory=SampleInventory();LoadAppIcons();Filter();LoadBackups();}
+  public void PopulateForPreview(){inventory=Engine.Inventory();if(inventory.Count==0)inventory=SampleInventory();else Sizing.InstallSize.Apply(inventory,TimeSpan.FromSeconds(10));LoadAppIcons();Filter();LoadBackups();}
   /// <summary>Selects a tab that has no sample data of its own so --preview all still captures its empty-state guidance.</summary>
   public void PreviewTab(string key){TabPage t=key=="empty"?emptyTab:key=="dupes"?dupeTab:key=="analyzer"?analyzerTab:tabs.TabPages.Cast<TabPage>().FirstOrDefault(p=>p.Text.StartsWith(Core.L.T(key=="vault"?"Kho khôi phục":"Nhật ký"),StringComparison.Ordinal));if(t!=null)tabs.SelectedTab=t;}
   /// <summary>Representative applications for layout previews on systems without a Windows registry.</summary>
@@ -196,6 +196,8 @@ namespace TweekPro {
    try{
     inventory=await Task.Run(()=>Engine.Inventory());inventoryError=null;LoadAppIcons();Filter();LoadBackups();
     Log(Core.L.F("Đã đọc {0} ứng dụng desktop. Chưa bao gồm toàn bộ ứng dụng Microsoft Store.",inventory.Count));
+    var measured=inventory;int filled=await Task.Run(()=>Sizing.InstallSize.Apply(measured,TimeSpan.FromSeconds(20)));
+    if(filled>0&&ReferenceEquals(measured,inventory)){Filter();Log(Core.L.F("Đã bổ sung dung lượng cho {0} ứng dụng từ Steam hoặc thư mục cài.",filled));}
    }catch(Exception e){
     inventoryError=e.Message;inventory=new List<AppEntry>();LoadAppIcons();Filter();
     throw;
@@ -212,7 +214,8 @@ namespace TweekPro {
    var verdict=Pup.PupDetector.Classify(a);if(verdict!=null)flagged++;if(onlyPup&&verdict==null)continue;
    string location=String.IsNullOrWhiteSpace(a.Location)?Core.L.T("Chưa được ứng dụng khai báo thư mục cài"):a.Location;
    string flag=verdict==null?"":verdict.Badge+" • "+Pup.PupDetector.SeverityLabel(verdict.Severity);
-   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate),flag}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+"\r\n"+Core.L.T("Ngày bộ cài khai báo: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("Không có"):a.InstallDate)+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
+   string sizeNote=!a.SizeMeasured?"":Sizing.SteamLibrary.AppIdOf(a.Key,a.Command)>0?"\r\n"+Core.L.T("Dung lượng do Steam ghi nhận; thư mục thật: ")+a.Location:"\r\n"+Core.L.T(a.SizePartial?"Dung lượng đo chưa đủ — thư mục quá lớn hoặc đọc quá lâu.":"Dung lượng đo từ thư mục cài (bộ cài không khai báo).")+(String.IsNullOrWhiteSpace(a.Location)?" "+Sizing.InstallSize.FolderOf(a):"");
+   var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size)+(a.SizePartial?"+":""),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate),flag}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+sizeNote+"\r\n"+Core.L.T("Ngày bộ cài khai báo: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("Không có"):a.InstallDate)+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
    if(verdict!=null)item.ForeColor=verdict.Severity==Pup.PupSeverity.High?Theme.Danger:Theme.Warning;
    Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
   }apps.EndUpdate();appCount.Text=Core.L.F("{0} ứng dụng hiển thị  /  {1} ứng dụng trên máy",apps.Items.Count,inventory.Count)+(flagged>0?"  •  "+Core.L.F("{0} mục nghi không mong muốn",flagged):"");
