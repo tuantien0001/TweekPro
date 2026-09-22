@@ -62,8 +62,13 @@ Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Run]
+; Pre-compile the exe and its dependencies to native code so cold start on slow CPUs skips most of the JIT work (the app is x64).
+Filename: "{dotnet4064}\ngen.exe"; Parameters: "install ""{app}\{#AppExeName}"" /nologo /silent"; StatusMsg: "Optimizing startup (ngen)…"; Flags: runhidden waituntilterminated skipifdoesntexist
 ; postinstall entries run de-elevated by default; the exe manifest requires administrator, so launch it with Setup's elevated token.
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser
+
+[UninstallRun]
+Filename: "{dotnet4064}\ngen.exe"; Parameters: "uninstall ""{app}\{#AppExeName}"" /nologo /silent"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "NgenUninstall"
 
 [Code]
 // .NET Framework 4.8 ships with Windows 10 1903+ and Windows 11; older systems get a clear message and the download page.

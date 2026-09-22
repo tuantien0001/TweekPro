@@ -1,10 +1,22 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 17:10 (Asia/Bangkok).
-Status: DONE (Cursor), not released. Owner (16:56): Overview needs drive rings + auto-run the health check on launch.
+Updated: 2026-09-22 17:30 (Asia/Bangkok).
+Status: DONE (Cursor), not released. Owner (17:08): Khởi động tab must load when clicked; Win10/Win7 weak-PC support; make the app lighter.
 Last editor: Cursor.
 
-## Current task (17:10)
+## Current task (17:30)
+
+R. DONE Lighter startup + lazy tabs + old-Windows manifest.
+- Root cause of "Khởi động tab shows nothing": `tabs.SelectedIndexChanged` skipped the load while `busy` (startup Reload/health check hold Guard). New `MainForm.WhenIdle(action)` waits for `busy` to clear then Guards; autorun handler shows "Đang đọc mục khởi động…" overlay meanwhile (`autorunLoading` flag), Explorer tab uses the same helper.
+- Startup no longer holds Guard for the slow parts: `Reload` returns right after the inventory renders; `MeasureSizes()` (fire-and-forget, `LowPriority`) fills sizes and re-filters only if `inventory` is still the same list; `AutoHealthCheck` runs outside Guard with `RunHealthCheck` re-entrancy check (`healthCancellation!=null` → log + return) and low-priority probes.
+- `Advanced.Autoruns(bool includeServices=true)` → `StartupSources.Append(items,includeServices)`; health probe passes false (was WMI 300+ services + signature per third-party service, all discarded). Test in `AdvancedTests`.
+- `Sizing/SizeCache.cs`: folder → bytes/partial/measuredAt, XML at `%LOCALAPPDATA%\TweekPro\install-sizes.xml`, MaxAge 24 h, Keep 30 d, `FileOverride`/`Reset` for tests; used by `InstallSize.Apply` and `WindowsAppsUI.MeasureStoreSizes`. Tests in `InstallSizeTests` (zero-budget hit, reload from disk, expiry, case-insensitive exact match, re-measure).
+- Measured (this PC, 100 apps, 40 measured folders): baseline WS 94 MB / private 52 MB / CPU 7.8 s in 30 s, buttons disabled ~8 s. Now: cold cache 8.5 s CPU (writes cache), warm 3.7 s CPU, WS 91 MB, buttons usable after ~1 s, health done at +3 s. ngen trial: install/uninstall exit 0, CPU 3.4 s (small here, bigger on slow CPUs) — uninstalled again, nothing left in the NIC.
+- `app.manifest`: supportedOS for Windows 8 and 7 added (app is x64; Win7 SP1 needs .NET 4.8). `installer/TweekPro.iss`: `[Run]` `{dotnet4064}\ngen.exe install` (runhidden waituntilterminated skipifdoesntexist) + `[UninstallRun]` uninstall. NOT compiled locally (no ISCC here); syntax checked by hand, CI compiles it on the next tag — if the release workflow fails, look here first.
+- README: requirements (Win7/8.1 caveats, no 32-bit, untested on Win7), "Máy yếu" bullet, data folder lists `install-sizes.xml`, `### 0.7.7` bullets. Build 0 W / 0 E; elevated `--self-test` PASS 17:22.
+- NEXT: owner may cut 0.7.7; watch the Actions run for the ISCC step.
+
+## Previous task (17:10)
 
 Q. DONE Overview: drive rings + auto check. `Health/HealthCheck.cs`: `DriveGauge` (Name/Free/Total, `UsedFraction` clamped, `Level`), `HealthCheck.DriveLevel` (shared with the Disk finding), `ReadDrives` (fixed + ready, letter order, never throws), `DriveLabel`. `Health/HealthGauge.cs`: `HealthRenderer.Draw(..., drives)` puts one 72 px ring per drive on the right of the card (`DrivesThatFit` keeps ≥360 px for the text block), two-line caption "{0} trống" / "/ total"; `HealthGaugePanel.Drives`. `Health/HealthUI.cs`: `RefreshDriveRings`, `AutoHealthCheck` (rings, then `RunHealthCheck` if `settings.HealthAutoCheck`), rings re-read inside every check, "Tự kiểm tra khi mở" checkbox saves `Settings.HealthAutoCheck` (default true, restored in `Defaults`), list overlay says "Đang kiểm tra…" during the first run and reverts if stopped. `App.cs` Shown: Reload → `Guard(AutoHealthCheck)` → `AutoCheckForUpdates`. LangEn pairs added; gauge idle text now says the check runs on launch. Tests in `HealthTests` (levels, fraction clamps, label, live drives, slot fitting). README tab row + `### 0.7.7 (chưa phát hành)`; screenshots regenerated 17:05 (health.png shows C:/D:/E: rings).
 - Verification: build 0 W / 0 E; elevated `--self-test` PASS 17:08. Version string still 0.7.6.
