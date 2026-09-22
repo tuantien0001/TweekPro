@@ -116,7 +116,7 @@ namespace TweekPro {
    BuildListMenus();
    // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics → AI assistant last.
    remnantsTab=clean;
-   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,staleTab,tracksTab,regTab,analyzerTab,spaceTab,vault,autorunTab,extTab,explorerTab,netTab,servicesTab,toolsTab,logs,aiTab};
+   var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,staleTab,analyzerTab,vault,autorunTab,explorerTab,netTab,servicesTab,toolsTab,logs,extTab,tracksTab,regTab,spaceTab,aiTab};
    tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(tabStrip);Controls.Add(header);Controls.Add(status);
@@ -400,7 +400,7 @@ namespace TweekPro {
   }
   /// <summary>Renders a form off-screen into a PNG next to the executable so the layout can be reviewed without interaction.</summary>
   /// <summary>Every tab in display order; --preview all renders one PNG per entry for the README gallery.</summary>
-  public static readonly string[] PreviewModes={"health","apps","store","remnants","junk","empty","dupes","stale","tracks","registry","analyzer","space","vault","autorun","extensions","explorer","tweaks","network","services","tools","logs","ai"};
+  public static readonly string[] PreviewModes={"health","apps","store","remnants","junk","empty","dupes","stale","analyzer","vault","autorun","explorer","tweaks","network","services","tools","logs","extensions","tracks","registry","space","ai"};
   static void ApplyPreview(MainForm form,string mode){
    if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode=="stale")form.PreviewStale();else if(mode=="tracks")form.PreviewTracks(true);else if(mode=="registry")form.PreviewRegistry();else if(mode=="space")form.PreviewSystemSpace();else if(mode=="extensions")form.PreviewExtensions();else if(mode=="explorer"||mode=="tweaks")form.PreviewExplorer(mode=="tweaks");else if(mode=="empty"||mode=="dupes"||mode=="analyzer"||mode=="vault"||mode=="logs")form.PreviewTab(mode);else if(mode!="")form.PreviewRemnants();
   }
