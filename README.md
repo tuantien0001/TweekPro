@@ -222,6 +222,7 @@ Chưa có theo dõi cài đặt (install monitor), forced uninstall, quản lý 
 ### 0.7.5 (chưa phát hành)
 
 - **Dung lượng đầy đủ như Revo** (`Sizing/`): app không khai báo `EstimatedSize` được đo từ thư mục cài, hoặc từ thư mục chứa trình gỡ / DisplayIcon khi không khai báo thư mục; game Steam đọc `libraryfolders.vdf` + `appmanifest_*.acf` nên game đã chuyển sang ổ khác (D:\SteamLibrary) hiện đúng kích cỡ và thư mục thật; tab **Ứng dụng Windows** có cột **Dung lượng** đo từ thư mục gói, đi theo liên kết `WindowsApps → D:\XboxGames` của game Xbox. Không đo Program Files, ProgramData, Windows, thư mục người dùng hay gốc ổ đĩa; mỗi thư mục tối đa 6 giây, dấu «+» nghĩa là đo chưa hết.
+- **Sửa lỗi**: mở tab **Kho khôi phục** (hoặc bất kỳ danh sách có ô tích đã được nạp trước khi tab hiện ra) không còn báo «Object reference not set to an instance of an object» và kẹt ở tab cũ — Windows phát sự kiện ItemChecked cho từng dòng lúc tạo danh sách, nay được bỏ qua ở `SmoothListView`. Lỗi chưa xử lý ghi cả stack trace vào nhật ký.
 
 ### 0.7.4 (22/09/2026)
 

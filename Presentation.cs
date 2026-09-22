@@ -136,7 +136,18 @@ namespace TweekPro {
    return SystemIcons.Application.ToBitmap();
   }
  }
- public class SmoothListView:ListView { public SmoothListView(){DoubleBuffered=true;} }
+ /// <summary>
+ /// Double-buffered ListView that also swallows the ItemCheck/ItemChecked notifications Windows raises while the handle is being
+ /// created. A checkbox list filled before its tab is first shown receives one notification per row at that moment, and
+ /// <c>Items</c> still returns null for rows not yet inserted natively, so summary handlers would crash on a null item.
+ /// </summary>
+ public class SmoothListView:ListView {
+  bool creatingHandle;
+  public SmoothListView(){DoubleBuffered=true;}
+  protected override void OnHandleCreated(EventArgs e){creatingHandle=true;try{base.OnHandleCreated(e);}finally{creatingHandle=false;}}
+  protected override void OnItemCheck(ItemCheckEventArgs e){if(!creatingHandle)base.OnItemCheck(e);}
+  protected override void OnItemChecked(ItemCheckedEventArgs e){if(!creatingHandle)base.OnItemChecked(e);}
+ }
  /// <summary>
  /// Fixed-order tab header. Windows' multiline TabControl moves the row that holds the selected tab down next to the page, so with
  /// three rows the tabs appear to shuffle on every click; this strip paints every tab in a stable left-to-right grid and drives a

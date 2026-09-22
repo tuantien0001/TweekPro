@@ -389,7 +389,7 @@ namespace TweekPro {
     if(mode=="all"){string dir=args.Length>2&&!args[2].StartsWith("--")?args[2]:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"previews");Directory.CreateDirectory(dir);Core.L.Lang=args.Contains("--en")?Core.L.EnglishCode:Core.L.Vietnamese;foreach(string m in PreviewModes)using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,m);Snapshot(form,Path.Combine(dir,m+".png"),new Size(1280,820));}return;}
     using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,mode);if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}
    }catch(Exception error){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"preview-error.txt"),error.ToString());Environment.ExitCode=1;}return;}
-   Application.ThreadException+=(s,e)=>{Core.Log.Error("Lỗi chưa xử lý",e.Exception);MessageBox.Show(e.Exception.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Error);};
+   Application.ThreadException+=(s,e)=>{Core.Log.Error("Lỗi chưa xử lý | "+e.Exception);MessageBox.Show(e.Exception.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Error);};
    Application.Run(new MainForm());
    Core.Log.Info("Tweek Pro đóng.");
   }

@@ -1,10 +1,17 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 09:08 (Asia/Bangkok).
-Status: DONE (Cursor). Owner: Store/Xbox games (GTA V) and Steam games show no size while Revo shows everything; games were moved to D: via the Xbox app and Steam settings.
+Updated: 2026-09-22 09:22 (Asia/Bangkok).
+Status: DONE (Cursor). Owner: clicking Kho khôi phục showed "Object reference not set to an instance of an object" and the page stayed on Phân tích ổ đĩa.
 Last editor: Cursor.
 
-## Current task (09:08)
+## Current task (09:22)
+
+L. DONE Vault tab crash. Cause: the vault list is filled at startup (`LoadBackups` in `Reload`) before its tab is ever shown; when the tab is first selected the ListView handle is created, Windows sends LVN_ITEMCHANGED for every row (state image 0 → 1), WinForms raises `ItemChecked`, `UpdateBackupSummary` enumerates `backups.Items` and `Items[i]` returns null for rows not yet inserted natively → NRE inside `TabControl.SelectedIndex`, so the new page never became visible. Only bites with ≥2 backups (the owner now has autorun backups). Reproduced in a stand-alone WinForms harness (5 events, 10 null items) and confirmed the fix there (0 events during handle creation, user check still raises 1).
+- Fix: `Presentation.SmoothListView` overrides `OnHandleCreated`/`OnItemCheck`/`OnItemChecked` and drops both events while the handle is being created. Every list in the app is a `SmoothListView`, so remnants/junk/dupes/store/stale lists filled from another tab (AI tools) are covered too.
+- `Application.ThreadException` now logs `e.Exception.ToString()` (stack trace) instead of type + message.
+- README `### 0.7.5 (chưa phát hành)` bullet. Build 0 W / 0 E; elevated `--self-test` PASS 09:20.
+
+## Previous task (09:08)
 
 K. DONE Sizes like Revo (`Sizing/InstallSize.cs`, `Sizing/InstallSizeTests.cs`, wired in `Tests07`, `SizingLang` in `Core.L`). Not released; version stays 0.7.4, README has `### 0.7.5 (chưa phát hành)`.
 - `SteamLibrary`: appid from the Uninstall key name `Steam App <id>` or `steam://uninstall/<id>`; reads `<steam>\steamapps\libraryfolders.vdf` (also `config\`) and `appmanifest_<id>.acf`; returns library, installdir, SizeOnDisk. On this machine PUBG/CS2/AoE IV live in `D:\SteamLibrary` while the registry still says `C:\…\Steam\steamapps\common\…`; `Apply` swaps `Location` to the real folder only when the registry folder does not exist.
