@@ -232,7 +232,7 @@ Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trìn
 
 ## Lịch sử phiên bản
 
-### 0.7.7 (chưa phát hành)
+### 0.7.7 (22/09/2026)
 
 - **Tổng quan tự kiểm tra khi mở**: sau khi đọc xong danh sách ứng dụng, Tweek Pro tự chạy kiểm tra sức khỏe (chỉ đọc) nên điểm số và các khu vực cần chú ý hiện ra ngay, không cần bấm Kiểm tra ngay; nút Dừng kiểm tra vẫn dùng được trong lúc đo. Ô «Tự kiểm tra khi mở» (`healthAutoCheck`, mặc định bật) tắt hành vi này cho máy chậm.
 - **Khởi động nhẹ hơn, không khóa nút**: đo dung lượng thư mục cài (phần tốn CPU nhất khi mở — ≈5 giây CPU mỗi lần trên máy có 40 ứng dụng không khai báo dung lượng) được nhớ trong `%LOCALAPPDATA%\TweekPro\install-sizes.xml` tối đa 24 giờ cho từng thư mục (`Sizing/SizeCache`, dùng chung cho tab Ứng dụng và Ứng dụng Windows; mục cũ hơn 30 ngày tự bỏ). Đo dung lượng và kiểm tra sức khỏe chạy ở luồng ưu tiên thấp và **ngoài khóa thao tác**, nên mọi nút dùng được ngay sau khi danh sách ứng dụng hiện ra (trước đây bị mờ 8–10 giây). Thăm dò khởi động của kiểm tra sức khỏe không còn liệt kê 300+ dịch vụ qua WMI và xác minh chữ ký từng dịch vụ (`Advanced.Autoruns(includeServices:false)`). Đo trên máy phát triển: CPU cho toàn bộ khởi động giảm từ 7,8 s xuống 3,7 s ở lần mở thứ hai; bộ nhớ không đổi (≈50 MB riêng). Kiểm thử: cache trả kết quả với ngân sách 0, tồn tại qua lần đọc lại, hết hạn sau 24 giờ, khớp thư mục không phân biệt hoa thường; `Autoruns(false)` giữ mục Run và bỏ dịch vụ.

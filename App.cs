@@ -21,7 +21,7 @@ namespace TweekPro {
   ImageList appIcons=new ImageList(); Label appCount=new Label();
   bool busy;string inventoryError;string sessions=Core.Paths.Sessions;Icon brandIcon,brandIconSmall;CheckBox pupOnly=new CheckBox();
   Core.Settings settings=Core.Settings.Load(Core.Paths.SettingsFile);
-  public const string Version="0.7.6";
+  public const string Version="0.7.7";
   public const string AppTitle="Tweek Pro";
   public const string Tagline="Trình quản lý Windows";
 
