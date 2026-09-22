@@ -28,14 +28,20 @@ namespace TweekPro.Update {
     try{
      using(var k=Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion")){
       if(k!=null){
-       string product=Convert.ToString(k.GetValue("ProductName","")),display=Convert.ToString(k.GetValue("DisplayVersion","")),build=Convert.ToString(k.GetValue("CurrentBuild",""));
-       int buildNumber;if(int.TryParse(build,out buildNumber)&&buildNumber>=22000&&product.StartsWith("Windows 10",StringComparison.OrdinalIgnoreCase))product="Windows 11"+product.Substring(10);
+       string product=Product(Convert.ToString(k.GetValue("ProductName","")),Convert.ToString(k.GetValue("CurrentBuild",""))),display=Convert.ToString(k.GetValue("DisplayVersion","")),build=Convert.ToString(k.GetValue("CurrentBuild",""));
        if(!String.IsNullOrWhiteSpace(product))return Compose(product,display,build);
       }
      }
     }catch(Exception){}
    }
    return Environment.OSVersion.VersionString+(Environment.Is64BitOperatingSystem?" (64-bit)":" (32-bit)");
+  }
+
+  /// <summary>Windows 11 still writes ProductName "Windows 10 …"; builds ≥ 22000 are renamed. Server and other editions are returned unchanged.</summary>
+  public static string Product(string productName,string build){
+   int buildNumber;string name=(productName??"").Trim();
+   if(int.TryParse(build,out buildNumber)&&buildNumber>=22000&&name.StartsWith("Windows 10",StringComparison.OrdinalIgnoreCase))return "Windows 11"+name.Substring(10);
+   return name;
   }
 
   /// <summary>"Windows 11 Pro 24H2 (build 26100)" style label; empty parts are skipped.</summary>

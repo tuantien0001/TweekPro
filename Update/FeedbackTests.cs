@@ -24,8 +24,10 @@ namespace TweekPro.Update {
    Assert(Feedback.Compose("Windows 11 Pro","24H2","26100")=="Windows 11 Pro 24H2 (build 26100)","compose full label");
    Assert(Feedback.Compose("Windows 10 Home","","19045")=="Windows 10 Home (build 19045)","compose without display version");
    Assert(Feedback.Compose(" Windows 7 Ultimate ",null,null)=="Windows 7 Ultimate","compose trims and skips empties");
+   Assert(Feedback.Product("Windows 10 Pro","22631")=="Windows 11 Pro"&&Feedback.Product("Windows 10 Home","19045")=="Windows 10 Home","Windows 10 ProductName with build ≥22000 is Windows 11");
+   Assert(Feedback.Product("Windows Server 2022 Datacenter","20348")=="Windows Server 2022 Datacenter"&&Feedback.Product("Windows Server 2025 Datacenter","26100")=="Windows Server 2025 Datacenter","server editions untouched");
+   Assert(Feedback.Product("Windows 10 Pro","abc")=="Windows 10 Pro","unparseable build leaves the name alone");
    string live=Feedback.WindowsLabel();Assert(!String.IsNullOrWhiteSpace(live),"live label never empty");
-   if(Environment.OSVersion.Platform==PlatformID.Win32NT&&Environment.OSVersion.Version.Build>=22000)Assert(live.StartsWith("Windows 11"),"build ≥22000 reported as Windows 11: "+live);
   }
  }
 }
