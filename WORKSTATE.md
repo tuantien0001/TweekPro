@@ -14,7 +14,8 @@ R. DONE Lighter startup + lazy tabs + old-Windows manifest.
 - Measured (this PC, 100 apps, 40 measured folders): baseline WS 94 MB / private 52 MB / CPU 7.8 s in 30 s, buttons disabled ~8 s. Now: cold cache 8.5 s CPU (writes cache), warm 3.7 s CPU, WS 91 MB, buttons usable after ~1 s, health done at +3 s. ngen trial: install/uninstall exit 0, CPU 3.4 s (small here, bigger on slow CPUs) — uninstalled again, nothing left in the NIC.
 - `app.manifest`: supportedOS for Windows 8 and 7 added (app is x64; Win7 SP1 needs .NET 4.8). `installer/TweekPro.iss`: `[Run]` `{dotnet4064}\ngen.exe install` (runhidden waituntilterminated skipifdoesntexist) + `[UninstallRun]` uninstall. NOT compiled locally (no ISCC here); syntax checked by hand, CI compiles it on the next tag — if the release workflow fails, look here first.
 - README: requirements (Win7/8.1 caveats, no 32-bit, untested on Win7), "Máy yếu" bullet, data folder lists `install-sizes.xml`, `### 0.7.7` bullets. Build 0 W / 0 E; elevated `--self-test` PASS 17:22.
-- NEXT: owner may cut 0.7.7; watch the Actions run for the ISCC step.
+- 17:32 Installed exe `C:\Program Files\Tweek Pro\TweekPro-0.7.6.exe` replaced with this build (SHA-256 24D898A8…, = bin of `bd29579`) and relaunched (PID 45624). Version string still 0.7.6.
+- NEXT: owner tests, then says "push 0.7.7" → `release.ps1 -Version 0.7.7` elevated; watch the Actions run for the ISCC step (ngen lines in TweekPro.iss are untested locally).
 
 ## Previous task (17:10)
 
