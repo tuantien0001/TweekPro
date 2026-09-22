@@ -45,14 +45,15 @@ namespace TweekPro {
    if(!IsDisposed)healthGauge.Drives=drives;
   }
 
-  /// <summary>Startup hook: drive rings first, then the full check unless the user turned it off.</summary>
+  /// <summary>Startup hook: drive rings first, then the full check unless the user turned it off. Runs outside Guard so every other button stays usable while the probes work at low priority.</summary>
   async Task AutoHealthCheck(){
-   await RefreshDriveRings();
-   if(settings.HealthAutoCheck)await RunHealthCheck();
+   try{await RefreshDriveRings();if(settings.HealthAutoCheck)await RunHealthCheck();}
+   catch(Exception e){Log(Core.L.T("LỖI: ")+e.Message);}
   }
 
-  /// <summary>Runs every probe on a worker thread, then scores and renders the report.</summary>
+  /// <summary>Runs every probe on a low-priority worker thread, then scores and renders the report; a second call while one is running is ignored.</summary>
   async Task RunHealthCheck(){
+   if(healthCancellation!=null){Log(Core.L.T("Đang kiểm tra sức khỏe, chờ lượt hiện tại xong."));return;}
    healthStage.Visible=true;healthGauge.Report=null;healthGauge.BusyText=Core.L.T("Đang kiểm tra…");
    if(healthReport==null)Theme.SetOverlay(healthOverlay,"Đang kiểm tra sức khỏe máy…\r\nKết quả từng khu vực sẽ hiện ở đây; bấm Dừng kiểm tra nếu muốn bỏ qua.",NoteKind.Info);
    var inputs=new HealthInputs{LeftoverCandidates=candidates.Count};
@@ -62,7 +63,7 @@ namespace TweekPro {
    Action<string> stage=text=>{try{BeginInvoke((Action)(()=>healthStage.Text=text));}catch(InvalidOperationException){}};
    healthCancellation=new CancellationTokenSource();var token=healthCancellation.Token;healthStop.Visible=true;
    try{
-   await Task.Run(()=>{
+   await Task.Run(()=>LowPriority<object>(()=>{
     stage(Core.L.T("Đang đo tệp rác theo quy tắc…"));
     try{var rules=JunkRules.Load(Core.Paths.JunkRulesOverride).Rules;var preview=JunkCleaner.Preview(rules,elevated,minAge,token);
      inputs.JunkBytes=preview.Where(r=>!r.Locked).Sum(r=>r.Bytes);inputs.JunkFiles=preview.Where(r=>!r.Locked).Sum(r=>r.Count);inputs.JunkLockedRules=preview.Count(r=>r.Locked);}
@@ -76,7 +77,7 @@ namespace TweekPro {
     catch(OperationCanceledException){throw;}
     catch(Exception e){inputs.VaultMeasured=false;Core.Log.Warn("Health: vault probe failed: "+e.Message);}
     stage(Core.L.T("Đang đếm mục khởi động…"));
-    try{var autoruns=Advanced.Autoruns().Where(a=>a.Item!=null&&a.Item.Kind!="Service").ToList();Startup.StartupInspector.Annotate(autoruns);inputs.AutorunEntries=autoruns.Count(a=>a.Insight!=null&&a.Insight.Approval.Enabled);inputs.AutorunBroken=autoruns.Count(a=>a.Insight!=null&&a.Insight.Broken);}
+    try{var autoruns=Advanced.Autoruns(false).Where(a=>a.Item!=null).ToList();Startup.StartupInspector.Annotate(autoruns);inputs.AutorunEntries=autoruns.Count(a=>a.Insight!=null&&a.Insight.Approval.Enabled);inputs.AutorunBroken=autoruns.Count(a=>a.Insight!=null&&a.Insight.Broken);}
     catch(Exception e){inputs.AutorunMeasured=false;Core.Log.Warn("Health: autorun probe failed: "+e.Message);}
     token.ThrowIfCancellationRequested();
     stage(Core.L.T("Đang tìm thư mục rỗng trong Downloads…"));
@@ -93,7 +94,8 @@ namespace TweekPro {
     // Desktop inventory is already in memory; Store packages only count when that tab has loaded them (no PowerShell here).
     try{var verdicts=Pup.PupDetector.Scan(desktopSnapshot,storeSnapshot);inputs.PupCount=verdicts.Count;inputs.PupHigh=verdicts.Count(v=>v.Severity==Pup.PupSeverity.High);}
     catch(Exception e){inputs.PupMeasured=false;Core.Log.Warn("Health: pup probe failed: "+e.Message);}
-   },token);
+    return null;
+   }),token);
    }catch(OperationCanceledException){if(!IsDisposed){healthGauge.Report=healthReport;if(healthReport==null)Theme.SetOverlay(healthOverlay,"Chưa kiểm tra.\r\nBấm Kiểm tra ngay để chấm điểm máy. Mỗi dòng kết quả chỉ ra tab có thể dọn an toàn.",NoteKind.Info);Log(Core.L.T("Đã dừng kiểm tra sức khỏe."));}return;}
    finally{healthCancellation.Dispose();healthCancellation=null;if(!IsDisposed){healthStage.Visible=false;healthStop.Visible=false;healthGauge.BusyText=null;}}
    if(IsDisposed)return;

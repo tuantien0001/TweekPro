@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -127,7 +128,7 @@ namespace TweekPro {
    Theme.SetOverlay(appsOverlay,"Đang đọc danh sách ứng dụng…\r\nTweek Pro đọc khóa Uninstall của HKLM/HKCU, không kích hoạt sửa chữa MSI.",NoteKind.Info);
    Theme.SetOverlay(remnantsOverlay,"Chưa có mục còn sót.\r\nSau khi gỡ, cửa sổ quét sẽ chuyển các mục chưa xử lý vào đây. Có thể dùng Quét lại lịch sử gỡ hoặc Quét siêu sâu.",NoteKind.Info);
    Theme.SetOverlay(backupsOverlay,"Chưa có bản sao lưu.\r\nCác mục xóa từ cửa sổ quét hoặc tab Phần còn sót sẽ xuất hiện ở đây để khôi phục.",NoteKind.Info);
-   if(!preview) Shown+=async(s,e)=>{await Guard(async()=>await Reload());await Guard(async()=>await AutoHealthCheck());await AutoCheckForUpdates();};
+   if(!preview) Shown+=async(s,e)=>{await Guard(async()=>await Reload());await AutoHealthCheck();await AutoCheckForUpdates();};
    FormClosing+=(s,e)=>{if(busy){e.Cancel=true;MessageBox.Show(this,Core.L.T("Đang xử lý. Hãy chờ thao tác hiện tại hoàn tất."));return;}if(!preview)RunTracksOnExit();};
    ResumeLayout(true);
    try{if(File.Exists(sessions))history=Engine.Load<List<AppEntry>>(sessions);}catch(Exception e){Log(Core.L.T("Không đọc được lịch sử: ")+e.Message);}
@@ -151,6 +152,10 @@ namespace TweekPro {
    b.Click+=async(s,e)=>await Guard(action);bar.Controls.Add(b);actions.Add(b);
   }
   void SetupList(ListView list,string[] names,int[] widths,bool check,bool groups=false){Theme.StyleList(list);list.CheckBoxes=check;list.ShowGroups=groups;for(int i=0;i<names.Length;i++)list.Columns.Add(Core.L.T(names[i]),widths[i]);}
+  /// <summary>Runs a guarded action once the current one finishes; tabs that load lazily on selection use it so a click during startup work is honoured instead of dropped.</summary>
+  async Task WhenIdle(Func<Task> action){while(busy&&!IsDisposed)await Task.Delay(120);if(!IsDisposed)await Guard(action);}
+  /// <summary>Background work that must not fight the UI on weak machines: below-normal thread priority for the duration of the call.</summary>
+  public static T LowPriority<T>(Func<T> work){var t=Thread.CurrentThread;var saved=t.Priority;try{t.Priority=ThreadPriority.BelowNormal;return work();}finally{t.Priority=saved;}}
   async Task Guard(Func<Task> action){if(busy)return;busy=true;foreach(var b in actions)b.Enabled=false;deepMode.Enabled=false;search.Enabled=false;apps.Enabled=false;remnants.Enabled=false;backups.Enabled=false;try{await action();}catch(Exception e){Log(Core.L.T("LỖI: ")+e.Message);MessageBox.Show(this,e.Message,"Tweek Pro",MessageBoxButtons.OK,MessageBoxIcon.Warning);}finally{busy=false;foreach(var b in actions)b.Enabled=true;deepMode.Enabled=true;search.Enabled=true;apps.Enabled=true;remnants.Enabled=true;backups.Enabled=true;}}
   void Log(string value){log.AppendText(DateTime.Now.ToString("HH:mm:ss")+"  "+value+"\r\n");status.Text=value;if(value.StartsWith("LỖI",StringComparison.OrdinalIgnoreCase)||value.StartsWith("ERROR",StringComparison.OrdinalIgnoreCase))Core.Log.Error(value);else Core.Log.Info(value);}
   /// <summary>Persists settings.json; failures are logged, never shown as blocking errors.</summary>
@@ -201,12 +206,20 @@ namespace TweekPro {
    try{
     inventory=await Task.Run(()=>Engine.Inventory());inventoryError=null;LoadAppIcons();Filter();LoadBackups();
     Log(Core.L.F("Đã đọc {0} ứng dụng desktop. Chưa bao gồm toàn bộ ứng dụng Microsoft Store.",inventory.Count));
-    var measured=inventory;int filled=await Task.Run(()=>Sizing.InstallSize.Apply(measured,TimeSpan.FromSeconds(20)));
-    if(filled>0&&ReferenceEquals(measured,inventory)){Filter();Log(Core.L.F("Đã bổ sung dung lượng cho {0} ứng dụng từ Steam hoặc thư mục cài.",filled));}
+    // Folder walking is the slow part; it runs after Reload returns so the buttons come back as soon as the list is on screen.
+    var sizing=MeasureSizes(inventory);
    }catch(Exception e){
     inventoryError=e.Message;inventory=new List<AppEntry>();LoadAppIcons();Filter();
     throw;
    }
+  }
+  /// <summary>Fills missing install sizes on a low-priority worker and re-renders only if the inventory has not been replaced meanwhile.</summary>
+  async Task MeasureSizes(List<AppEntry> measured){
+   try{
+    int filled=await Task.Run(()=>LowPriority(()=>Sizing.InstallSize.Apply(measured,TimeSpan.FromSeconds(20))));
+    if(IsDisposed||filled==0||!ReferenceEquals(measured,inventory))return;
+    Filter();Log(Core.L.F("Đã bổ sung dung lượng cho {0} ứng dụng từ Steam hoặc thư mục cài.",filled));
+   }catch(Exception e){Core.Log.Warn("Install size pass failed: "+e.Message);}
   }
   void LoadAppIcons(){appIcons.Images.Clear();var imageHandle=appIcons.Handle;foreach(var a in inventory){using(var bitmap=Presentation.AppIcon(a))appIcons.Images.Add(a.Id,bitmap);}}
   void Filter(){

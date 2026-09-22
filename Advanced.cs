@@ -80,7 +80,8 @@ namespace TweekPro {
    }catch(Exception){}
    app.KnownExecutables=app.KnownExecutables.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
   }
-  public static List<AutorunEntry> Autoruns(){
+  /// <summary>Run/RunOnce values, Startup shortcuts, packaged startup tasks, vault copies and (unless includeServices is false) automatic services; the health probe skips services because listing them means a WMI query plus a signature check per third-party service.</summary>
+  public static List<AutorunEntry> Autoruns(bool includeServices=true){
    var items=new List<AutorunEntry>();
    foreach(string h in new[]{"HKCU","HKLM"})foreach(string v in Views)foreach(string path in new[]{Run,RunOnce})try{
     using(var b=Engine.Base(h,v))using(var key=b.OpenSubKey(path)){
@@ -97,7 +98,7 @@ namespace TweekPro {
    }catch(IOException){}catch(UnauthorizedAccessException){}
    // HKCU Software may be shared across registry views; suppress duplicate commands.
    items=items.GroupBy(x=>x.Item.Kind+"|"+x.Item.Hive+"|"+x.Item.Path+"|"+x.Item.ValueName+"|"+x.Command,StringComparer.OrdinalIgnoreCase).Select(g=>g.First()).ToList();
-   Startup.StartupSources.Append(items);
+   Startup.StartupSources.Append(items,includeServices);
    foreach(var backup in Engine.Backups().Where(b=>b.Purpose=="Autorun"&&b.State!="Restored"&&b.Kind!="StartupTask"))items.Add(new AutorunEntry{Name=backup.AppName,Command=backup.Original+(backup.ValueName==null?"":" :: "+backup.ValueName),Source="Kho Tweek Pro",State=backup.State=="BackedUp"?"Đã tắt bằng Tweek Pro":"Cần kiểm tra",Saved=backup});
    return items.OrderBy(x=>x.Name).ToList();
   }

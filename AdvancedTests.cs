@@ -17,6 +17,7 @@ namespace TweekPro {
     using(var root=Engine.Base("HKCU",view))using(var key=root.CreateSubKey(Advanced.Run)){key.SetValue(id,valueText,RegistryValueKind.ExpandString);}
     Candidate c;using(var root=Engine.Base("HKCU",view))using(var key=root.OpenSubKey(Advanced.Run))c=new Candidate{Kind="RegistryValue",Path=Advanced.Run,Hive="HKCU",View=view,ValueName=id,AppId=appId,AppName=id,ExpectedHash=Advanced.Fingerprint(Advanced.ReadValue(key,id))};
     var entry=Advanced.Autoruns().First(a=>a.Name==id);Assert(entry.Item.ValueName==id,"Autorun enumeration");
+    var light=Advanced.Autoruns(false);Assert(light.Any(a=>a.Name==id)&&light.All(a=>a.Item==null||a.Item.Kind!="Service"),"Autoruns(false) keeps Run entries and skips services");
     var b=Advanced.Store(c,true);using(var root=Engine.Base("HKCU",view))using(var key=root.OpenSubKey(Advanced.Run))Assert(!key.GetValueNames().Contains(id),"Autorun disabled");
     Engine.Restore(b);using(var root=Engine.Base("HKCU",view))using(var key=root.OpenSubKey(Advanced.Run))Assert((string)key.GetValue(id,null,RegistryValueOptions.DoNotExpandEnvironmentNames)==valueText,"Autorun restore content");
     Reject(()=>Engine.Restore(b));

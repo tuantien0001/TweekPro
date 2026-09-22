@@ -10,7 +10,7 @@ namespace TweekPro {
  public partial class MainForm {
   CheckBox deepMode=new CheckBox();CancellationTokenSource scanCancellation;
   ListView autorunList=new SmoothListView(),toolList=new SmoothListView();ImageList startupIcons=new ImageList(),toolIcons=new ImageList();
-  Label autorunNote,autorunOverlay;Button cancelScan;TabPage autorunTab,toolsTab;bool autorunGuard;
+  Label autorunNote,autorunOverlay;Button cancelScan;TabPage autorunTab,toolsTab;bool autorunGuard,autorunLoading;
   void BuildAdvancedTabs(){
    autorunTab=new TabPage(Core.L.T("Khởi động"));toolsTab=new TabPage(Core.L.T("Công cụ"));tabs.TabPages.Add(autorunTab);tabs.TabPages.Add(toolsTab);
    startupIcons.ColorDepth=ColorDepth.Depth32Bit;startupIcons.ImageSize=new Size(24,24);autorunList.SmallImageList=startupIcons;
@@ -44,7 +44,7 @@ namespace TweekPro {
    var note=Theme.Note("Mỗi mục dùng icon hệ thống của tệp .exe/.cpl/.msc tương ứng. Chỉ mở công cụ khi bạn chọn. Công cụ thiếu trên phiên bản Windows hiện tại sẽ được đánh dấu. SFC/chkdsk có thể sửa hệ thống và yêu cầu quyền quản trị. Kiểm tra cập nhật hỏi GitHub Releases (tag v*), không theo từng push nhánh.",NoteKind.Info);
    toolsTab.Controls.Add(toolList);toolsTab.Controls.Add(note);toolsTab.Controls.Add(toolbar);FillTools();
    toolList.DoubleClick+=async(s,e)=>await Guard(()=>{OpenTool();return Task.FromResult(0);});
-   tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==autorunTab&&autorunList.Items.Count==0&&!busy)await Guard(async()=>await LoadAutoruns());};
+   tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab!=autorunTab||autorunList.Items.Count>0||autorunLoading)return;autorunLoading=true;Theme.SetOverlay(autorunOverlay,"Đang đọc mục khởi động…",NoteKind.Info);try{await WhenIdle(async()=>{if(autorunList.Items.Count==0)await LoadAutoruns();});}finally{autorunLoading=false;if(autorunList.Items.Count==0)Theme.SetOverlay(autorunOverlay,"Chưa tải mục khởi động.\r\nBấm Tải danh sách hoặc mở tab này để đọc Run, shortcut Startup, ứng dụng Windows và dịch vụ tự chạy.",NoteKind.Info);}};
    cancelScan=Theme.Button("Dừng quét sâu",ButtonStyle.Secondary);cancelScan.AutoSize=false;cancelScan.Dock=DockStyle.Right;cancelScan.Width=150;cancelScan.Margin=new Padding(0);cancelScan.Visible=false;
    cancelScan.Click+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};status.Controls.Add(cancelScan);
    deepMode.Font=Theme.Body;

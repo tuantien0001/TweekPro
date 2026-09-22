@@ -183,9 +183,9 @@ namespace TweekPro.Sizing {
   /// <summary>KB for the Size column; a folder that exists but holds only zero-length files still shows as 1 KB rather than "unknown".</summary>
   public static long ToKB(long bytes){return bytes<0?0:bytes==0?1:(bytes+1023)/1024;}
 
-  /// <summary>Desktop apps without EstimatedSize: Steam titles read the client's size and current library; others measure their install folder. Stops adding folder walks once the overall budget is spent.</summary>
+  /// <summary>Desktop apps without EstimatedSize: Steam titles read the client's size and current library; others measure their install folder (remembered in SizeCache for a day). Stops adding folder walks once the overall budget is spent.</summary>
   public static int Apply(IEnumerable<AppEntry> apps,TimeSpan budget){
-   int filled=0;var watch=Stopwatch.StartNew();
+   int filled=0;var watch=Stopwatch.StartNew();var now=DateTime.Now;
    foreach(var a in apps.Where(x=>x.Size<=0).ToList()){
     long steamId=SteamLibrary.AppIdOf(a.Key,a.Command);
     if(steamId>0){
@@ -197,11 +197,16 @@ namespace TweekPro.Sizing {
       if(a.Size>0)continue;
      }
     }
-    if(watch.Elapsed>budget)continue;
     string folder=FolderOf(a);if(!Measurable(folder))continue;
-    bool partial;long bytes=FolderSize.Measure(folder,PerFolder,out partial);
+    bool partial;long bytes;
+    if(!SizeCache.TryGet(folder,now,out bytes,out partial)){
+     if(watch.Elapsed>budget)continue;
+     bytes=FolderSize.Measure(folder,PerFolder,out partial);
+     if(bytes>=0)SizeCache.Put(folder,bytes,partial,now);
+    }
     if(bytes>=0){a.Size=ToKB(bytes);a.SizeMeasured=true;a.SizePartial=partial;filled++;}
    }
+   SizeCache.Flush(now);
    return filled;
   }
  }

@@ -70,11 +70,11 @@ namespace TweekPro.Startup {
    return true;
   }
 
-  /// <summary>Appends packaged startup tasks and automatic services. Both probes are skipped off Windows and never throw.</summary>
-  public static void Append(List<AutorunEntry> items){
+  /// <summary>Appends packaged startup tasks and, when asked, automatic services. Both probes are skipped off Windows and never throw.</summary>
+  public static void Append(List<AutorunEntry> items,bool includeServices=true){
    if(!ProcessControl.IsWindows)return;
    try{AddWindowsApps(items);}catch(Exception){}
-   try{AddAutoServices(items);}catch(Exception){}
+   if(includeServices)try{AddAutoServices(items);}catch(Exception){}
   }
 
   static void AddWindowsApps(List<AutorunEntry> items){

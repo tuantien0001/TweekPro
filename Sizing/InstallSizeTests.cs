@@ -50,12 +50,25 @@ namespace TweekPro.Sizing {
     var viaIcon=new AppEntry{Name="Icon",Size=0,Location="",Key="I",Command="MsiExec.exe /X{1}",DisplayIcon=Path.Combine(root,"sub","deeper","app.exe")+",0"};
     Assert(InstallSize.FolderOf(viaUninstaller)==Path.Combine(root,"sub")&&InstallSize.FolderOf(viaIcon)==Path.Combine(root,"sub","deeper")&&InstallSize.FolderOf(blank)==""&&InstallSize.FolderOf(declared)==root,"folder from location, uninstaller or icon");
     Assert(InstallSize.FolderOf(new AppEntry{Command="\"C:\\Users\\x\\AppData\\Local\\Temp\\setup.exe\" /u"})==""&&InstallSize.FolderOf(new AppEntry{Command="MsiExec.exe /X{1}"})=="","Temp and relative commands give no folder");
+    SizeCache.FileOverride=Path.Combine(root+"-cache","install-sizes.xml");SizeCache.Reset();
     int filled=InstallSize.Apply(new List<AppEntry>{declared,folder,gone,steam,blank,viaUninstaller,viaIcon},TimeSpan.FromSeconds(10));
     Assert(filled==3&&declared.Size==500&&!declared.SizeMeasured,"declared size untouched");
     Assert(folder.Size==4&&folder.SizeMeasured&&!folder.SizePartial,"folder measured to 4 KB: "+folder.Size);
     Assert(viaUninstaller.Size==2&&viaIcon.Size==1,"uninstaller folder 1096 B -> 2 KB, icon folder 96 B -> 1 KB");
     Assert(gone.Size==0&&steam.Size==0&&blank.Size==0,"missing, unknown Steam and blank locations stay unknown");
-   }finally{try{Directory.Delete(root,true);}catch(Exception){}}
+
+    // Cache: a second pass reads the remembered bytes instead of walking (the folder grew, the size did not), a fresh process sees the file, expiry re-measures.
+    Assert(File.Exists(SizeCache.File),"cache file written");
+    File.WriteAllBytes(Path.Combine(root,"grown.bin"),new byte[100000]);
+    var again=new AppEntry{Name="Folder",Size=0,Location=root,Key="Y",Command=""};
+    Assert(InstallSize.Apply(new List<AppEntry>{again},TimeSpan.Zero)==1&&again.Size==4,"cached size served even with a zero budget: "+again.Size);
+    SizeCache.Reset();long cached;bool cachedPartial;
+    Assert(SizeCache.TryGet(root,DateTime.Now,out cached,out cachedPartial)&&cached==4096&&!cachedPartial,"cache survives a reload from disk");
+    Assert(!SizeCache.TryGet(root,DateTime.Now.AddHours(25),out cached,out cachedPartial),"entries expire after MaxAge");
+    Assert(!SizeCache.TryGet(root.ToUpperInvariant()+"\\nope",DateTime.Now,out cached,out cachedPartial)&&SizeCache.TryGet(root.ToUpperInvariant(),DateTime.Now,out cached,out cachedPartial),"folder match is case-insensitive and exact");
+    var fresh=new AppEntry{Name="Folder",Size=0,Location=root,Key="Y",Command=""};SizeCache.MaxAge=TimeSpan.Zero;
+    Assert(InstallSize.Apply(new List<AppEntry>{fresh},TimeSpan.FromSeconds(10))==1&&fresh.Size==102,"expired entry is re-measured (102 KB): "+fresh.Size);
+   }finally{SizeCache.MaxAge=TimeSpan.FromHours(24);SizeCache.FileOverride=null;SizeCache.Reset();try{Directory.Delete(root,true);}catch(Exception){}try{Directory.Delete(root+"-cache",true);}catch(Exception){}}
   }
  }
 }

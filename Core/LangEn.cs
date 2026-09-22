@@ -99,7 +99,7 @@ namespace TweekPro.Core {
    {" Có thể giải phóng khoảng {0}."," About {0} can be freed."},{"{0} khu vực cần chú ý.","{0} areas need attention."},{" Nên dọn ngay để máy nhẹ hơn."," Clean now to lighten the PC."},
    {"Chưa kiểm tra","Not checked yet"},{"Đang kiểm tra…","Checking…"},
    {"Tweek Pro tự đo tệp rác, phần còn sót, thư mục rỗng, kho khôi phục, mục khởi động và dung lượng trống khi mở; bấm Kiểm tra ngay để đo lại. Chỉ đọc, không thay đổi gì.","Tweek Pro measures junk, leftovers, empty folders, the vault, startup entries and free space when it opens; click Check now to measure again. Read-only; nothing changes."},
-   {"Tự kiểm tra khi mở","Check on launch"},{"{0} trống / {1}","{0} free / {1}"},{"{0} trống","{0} free"},
+   {"Tự kiểm tra khi mở","Check on launch"},{"Đang kiểm tra sức khỏe, chờ lượt hiện tại xong.","A health check is already running; wait for it to finish."},{"{0} trống / {1}","{0} free / {1}"},{"{0} trống","{0} free"},
    {"Đang kiểm tra sức khỏe máy…\r\nKết quả từng khu vực sẽ hiện ở đây; bấm Dừng kiểm tra nếu muốn bỏ qua.","Checking this PC…\r\nEach area's result will appear here; click Stop check to skip."},
    {"Có thể giải phóng: {0}   •   {1} khu vực cần chú ý   •   Kiểm tra lúc {2}","Reclaimable: {0}   •   {1} areas need attention   •   Checked at {2}"},
    {"Tweek Pro – Kiểm tra sức khỏe máy {0}","Tweek Pro – PC health check {0}"},{"Điểm: {0}/100 ({1} – {2}). {3}","Score: {0}/100 ({1} – {2}). {3}"},{"chưa đo","not measured"},

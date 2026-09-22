@@ -55,15 +55,20 @@ namespace TweekPro {
    if(ReferenceEquals(apps,storeApps))RenderStoreApps();
   }
 
-  /// <summary>Measures each package folder within the overall budget; packages moved to another drive are junctions under WindowsApps and are followed at the root only.</summary>
+  /// <summary>Measures each package folder within the overall budget (cached for a day in SizeCache); packages moved to another drive are junctions under WindowsApps and are followed at the root only.</summary>
   static void MeasureStoreSizes(List<WindowsApp> apps,TimeSpan budget){
-   var watch=System.Diagnostics.Stopwatch.StartNew();
+   var watch=System.Diagnostics.Stopwatch.StartNew();var now=DateTime.Now;
    foreach(var a in apps){
-    if(watch.Elapsed>budget)break;
     if(String.IsNullOrWhiteSpace(a.InstallLocation))continue;
-    bool partial;long bytes=Sizing.FolderSize.Measure(a.InstallLocation,Sizing.InstallSize.PerFolder,out partial);
+    bool partial;long bytes;
+    if(!Sizing.SizeCache.TryGet(a.InstallLocation,now,out bytes,out partial)){
+     if(watch.Elapsed>budget)break;
+     bytes=Sizing.FolderSize.Measure(a.InstallLocation,Sizing.InstallSize.PerFolder,out partial);
+     if(bytes>=0)Sizing.SizeCache.Put(a.InstallLocation,bytes,partial,now);
+    }
     a.Bytes=bytes;a.BytesPartial=partial;
    }
+   Sizing.SizeCache.Flush(now);
   }
 
   Dictionary<string,Bitmap> storeLogoCache=new Dictionary<string,Bitmap>(StringComparer.OrdinalIgnoreCase);bool storeLoaded;

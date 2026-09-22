@@ -81,7 +81,7 @@ namespace TweekPro {
    ShowExplorerView(true);
    Theme.SetOverlay(fileOverlay,"Chọn một tệp bên trái (hoặc kéo thả / dán đường dẫn) để xem loại thật, thuộc tính ẩn/hệ thống, chữ ký số, mã băm và cảnh báo giả dạng (hoadon.pdf.exe).",NoteKind.Info);
    Theme.SetOverlay(browserOverlay,"Đang mở thư mục…",NoteKind.Info);
-   tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==explorerTab&&browserListing==null)await Guard(async()=>await BrowseFolder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));};
+   tabs.SelectedIndexChanged+=async(s,e)=>{if(tabs.SelectedTab==explorerTab&&browserListing==null)await WhenIdle(async()=>{if(browserListing==null)await BrowseFolder(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));});};
    ReloadTweaks();
   }
 
