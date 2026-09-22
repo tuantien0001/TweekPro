@@ -1,8 +1,12 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 10:55 (Asia/Bangkok).
-Status: DONE (Cursor). Owner: "làm mục 1, 5 6 7 8 9" of the roadmap (forced uninstall, tracks, registry, system space, browser extensions, shredder). Not released; version string is still 0.7.4, README has `### 0.7.5 (chưa phát hành)`.
+Updated: 2026-09-22 11:30 (Asia/Bangkok).
+Status: DONE (Cursor). Owner: roadmap items 1/5/6/7/8/9 built, tab order changed (new tabs before Trợ lý AI), then "release bản 0.7.5".
 Last editor: Cursor.
+
+## Current task (11:30)
+
+N. DONE Release v0.7.5 (owner 11:03). `release.ps1 -Version 0.7.5` elevated → self-test PASS 11:16, commit `9414a9a` "Release v0.7.5", annotated tag `v0.7.5` (`3da8d3f`), both on origin. Actions run 35686306291 success; Release published with `TweekPro-0.7.5-Setup.exe` (5.2 MB) + portable zip: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.5 . Setup installed (`/VERYSILENT /CLOSEAPPLICATIONS`, exit 0) → `C:\Program Files\Tweek Pro\TweekPro-0.7.5.exe` 0.7.5.0 running since 11:29. Tab order commit `8554821` (new tabs sit after Nhật ký, before Trợ lý AI). README `### 0.7.5` finalized by the script; next changelog heading will be `### 0.7.6 (chưa phát hành)`.
 
 ## Current task (10:55)
 
