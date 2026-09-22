@@ -273,6 +273,7 @@ namespace TweekPro {
    if(b.Kind=="Junk"){Cleaner.JunkCleaner.Restore(b);return;}
    if(b.Kind=="Duplicate"){Dupes.DuplicateFinder.Restore(b);return;}
    if(b.Kind==Stale.StaleFinder.BackupKind){Stale.StaleFinder.Restore(b);return;}
+   if(b.Kind==Tracks.TracksCleaner.BackupKind){Tracks.TracksCleaner.Restore(b);return;}
    if(b.Kind=="Store"){Store.WindowsApps.Restore(b);return;}
    if(b.Kind=="Service"){Network.ProcessControl.Restore(b);return;}
    if(b.Kind==Startup.StartupSources.BackupKind){Startup.StartupSources.Restore(b);return;}

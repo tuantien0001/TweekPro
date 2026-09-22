@@ -186,6 +186,7 @@ namespace TweekPro {
      case "layers":Layers(g,r,pen,brush);break;
      case "spark":Spark(g,r,brush);break;
      case "explorer":ExplorerGlyph(g,r,pen);break;
+     case "footprints":Footprints(g,r,brush);break;
      default:g.FillEllipse(brush,r.X+r.Width/2-3,r.Y+r.Height/2-3,6,6);break;
     }
    }
@@ -202,6 +203,7 @@ namespace TweekPro {
    if(has("còn sót","Leftovers"))return "magnifier";
    if(has("trùng","Duplicates"))return "duplicate";
    if(has("tải về cũ","Old Downloads"))return "download";
+   if(has("Dấu vết","Tracks"))return "footprints";
    if(has("rác","Junk"))return "trash";
    if(has("rỗng","Empty"))return "folder";
    if(has("Phân tích","Analyzer"))return "chart";
@@ -235,6 +237,12 @@ namespace TweekPro {
    g.DrawEllipse(pen,lens);g.DrawLine(pen,lens.Right-1,lens.Bottom-1,r.Right,r.Bottom);
   }
   /// <summary>Arrow pointing down into a tray: the Old Downloads tab.</summary>
+  /// <summary>Two offset footprints (sole + heel each): the Privacy Tracks tab.</summary>
+  static void Footprints(Graphics g,Rectangle r,Brush brush){
+   float w=r.Width,h=r.Height;
+   g.FillEllipse(brush,r.X+w*0.08f,r.Y+h*0.05f,w*0.34f,h*0.5f);g.FillEllipse(brush,r.X+w*0.14f,r.Y+h*0.6f,w*0.24f,h*0.24f);
+   g.FillEllipse(brush,r.X+w*0.58f,r.Y+h*0.25f,w*0.34f,h*0.5f);g.FillEllipse(brush,r.X+w*0.64f,r.Y+h*0.78f,w*0.24f,h*0.22f);
+  }
   static void Download(Graphics g,Rectangle r,Pen pen){
    int cx=r.X+r.Width/2;int top=r.Y+1,tip=r.Bottom-5;
    g.DrawLine(pen,cx,top,cx,tip);
