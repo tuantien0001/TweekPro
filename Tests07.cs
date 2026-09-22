@@ -88,6 +88,7 @@ namespace TweekPro {
     Startup.StartupTests.Run();
     Startup.StartupSourcesTests.Run();
     Update.UpdateTests.Run();
+    Update.FeedbackTests.Run();
     Explorer.ExplorerTests.Run();
     Remnants.TraceHunterTests.Run();
     Remnants.ForcedUninstallTests.Run();

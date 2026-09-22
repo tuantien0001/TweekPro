@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Tải bản mới nhất
+    url: https://github.com/tuantien0001/TweekPro/releases/latest
+    about: Trước khi báo lỗi, hãy thử bản phát hành mới nhất — nhiều lỗi đã được sửa.
+  - name: Hướng dẫn sử dụng (README)
+    url: https://github.com/tuantien0001/TweekPro#readme
+    about: Mô tả từng tab, giới hạn đã biết và cách khôi phục từ Kho.

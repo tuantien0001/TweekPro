@@ -26,6 +26,7 @@ namespace TweekPro {
    Add(bar,"Mở tab xử lý",()=>{OpenHealthTab();return Task.FromResult(0);});
    Add(bar,"Sao chép báo cáo",()=>{CopyHealthReport();return Task.FromResult(0);});
    Add(bar,"Kiểm tra cập nhật",async()=>await CheckForUpdates());
+   AddFeedbackButton(bar);
    // Deliberately not registered through Add(): it must stay enabled while Guard disables every other action.
    healthStop=Theme.Button("Dừng kiểm tra",ButtonStyle.Secondary);healthStop.Margin=new Padding(0,0,8,8);healthStop.Visible=false;
    healthStop.Click+=(s,e)=>{if(healthCancellation!=null)healthCancellation.Cancel();};bar.Controls.Add(healthStop);

@@ -1,0 +1,82 @@
+name: "🐞 Báo lỗi"
+description: Tweek Pro chạy sai, treo, báo lỗi hoặc xóa/khôi phục không đúng.
+title: "[Lỗi] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã báo lỗi. Nút **Báo lỗi trên GitHub** trong Tweek Pro (tab Tổng quan hoặc Công cụ) đã điền sẵn phiên bản và Windows; bạn chỉ cần mô tả điều đã xảy ra.
+        Đừng dán mật khẩu, mã bản quyền hay đường dẫn có tên riêng nếu bạn không muốn công khai.
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản Tweek Pro
+      description: Hiện ở thanh tiêu đề cửa sổ (ví dụ 0.7.7).
+      placeholder: "0.7.7"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Phiên bản Windows
+      description: Windows 10/11, bản build (Win + R → winver).
+      placeholder: "Windows 11 24H2 (build 26100)"
+    validations:
+      required: true
+  - type: dropdown
+    id: tab
+    attributes:
+      label: Tab / chức năng liên quan
+      options:
+        - Tổng quan
+        - Ứng dụng
+        - Ứng dụng Windows
+        - Phần còn sót
+        - Dọn rác
+        - Thư mục rỗng
+        - Tệp trùng lặp
+        - Tệp tải về cũ
+        - Phân tích ổ đĩa
+        - Kho khôi phục
+        - Khởi động
+        - Explorer
+        - Mạng
+        - Dịch vụ hệ thống
+        - Công cụ
+        - Nhật ký
+        - Tiện ích trình duyệt
+        - Dấu vết
+        - Registry
+        - Dung lượng hệ thống
+        - Trợ lý AI
+        - Bộ cài / cập nhật
+        - Khác
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Điều đã xảy ra
+      description: Bạn bấm gì, ứng dụng làm gì, thông báo lỗi hiện ra (chép nguyên văn nếu có).
+      placeholder: |
+        1. Mở tab …
+        2. Bấm …
+        3. Ứng dụng báo …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Điều bạn mong đợi
+  - type: textarea
+    id: logs
+    attributes:
+      label: Nhật ký / ảnh chụp
+      description: Kéo thả ảnh chụp màn hình hoặc tệp `tweekpro-yyyyMMdd.log` trong `%LOCALAPPDATA%\TweekPro\Logs` vào đây (tab Nhật ký có nút mở thư mục).
+  - type: checkboxes
+    id: vault
+    attributes:
+      label: Kho khôi phục
+      options:
+        - label: Lỗi liên quan đến việc xóa/khôi phục và tôi đã thử nút Khôi phục trong tab Kho khôi phục.

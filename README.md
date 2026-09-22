@@ -226,6 +226,18 @@ Script ghi phiên bản mới vào `TweekPro.csproj`, `App.cs`, `build.ps1`, `in
 
 Tài liệu kèm theo: `AGENTS.md` (quy ước cho agent), `HANDOFF.md` (kiến trúc, lịch sử), `WORKSTATE.md` (checkpoint hiện tại), `TEST-PLAN.md` (kiểm thử trên máy thật), `SCAN-GUIDE.md` (phạm vi quét phần còn sót).
 
+## Báo lỗi và góp ý
+
+Mọi phản hồi theo dõi công khai tại [GitHub Issues](https://github.com/tuantien0001/TweekPro/issues) (cần tài khoản GitHub miễn phí). Có ba mẫu:
+
+| Mẫu | Dùng khi | Nhãn |
+| --- | --- | --- |
+| [🐞 Báo lỗi](https://github.com/tuantien0001/TweekPro/issues/new?template=bug_report.yml) | Ứng dụng chạy sai, treo, báo lỗi, xóa/khôi phục không đúng | `bug` |
+| [💡 Đề xuất tính năng](https://github.com/tuantien0001/TweekPro/issues/new?template=feature_request.yml) | Muốn Tweek Pro làm thêm hoặc làm khác đi | `enhancement` |
+| [⭐ Đánh giá / góp ý](https://github.com/tuantien0001/TweekPro/issues/new?template=feedback.yml) | Chấm sao, điểm thích, điểm cần cải thiện | `feedback` |
+
+Trong ứng dụng, nút **Báo lỗi / góp ý** (tab Tổng quan và Công cụ) mở đúng mẫu với phiên bản Tweek Pro, phiên bản Windows và tab đang mở đã điền sẵn; mục «Mở thư mục nhật ký để đính kèm» dẫn tới `%LOCALAPPDATA%\TweekPro\Logs` để kéo tệp `tweekpro-yyyyMMdd.log` vào issue. Không dán mật khẩu hay khóa bản quyền vào issue.
+
 ## Giới hạn hiện tại
 
 Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ), hay tự tải và cài bản mới im lặng (Kiểm tra cập nhật chỉ báo và mở trang tải). Không xác định được mọi dấu vết của mọi ứng dụng. Băng thông theo tiến trình chỉ tính từ khi bật ETW. Bản phân phối là một thư mục (exe + DLL). Chuỗi giao diện nằm trong mã (chưa `.resx`); một số thông báo nhật ký còn tiếng Việt khi chọn tiếng Anh.
@@ -234,6 +246,7 @@ Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trìn
 
 ### 0.7.7 (22/09/2026)
 
+- **Báo lỗi và góp ý qua GitHub Issues**: ba mẫu issue (`.github/ISSUE_TEMPLATE`: Báo lỗi, Đề xuất tính năng, Đánh giá / góp ý — tiếng Việt, có nhãn `bug`/`enhancement`/`feedback`, chọn tab liên quan, chấm sao). Nút **Báo lỗi / góp ý** ở tab Tổng quan và Công cụ mở mẫu tương ứng với phiên bản Tweek Pro, phiên bản Windows (đọc `ProductName`/`DisplayVersion`/`CurrentBuild`, build ≥ 22000 ghi Windows 11) và tab đang mở đã điền sẵn; thêm lối «Xem phản hồi đã gửi» và «Mở thư mục nhật ký để đính kèm». Liên kết được cắt dưới 7000 ký tự để trình duyệt chấp nhận. README có mục «Báo lỗi và góp ý». Kiểm thử: mã hóa UTF-8 tham số, bỏ trường trống, cắt nội dung dài kèm dấu «…», ghép nhãn Windows.
 - **Ứng dụng**: danh sách mặc định xếp **dung lượng lớn nhất lên đầu** (tự cập nhật khi đo xong thư mục); bấm tiêu đề cột để đổi cách xếp (bấm lại để đảo chiều). Thêm 5 cột giống Revo: **Loại** (32/64-bit, MSI), **Thư mục cài**, **Lệnh gỡ** (UninstallString), **Trang web** (URLInfoAbout/HelpLink), **Ghi chú** (Comments). Ô thông tin bên dưới hiện đủ lệnh gỡ, lệnh gỡ im lặng (QuietUninstallString), khóa Registry (kể cả WOW6432Node), trang web, ghi chú. Chuột phải thêm **Sao chép lệnh gỡ im lặng**, **Mở trang web nhà phát hành** (chỉ nhận http/https) và **Mở khóa Registry trong Regedit**. CSV xuất thêm Type, InstallDate, QuietUninstallCommand, Website, Comments, RegistryKey và theo đúng thứ tự đang xem; ô tìm kiếm lọc cả phần ghi chú.
 - **Tổng quan tự kiểm tra khi mở**: sau khi đọc xong danh sách ứng dụng, Tweek Pro tự chạy kiểm tra sức khỏe (chỉ đọc) nên điểm số và các khu vực cần chú ý hiện ra ngay, không cần bấm Kiểm tra ngay; nút Dừng kiểm tra vẫn dùng được trong lúc đo. Ô «Tự kiểm tra khi mở» (`healthAutoCheck`, mặc định bật) tắt hành vi này cho máy chậm.
 - **Khởi động nhẹ hơn, không khóa nút**: đo dung lượng thư mục cài (phần tốn CPU nhất khi mở — ≈5 giây CPU mỗi lần trên máy có 40 ứng dụng không khai báo dung lượng) được nhớ trong `%LOCALAPPDATA%\TweekPro\install-sizes.xml` tối đa 24 giờ cho từng thư mục (`Sizing/SizeCache`, dùng chung cho tab Ứng dụng và Ứng dụng Windows; mục cũ hơn 30 ngày tự bỏ). Đo dung lượng và kiểm tra sức khỏe chạy ở luồng ưu tiên thấp và **ngoài khóa thao tác**, nên mọi nút dùng được ngay sau khi danh sách ứng dụng hiện ra (trước đây bị mờ 8–10 giây). Thăm dò khởi động của kiểm tra sức khỏe không còn liệt kê 300+ dịch vụ qua WMI và xác minh chữ ký từng dịch vụ (`Advanced.Autoruns(includeServices:false)`). Đo trên máy phát triển: CPU cho toàn bộ khởi động giảm từ 7,8 s xuống 3,7 s ở lần mở thứ hai; bộ nhớ không đổi (≈50 MB riêng). Kiểm thử: cache trả kết quả với ngân sách 0, tồn tại qua lần đọc lại, hết hạn sau 24 giờ, khớp thư mục không phân biệt hoa thường; `Autoruns(false)` giữ mục Run và bỏ dịch vụ.

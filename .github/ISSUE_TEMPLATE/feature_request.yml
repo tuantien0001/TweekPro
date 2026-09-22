@@ -1,0 +1,32 @@
+name: "💡 Đề xuất tính năng"
+description: Bạn muốn Tweek Pro làm thêm điều gì, hoặc làm khác đi.
+title: "[Đề xuất] "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản Tweek Pro đang dùng
+      placeholder: "0.7.7"
+  - type: textarea
+    id: problem
+    attributes:
+      label: Vấn đề bạn gặp
+      description: Việc gì hiện đang khó hoặc tốn thời gian?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Đề xuất
+      description: Bạn muốn nó hoạt động thế nào? Có phần mềm nào làm tốt việc này để tham khảo (Revo, CCleaner, BleachBit…)?
+    validations:
+      required: true
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Tính năng này có xóa hoặc thay đổi dữ liệu không?
+      options:
+        - Không, chỉ đọc/hiển thị
+        - Có, cần qua Kho khôi phục
+        - Không chắc

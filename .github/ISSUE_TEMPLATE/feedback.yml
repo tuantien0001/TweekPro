@@ -1,0 +1,50 @@
+name: "⭐ Đánh giá / góp ý"
+description: Cho biết Tweek Pro giúp được gì, chưa tốt ở đâu — không cần là lỗi.
+title: "[Đánh giá] "
+labels: ["feedback"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản Tweek Pro
+      placeholder: "0.7.7"
+  - type: input
+    id: windows
+    attributes:
+      label: Phiên bản Windows
+      placeholder: "Windows 10 22H2"
+  - type: dropdown
+    id: rating
+    attributes:
+      label: Bạn chấm Tweek Pro mấy sao?
+      options:
+        - "5 — Rất tốt, dùng thay phần mềm trả phí"
+        - "4 — Tốt, còn vài điểm nhỏ"
+        - "3 — Tạm được"
+        - "2 — Nhiều chỗ chưa ổn"
+        - "1 — Không dùng được"
+    validations:
+      required: true
+  - type: textarea
+    id: liked
+    attributes:
+      label: Điểm thích nhất
+  - type: textarea
+    id: improve
+    attributes:
+      label: Điểm cần cải thiện
+    validations:
+      required: true
+  - type: dropdown
+    id: usage
+    attributes:
+      label: Bạn dùng Tweek Pro cho việc gì nhiều nhất?
+      multiple: true
+      options:
+        - Gỡ ứng dụng và dọn phần còn sót
+        - Dọn rác / dấu vết
+        - Quản lý khởi động và dịch vụ
+        - Theo dõi mạng
+        - Phân tích và giải phóng ổ đĩa
+        - Tiện ích trình duyệt / Registry
+        - Trợ lý AI
