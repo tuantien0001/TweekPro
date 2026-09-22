@@ -1,10 +1,14 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 17:30 (Asia/Bangkok).
-Status: DONE (Cursor), not released. Owner (17:08): Khởi động tab must load when clicked; Win10/Win7 weak-PC support; make the app lighter.
+Updated: 2026-09-22 17:48 (Asia/Bangkok).
+Status: DONE (Cursor). Owner (17:33): "push 0.7.7".
 Last editor: Cursor.
 
-## Current task (17:30)
+## Current task (17:48)
+
+S. DONE Release v0.7.7. `release.ps1 -Version 0.7.7` elevated → build 0 W / 0 E, self-test PASS 17:34, commit `1d78f41` "Release v0.7.7", tag `v0.7.7` (`9f78cbf`), both on origin. Actions run 35716739058 success — the ISCC step accepted the new ngen `[Run]`/`[UninstallRun]` lines. Release published 17:35 UTC+7 with `TweekPro-0.7.7-Setup.exe` (5.2 MB) + portable zip: https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.7 . Setup installed (`/VERYSILENT /CLOSEAPPLICATIONS /NORESTART`, exit 0, 10 s incl. ngen); `ngen display` lists `TweekPro-0.7.7, Version=0.7.7.0` so the native image is in the NIC. `C:\Program Files\Tweek Pro\TweekPro-0.7.7.exe` 0.7.7.0 running since 17:47. README `### 0.7.7` finalized by the script; next changelog heading will be `### 0.7.8 (chưa phát hành)`.
+
+## Previous task (17:30)
 
 R. DONE Lighter startup + lazy tabs + old-Windows manifest.
 - Root cause of "Khởi động tab shows nothing": `tabs.SelectedIndexChanged` skipped the load while `busy` (startup Reload/health check hold Guard). New `MainForm.WhenIdle(action)` waits for `busy` to clear then Guards; autorun handler shows "Đang đọc mục khởi động…" overlay meanwhile (`autorunLoading` flag), Explorer tab uses the same helper.
