@@ -1,13 +1,14 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 18:20 (Asia/Bangkok).
+Updated: 2026-09-22 18:25 (Asia/Bangkok).
 Status: DONE (Cursor). Owner (18:00): "Mục ứng dụng đang ít thông tin quá, thêm Uninstall String giống Revo…" + "xếp hạng các ứng dụng dung lượng cao nhất lên đầu".
 Last editor: Cursor.
 
 ## Current task (18:20)
 
 T. DONE Applications tab: Revo-style info + largest-first order. `Engine.cs`: `AppEntry` gains `QuietCommand`, `Website` (URLInfoAbout → HelpLink → URLUpdateInfo), `Comments`, `TypeLabel` ("64-bit"/"32-bit" + " • MSI"); `Inventory` reads them. New `AppSort.Order(list,column,descending)` (size/date numeric, text case-insensitive, tie on name). `App.cs`: 12 columns (adds Loại, Thư mục cài, Lệnh gỡ, Trang web, Ghi chú), `appSortColumn=3`/`appSortDescending=true` default so the biggest installs are on top and re-sort after `MeasureSizes`; `ColumnClick` toggles/changes sort; `AppDetails()` details pane (uninstall, quiet uninstall, registry key with WOW6432Node, website, comments, PUP verdict); search also matches Comments; CSV exports Type/InstallDate/Quiet/Website/Comments/RegistryKey in the current order; appCount 26 px, details 84/96 px so one row still fits in the 1280×820 preview with the horizontal scrollbar. `ContextMenus.cs`: "Sao chép lệnh gỡ im lặng", "Mở trang web nhà phát hành" (`OpenWebsite`, http/https only), "Mở khóa Registry trong Regedit" (`OpenRegedit(hive,view,key)`). LangEn pairs added. Test in `Tests07.Run()` (AppSort + TypeLabel). Build 0 W / 0 E; elevated self-test PASS 18:10; `--preview all` regenerated docs/screenshots (apps.png shows Counter-Strike 2 66.67 GB first). README tab table + `### 0.7.8 (chưa phát hành)`.
-- NEXT: commit + push to main, replace `C:\Program Files\Tweek Pro\TweekPro-0.7.7.exe` in place (owner's habit) or cut 0.7.8 when asked.
+- Committed `25ee3b9` on main; exe replaced in place at 18:14 (`C:\Program Files\Tweek Pro\TweekPro-0.7.7.exe`, running PID 6508).
+- Owner (18:19): "ghi đè push 0.7.7 lên github, đừng lên 0.7.8" → changelog bullet folded into README `### 0.7.7`, commit "Release v0.7.7 (re-cut …)", annotated tag `v0.7.7` moved to it with `git push --force origin v0.7.7` (owner-requested tag overwrite; branch never force-pushed). Actions re-runs on the tag; softprops/action-gh-release v2 replaces same-name assets and the body on the existing Release. Next changelog heading will again be `### 0.7.8 (chưa phát hành)`.
 
 ## Previous task (17:48)
 
