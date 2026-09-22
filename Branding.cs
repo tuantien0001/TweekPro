@@ -189,6 +189,7 @@ namespace TweekPro {
      case "footprints":Footprints(g,r,brush);break;
      case "registry":RegistryTree(g,r,pen,brush);break;
      case "drive":Drive(g,r,pen,brush);break;
+     case "puzzle":Puzzle(g,r,pen);break;
      default:g.FillEllipse(brush,r.X+r.Width/2-3,r.Y+r.Height/2-3,6,6);break;
     }
    }
@@ -208,6 +209,7 @@ namespace TweekPro {
    if(has("Dấu vết","Tracks"))return "footprints";
    if(has("Registry","Registry"))return "registry";
    if(has("Dung lượng hệ thống","System Space"))return "drive";
+   if(has("Tiện ích","Extensions"))return "puzzle";
    if(has("rác","Junk"))return "trash";
    if(has("rỗng","Empty"))return "folder";
    if(has("Phân tích","Analyzer"))return "chart";
@@ -260,6 +262,22 @@ namespace TweekPro {
    using(var path=Rounded(body,3))g.DrawPath(pen,path);
    g.DrawLine(pen,r.X+3,r.Y+2,r.X+r.Width/2,body.Y-1);g.DrawLine(pen,r.Right-3,r.Y+2,r.X+r.Width/2,body.Y-1);
    g.FillEllipse(brush,body.Right-7,body.Y+body.Height/2-2,4,4);
+  }
+  /// <summary>Puzzle piece (square with a knob on top and on the right): the Browser Extensions tab.</summary>
+  static void Puzzle(Graphics g,Rectangle r,Pen pen){
+   int k=Math.Max(3,r.Width/5);var body=new Rectangle(r.X+1,r.Y+k,r.Width-k-1,r.Height-k-1);
+   using(var path=new GraphicsPath()){
+    path.StartFigure();
+    path.AddLine(body.X,body.Y,body.X+body.Width/2-k/2,body.Y);
+    path.AddArc(body.X+body.Width/2-k/2,body.Y-k,k,k,180,180);
+    path.AddLine(body.X+body.Width/2+k/2,body.Y,body.Right,body.Y);
+    path.AddLine(body.Right,body.Y,body.Right,body.Y+body.Height/2-k/2);
+    path.AddArc(body.Right-k/2,body.Y+body.Height/2-k/2,k,k,270,180);
+    path.AddLine(body.Right,body.Y+body.Height/2+k/2,body.Right,body.Bottom);
+    path.AddLine(body.Right,body.Bottom,body.X,body.Bottom);
+    path.CloseFigure();
+    g.DrawPath(pen,path);
+   }
   }
   static void Download(Graphics g,Rectangle r,Pen pen){
    int cx=r.X+r.Width/2;int top=r.Y+1,tip=r.Bottom-5;

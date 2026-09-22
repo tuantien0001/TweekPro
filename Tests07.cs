@@ -82,6 +82,7 @@ namespace TweekPro {
     Tracks.TracksTests.Run();
     RegClean.RegCleanTests.Run();
     SysSpace.SystemSpaceTests.Run();
+    Extensions.ExtensionsTests.Run();
 
     // Safety boundary: rules cannot reach user documents, the data folder or a whole AppData root.
     MustFail(()=>JunkSafety.ValidateRoot(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)),"Documents refused");
