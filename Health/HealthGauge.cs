@@ -28,7 +28,11 @@ namespace TweekPro.Health {
   }
 
   /// <summary>Draws the score ring, grade badge, headline and one free-space ring per fixed drive into the given card rectangle.</summary>
-  public static void Draw(Graphics g,Rectangle card,HealthReport report,string busyText,IList<DriveGauge> drives){
+  public static Color RowTint(HealthSeverity s){
+   Color c=SeverityColor(s);return Color.FromArgb((c.R+255*7)/8,(c.G+255*7)/8,(c.B+255*7)/8);
+  }
+
+  public static void Draw(Graphics g,Rectangle card,HealthReport report,string busyText,IList<DriveGauge> drives,string compare){
    var saved=g.SmoothingMode;g.SmoothingMode=SmoothingMode.AntiAlias;g.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
    using(var bg=new SolidBrush(Theme.Surface))g.FillRectangle(bg,card);
    using(var border=new Pen(Theme.Border))g.DrawRectangle(border,card.X,card.Y,card.Width-1,card.Height-1);
@@ -38,7 +42,7 @@ namespace TweekPro.Health {
     using(var divider=new Pen(Theme.Border))g.DrawLine(divider,drivesLeft-12,card.Y+20,drivesLeft-12,card.Bottom-20);
     for(int i=0;i<shown;i++)DrawDrive(g,new Rectangle(drivesLeft+i*DriveSlot,card.Y,DriveSlot,card.Height),drives[i]);
    }
-   DrawScore(g,card,shown>0?drivesLeft-24:card.Right,report,busyText);
+   DrawScore(g,card,shown>0?drivesLeft-24:card.Right,report,busyText,compare);
    g.SmoothingMode=saved;
   }
 
@@ -57,7 +61,7 @@ namespace TweekPro.Health {
    }
   }
 
-  static void DrawScore(Graphics g,Rectangle card,int right,HealthReport report,string busyText){
+  static void DrawScore(Graphics g,Rectangle card,int right,HealthReport report,string busyText,string compare){
    int ring=Math.Min(card.Height-28,128);var ringRect=new Rectangle(card.X+24,card.Y+(card.Height-ring)/2,ring,ring);
    bool has=report!=null;int score=has?report.Score:0;Color accent=has?ScoreColor(score):Theme.Muted;
    using(var track=new Pen(Theme.Border,10f))g.DrawArc(track,ringRect,135,270);
@@ -84,7 +88,8 @@ namespace TweekPro.Health {
    y+=46;
    using(var muted=new SolidBrush(Theme.Muted))using(var line=Wrap(false)){
     string text=Core.L.F("Có thể giải phóng: {0}   •   {1} khu vực cần chú ý   •   Kiểm tra lúc {2}",Presentation.BytesLabel(report.Reclaimable),report.Issues,report.Generated.ToString("HH:mm dd/MM"));
-    g.DrawString(text,Theme.Small,muted,new RectangleF(x,y,w,20),line);
+    g.DrawString(text,Theme.Small,muted,new RectangleF(x,y,w,18),line);
+    if(!String.IsNullOrEmpty(compare))g.DrawString(compare,Theme.Small,muted,new RectangleF(x,y+18,w,18),line);
    }
   }
 
@@ -102,16 +107,18 @@ namespace TweekPro.Health {
 
  /// <summary>Double-buffered panel that paints the health score card for the current report.</summary>
  public sealed class HealthGaugePanel:Panel {
-  HealthReport report;string busyText;IList<DriveGauge> drives;
+  HealthReport report;string busyText,compare;IList<DriveGauge> drives;
   public HealthGaugePanel(){DoubleBuffered=true;ResizeRedraw=true;BackColor=Theme.Canvas;}
   public HealthReport Report { get { return report; } set { report=value;Invalidate(); } }
   public string BusyText { get { return busyText; } set { busyText=value;Invalidate(); } }
   /// <summary>Fixed drives shown as free-space rings; null or empty hides the ring block.</summary>
   public IList<DriveGauge> Drives { get { return drives; } set { drives=value;Invalidate(); } }
+  /// <summary>Sentence comparing this check with the previous one; empty on the first check.</summary>
+  public string Compare { get { return compare; } set { compare=value;Invalidate(); } }
   protected override void OnPaint(PaintEventArgs e){
    base.OnPaint(e);
    var card=new Rectangle(16,12,Math.Max(10,Width-32),Math.Max(10,Height-24));
-   HealthRenderer.Draw(e.Graphics,card,report,busyText,drives);
+   HealthRenderer.Draw(e.Graphics,card,report,busyText,drives,compare);
   }
  }
 }

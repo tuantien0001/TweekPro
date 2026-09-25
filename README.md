@@ -244,6 +244,11 @@ Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trìn
 
 ## Lịch sử phiên bản
 
+### 0.7.8 (chưa phát hành)
+
+- **Tổng quan dễ dùng hơn**: ngay dưới điểm số có tối đa 3 nút, việc nhiều GB nhất đứng trước. Nút **Dọn rác …** chuyển đúng các nhóm rác không bị khóa vào Kho (có hỏi trước, lấy lại được). Các nút còn lại mở đúng tab. Bảng xếp rác lớn lên đầu và tô nền theo mức. Thẻ điểm ghi một câu so với lần kiểm tra trước (điểm và dung lượng). Ô «Tự kiểm tra khi mở» nằm cùng hàng nút.
+- **Ô tìm kiếm**: tab Ứng dụng và Dịch vụ hệ thống bỏ nhãn «Tìm kiếm» bên cạnh ô; chữ đó hiện mờ bên trong ô khi ô đang trống và biến mất khi gõ. Ô cao bằng nút trên thanh (36 px), mép trái/phải thẳng hàng với hàng nút, viền xanh khi đang gõ. Ô trống vẫn hiện mọi dòng.
+
 ### 0.7.7 (22/09/2026)
 
 - **Báo lỗi và góp ý qua GitHub Issues**: ba mẫu issue (`.github/ISSUE_TEMPLATE`: Báo lỗi, Đề xuất tính năng, Đánh giá / góp ý — tiếng Việt, có nhãn `bug`/`enhancement`/`feedback`, chọn tab liên quan, chấm sao). Nút **Báo lỗi / góp ý** ở tab Tổng quan và Công cụ mở mẫu tương ứng với phiên bản Tweek Pro, phiên bản Windows (đọc `ProductName`/`DisplayVersion`/`CurrentBuild`, build ≥ 22000 ghi Windows 11) và tab đang mở đã điền sẵn; thêm lối «Xem phản hồi đã gửi» và «Mở thư mục nhật ký để đính kèm». Liên kết được cắt dưới 7000 ký tự để trình duyệt chấp nhận. README có mục «Báo lỗi và góp ý». Kiểm thử: mã hóa UTF-8 tham số, bỏ trường trống, cắt nội dung dài kèm dấu «…», ghép nhãn Windows.

@@ -35,14 +35,20 @@ namespace TweekPro {
    Add(bar,"Khởi động dịch vụ",async()=>await StartSelectedService());
    Add(bar,"Dừng và vô hiệu hóa",async()=>await StopSelectedService(true),ButtonStyle.Danger);
    Add(bar,"Services của Windows",()=>{Process.Start(new ProcessStartInfo("services.msc"){UseShellExecute=true});return Task.FromResult(0);});
-   var filterLabel=new Label{Text=Core.L.T("Hiện"),AutoSize=true,Margin=new Padding(12,9,4,0),ForeColor=Theme.Muted};
-   svcFilter=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,Width=150,Margin=new Padding(0,5,0,0),Font=Theme.Body,FlatStyle=FlatStyle.Flat};
+   var filterLabel=new Label{Text=Core.L.T("Hiện"),AutoSize=true,ForeColor=Theme.Muted,Font=Theme.Body,TextAlign=ContentAlignment.MiddleLeft};
+   svcFilter=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,Width=168,Font=Theme.Body,FlatStyle=FlatStyle.Standard};
+   int labelW=TextRenderer.MeasureText(filterLabel.Text,Theme.Body).Width;
+   int labelH=filterLabel.PreferredHeight,comboH=svcFilter.PreferredHeight;
+   var filterHost=new Panel{Width=labelW+8+svcFilter.Width,Height=36,Margin=new Padding(8,0,8,8),BackColor=Theme.Surface};
+   filterLabel.SetBounds(0,(36-labelH)/2,labelW,labelH);
+   svcFilter.SetBounds(labelW+8,(36-comboH)/2,svcFilter.Width,comboH);
+   filterHost.Controls.Add(filterLabel);filterHost.Controls.Add(svcFilter);
    foreach(var f in SvcFilters)svcFilter.Items.Add(Core.L.T(f));
    svcFilter.SelectedIndex=0;svcFilter.SelectedIndexChanged+=(s,e)=>{if(svcLoaded)RenderServices();};
-   var searchLabel=new Label{Text=Core.L.T("Tìm kiếm"),AutoSize=true,Margin=new Padding(12,9,4,0),ForeColor=Theme.Muted};
-   svcSearch=new TextBox{Width=200,Height=28,Margin=new Padding(0,4,0,0),Font=Theme.Body,BorderStyle=BorderStyle.FixedSingle,ForeColor=Theme.Text};
+   svcSearch=new TextBox();
+   var svcSearchHost=Theme.SearchField(svcSearch);
    svcSearch.TextChanged+=(s,e)=>{if(svcLoaded)RenderServices();};
-   bar.Controls.Add(filterLabel);bar.Controls.Add(svcFilter);bar.Controls.Add(searchLabel);bar.Controls.Add(svcSearch);
+   bar.Controls.Add(filterHost);bar.Controls.Add(svcSearchHost);Theme.FillRow(bar,svcSearchHost);
 
    var note=Theme.Note("Mỗi dịch vụ được giải thích bằng lời thường: nó làm gì, thuộc Windows hay ứng dụng nào cài, và có dừng được không. Dịch vụ cốt lõi bị khóa. \"Dừng và vô hiệu hóa\" lưu kiểu khởi động cũ vào Kho khôi phục để bật lại. Chuột phải lên một dòng để thao tác.",NoteKind.Info);
    svcDetails=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,BackColor=Theme.Stripe,ForeColor=Theme.Text,BorderStyle=BorderStyle.None,Font=Theme.Small,Dock=DockStyle.Fill};

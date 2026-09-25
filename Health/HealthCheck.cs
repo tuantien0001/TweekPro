@@ -10,8 +10,13 @@ namespace TweekPro.Health {
 
  /// <summary>One measured area of the machine with a plain-language verdict and the tab that acts on it.</summary>
  public class HealthFinding {
-  public string Area; public string Verdict; public string Detail; public string Tab;
+  public string Key, Area, Verdict, Detail, Tab;
   public HealthSeverity Severity; public long Bytes; public int Count; public bool Measured=true;
+ }
+
+ /// <summary>One plain-language button on the Overview card. Clean is only the junk rules, which go to the vault; every other action opens its tab.</summary>
+ public class HealthAction {
+  public string Key, Tab, Label; public bool Clean;
  }
 
  /// <summary>Raw measurements gathered by the UI probes; keeping them as plain data makes scoring pure and testable.</summary>
@@ -85,6 +90,41 @@ namespace TweekPro.Health {
 
   public static string SeverityLabel(HealthSeverity s){return s==HealthSeverity.High?L.T("Khẩn"):s==HealthSeverity.Medium?L.T("Cần dọn"):s==HealthSeverity.Low?L.T("Nên xem"):L.T("Tốt");}
 
+  /// <summary>Display order: issues with the most reclaimable bytes first, then the more urgent ones; healthy rows stay at the bottom.</summary>
+  public static IEnumerable<HealthFinding> Order(IEnumerable<HealthFinding> findings){
+   return findings.OrderBy(f=>f.Measured&&f.Severity!=HealthSeverity.Good?0:1).ThenByDescending(f=>f.Bytes).ThenByDescending(f=>Penalty(f.Severity)).ThenBy(f=>f.Area??"");
+  }
+
+  /// <summary>At most three buttons. Junk with a size is the only action that cleans; the rest open their tab.</summary>
+  public static List<HealthAction> TopActions(HealthReport report){
+   var list=new List<HealthAction>();
+   if(report==null)return list;
+   foreach(var f in Order(report.Findings).Where(f=>f.Measured&&f.Severity!=HealthSeverity.Good).Take(3))
+    list.Add(new HealthAction{Key=f.Key,Tab=f.Tab,Clean=f.Key=="junk"&&f.Bytes>0,Label=ActionLabel(f)});
+   return list;
+  }
+
+  static string ActionLabel(HealthFinding f){
+   if(f.Key=="junk"&&f.Bytes>0)return L.F("Dọn rác {0}",Presentation.BytesLabel(f.Bytes));
+   if(f.Key=="empty"&&f.Count>0)return L.F("Xem {0} thư mục rỗng",f.Count);
+   if(f.Key=="pup"&&f.Count>0)return L.F("Xem {0} phần mềm cảnh báo",f.Count);
+   if(f.Key=="leftovers"&&f.Count>0)return L.F("Xem {0} phần còn sót",f.Count);
+   if(f.Key=="autorun")return L.T("Xem mục khởi động");
+   if(f.Key=="vault"&&f.Bytes>0)return L.F("Xem kho cũ {0}",Presentation.BytesLabel(f.Bytes));
+   if(f.Key=="disk")return L.T("Xem ổ đĩa");
+   return L.F("Xem {0}",f.Area);
+  }
+
+  /// <summary>One sentence against the previous check. lastScore below 0 means there is no previous check.</summary>
+  public static string Compare(int score,long reclaim,int lastScore,long lastReclaim){
+   if(lastScore<0)return "";
+   string scorePart=score>lastScore?L.F("Tốt hơn lần trước ({0} → {1}).",lastScore,score):score<lastScore?L.F("Kém hơn lần trước ({0} → {1}).",lastScore,score):L.F("Điểm bằng lần trước ({0}).",score);
+   long delta=lastReclaim-reclaim;
+   if(delta>0)return scorePart+" "+L.F("Có thể dọn ít hơn {0}.",Presentation.BytesLabel(delta));
+   if(delta<0)return scorePart+" "+L.F("Có thể dọn nhiều hơn {0}.",Presentation.BytesLabel(-delta));
+   return scorePart;
+  }
+
   /// <summary>One-sentence summary for the gauge card.</summary>
   public static string Headline(int score,long reclaimable,int issues){
    if(issues==0)return L.T("Máy đang sạch. Không có gì cần dọn ở các khu vực đã kiểm tra.");
@@ -93,7 +133,7 @@ namespace TweekPro.Health {
   }
 
   static HealthFinding Junk(HealthInputs i){
-   var f=new HealthFinding{Area=L.T("Tệp rác"),Tab=TabJunk,Measured=i.JunkMeasured,Bytes=i.JunkBytes,Count=i.JunkFiles};
+   var f=new HealthFinding{Key="junk",Area=L.T("Tệp rác"),Tab=TabJunk,Measured=i.JunkMeasured,Bytes=i.JunkBytes,Count=i.JunkFiles};
    if(!i.JunkMeasured){Unmeasured(f);return f;}
    f.Severity=i.JunkBytes>=2*GB?HealthSeverity.High:i.JunkBytes>=500*MB?HealthSeverity.Medium:i.JunkBytes>=100*MB?HealthSeverity.Low:HealthSeverity.Good;
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Rất ít tệp rác":f.Severity==HealthSeverity.Low?"Có một ít tệp rác":f.Severity==HealthSeverity.Medium?"Nhiều tệp rác":"Rất nhiều tệp rác");
@@ -102,7 +142,7 @@ namespace TweekPro.Health {
   }
 
   static HealthFinding Leftovers(HealthInputs i){
-   var f=new HealthFinding{Area=L.T("Phần còn sót"),Tab=TabLeftovers,Measured=i.LeftoverMeasured,Count=i.LeftoverCandidates};
+   var f=new HealthFinding{Key="leftovers",Area=L.T("Phần còn sót"),Tab=TabLeftovers,Measured=i.LeftoverMeasured,Count=i.LeftoverCandidates};
    if(!i.LeftoverMeasured){Unmeasured(f);return f;}
    f.Severity=i.LeftoverCandidates==0?HealthSeverity.Good:i.LeftoverCandidates<=5?HealthSeverity.Low:HealthSeverity.Medium;
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Không có mục chờ duyệt":"Có mục còn sót chờ duyệt");
@@ -111,7 +151,7 @@ namespace TweekPro.Health {
   }
 
   static HealthFinding Empty(HealthInputs i){
-   var f=new HealthFinding{Area=L.T("Thư mục rỗng"),Tab=TabEmpty,Measured=i.EmptyMeasured,Count=i.EmptyFolders};
+   var f=new HealthFinding{Key="empty",Area=L.T("Thư mục rỗng"),Tab=TabEmpty,Measured=i.EmptyMeasured,Count=i.EmptyFolders};
    if(!i.EmptyMeasured){Unmeasured(f);return f;}
    f.Severity=i.EmptyFolders==0?HealthSeverity.Good:HealthSeverity.Low;
    f.Verdict=L.T(i.EmptyFolders==0?"Không có thư mục rỗng":"Có thư mục rỗng");
@@ -120,7 +160,7 @@ namespace TweekPro.Health {
   }
 
   static HealthFinding Vault(HealthInputs i){
-   var f=new HealthFinding{Area=L.T("Kho khôi phục"),Tab=TabVault,Measured=i.VaultMeasured,Bytes=i.VaultStaleBytes,Count=i.VaultStale};
+   var f=new HealthFinding{Key="vault",Area=L.T("Kho khôi phục"),Tab=TabVault,Measured=i.VaultMeasured,Bytes=i.VaultStaleBytes,Count=i.VaultStale};
    if(!i.VaultMeasured){Unmeasured(f);return f;}
    f.Severity=i.VaultStaleBytes>=1*GB?HealthSeverity.Medium:i.VaultStaleBytes>=200*MB?HealthSeverity.Low:HealthSeverity.Good;
    f.Verdict=L.T(i.VaultBackups==0?"Kho trống":f.Severity==HealthSeverity.Good?"Kho gọn":"Kho giữ bản sao lưu cũ");
@@ -129,7 +169,7 @@ namespace TweekPro.Health {
   }
 
   static HealthFinding Autorun(HealthInputs i){
-   var f=new HealthFinding{Area=L.T("Khởi động cùng Windows"),Tab=TabAutorun,Measured=i.AutorunMeasured,Count=i.AutorunEntries};
+   var f=new HealthFinding{Key="autorun",Area=L.T("Khởi động cùng Windows"),Tab=TabAutorun,Measured=i.AutorunMeasured,Count=i.AutorunEntries};
    if(!i.AutorunMeasured){Unmeasured(f);return f;}
    f.Severity=i.AutorunEntries<=8?HealthSeverity.Good:i.AutorunEntries<=15?HealthSeverity.Low:i.AutorunEntries<=25?HealthSeverity.Medium:HealthSeverity.High;
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Ít mục khởi động":f.Severity==HealthSeverity.Low?"Khá nhiều mục khởi động":"Quá nhiều mục khởi động");
@@ -164,7 +204,7 @@ namespace TweekPro.Health {
   public static string DriveLabel(DriveGauge g){return L.F("{0} trống / {1}",Presentation.BytesLabel(g.FreeBytes),Presentation.BytesLabel(g.TotalBytes));}
 
   static HealthFinding Disk(HealthInputs i){
-   var f=new HealthFinding{Area=L.T("Dung lượng trống"),Tab=TabAnalyzer,Measured=i.DiskMeasured&&i.DiskTotalBytes>0};
+   var f=new HealthFinding{Key="disk",Area=L.T("Dung lượng trống"),Tab=TabAnalyzer,Measured=i.DiskMeasured&&i.DiskTotalBytes>0};
    if(!f.Measured){Unmeasured(f);return f;}
    double ratio=(double)i.DiskFreeBytes/i.DiskTotalBytes;
    f.Severity=DriveLevel(i.DiskFreeBytes,i.DiskTotalBytes);
@@ -175,7 +215,7 @@ namespace TweekPro.Health {
 
   /// <summary>PUP/bloatware: any high-severity match is High; 3+ items Medium; 1–2 Low. Counts only, no bytes (removal goes through the uninstall flows).</summary>
   static HealthFinding Pup(HealthInputs i){
-   var f=new HealthFinding{Area=L.T("Ứng dụng không mong muốn"),Tab=TabApps,Measured=i.PupMeasured,Count=i.PupCount};
+   var f=new HealthFinding{Key="pup",Area=L.T("Ứng dụng không mong muốn"),Tab=TabApps,Measured=i.PupMeasured,Count=i.PupCount};
    if(!i.PupMeasured){Unmeasured(f);return f;}
    f.Severity=i.PupCount==0?HealthSeverity.Good:i.PupHigh>0?HealthSeverity.High:i.PupCount>=3?HealthSeverity.Medium:HealthSeverity.Low;
    f.Verdict=L.T(f.Severity==HealthSeverity.Good?"Không có phần mềm không mong muốn":f.Severity==HealthSeverity.High?"Có phần mềm nên gỡ":"Có phần mềm không mong muốn");

@@ -217,6 +217,37 @@ namespace TweekPro {
   public static readonly Font Title=new Font("Segoe UI Semibold",20f);
   public static readonly Font Mono=new Font("Consolas",9.5f);
 
+  const int EmSetCueBanner=0x1501;
+  [System.Runtime.InteropServices.DllImport("user32.dll",CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
+  static extern IntPtr SendMessage(IntPtr hWnd,int msg,IntPtr wParam,string lParam);
+
+  /// <summary>Gray hint drawn inside an empty single-line box, including while it has focus. The hint is not part of Text, so filters stay empty until the user types.</summary>
+  public static void Cue(TextBox box,string text){
+   string hint=Core.L.T(text);
+   EventHandler apply=null;
+   apply=(s,e)=>{box.HandleCreated-=apply;SendMessage(box.Handle,EmSetCueBanner,(IntPtr)1,hint);};
+   if(box.IsHandleCreated)apply(box,EventArgs.Empty);else box.HandleCreated+=apply;
+  }
+
+  /// <summary>Search box the same height as a toolbar button (36 px), with the hint inside and a border that matches the flat buttons. The inner box keeps the caller's TextChanged handler.</summary>
+  public static Panel SearchField(TextBox box){
+   box.BorderStyle=BorderStyle.None;box.Font=Body;box.BackColor=Surface;box.ForeColor=Text;box.Margin=new Padding(0);Cue(box,"Tìm kiếm");
+   var host=new Panel{Width=240,Height=36,Margin=new Padding(0,0,8,8),BackColor=Surface,Cursor=Cursors.IBeam};
+   host.Controls.Add(box);
+   Action place=()=>{int h=Math.Max(box.PreferredHeight,16);box.SetBounds(10,Math.Max(0,(host.Height-h)/2),Math.Max(20,host.Width-20),h);};
+   host.Resize+=(s,e)=>place();host.HandleCreated+=(s,e)=>place();host.Click+=(s,e)=>box.Focus();
+   host.Paint+=(s,e)=>{using(var pen=new Pen(box.Focused?Primary:Border))e.Graphics.DrawRectangle(pen,0,0,host.Width-1,host.Height-1);};
+   box.GotFocus+=(s,e)=>host.Invalidate();box.LostFocus+=(s,e)=>host.Invalidate();
+   box.EnabledChanged+=(s,e)=>host.Invalidate();
+   return host;
+  }
+
+  /// <summary>Stretches a wrapped toolbar child to the content width so it lines up with the buttons on the left and the right.</summary>
+  public static void FillRow(FlowLayoutPanel bar,Control field){
+   EventHandler fit=(s,e)=>{int w=bar.ClientSize.Width-bar.Padding.Horizontal-field.Margin.Horizontal;if(w>=120&&field.Width!=w)field.Width=w;};
+   bar.Resize+=fit;bar.Layout+=(s,e)=>fit(s,EventArgs.Empty);
+  }
+
   /// <summary>Creates a flat button with the given semantic style and hover feedback.</summary>
   public static Button Button(string text,ButtonStyle style){
    var b=new Button{Text=Core.L.T(text),AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,FlatStyle=FlatStyle.Flat,Font=Body,Cursor=Cursors.Hand,Margin=new Padding(0,0,8,0),Padding=new Padding(12,0,12,0),MinimumSize=new Size(0,36),UseVisualStyleBackColor=false};

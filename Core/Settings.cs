@@ -26,6 +26,9 @@ namespace TweekPro.Core {
   [DataMember(Name="updateSkipVersion")] public string UpdateSkipVersion="";
   /// <summary>Run the read-only health check automatically after the inventory loads at startup.</summary>
   [DataMember(Name="healthAutoCheck")] public bool HealthAutoCheck=true;
+  /// <summary>Score and reclaimable bytes of the previous completed health check; -1 means none yet.</summary>
+  [DataMember(Name="healthLastScore")] public int HealthLastScore=-1;
+  [DataMember(Name="healthLastReclaim")] public long HealthLastReclaim;
   [DataMember(Name="windowWidth")] public int WindowWidth=0;
   [DataMember(Name="windowHeight")] public int WindowHeight=0;
   [DataMember(Name="language")] public string Language=L.Vietnamese;
@@ -44,7 +47,7 @@ namespace TweekPro.Core {
   public bool AiAllowActions { get { return AiActionMode!=AiActionModes.ReadOnly; } }
 
   /// <summary>DataContract deserialization skips field initializers; members added after 0.7 shipped need their defaults restored for older files.</summary>
-  [OnDeserializing] void Defaults(StreamingContext context){StaleMinAgeDays=30;StaleLargeMB=200;UpdateAutoCheck=true;UpdateSkipVersion="";HealthAutoCheck=true;}
+  [OnDeserializing] void Defaults(StreamingContext context){StaleMinAgeDays=30;StaleLargeMB=200;UpdateAutoCheck=true;UpdateSkipVersion="";HealthAutoCheck=true;HealthLastScore=-1;}
 
   /// <summary>Clamps values that would make the UI unusable if the file was edited by hand.</summary>
   public void Normalize(){

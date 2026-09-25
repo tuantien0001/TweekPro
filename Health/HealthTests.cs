@@ -103,6 +103,17 @@ namespace TweekPro.Health {
    // Renderer colors follow the score.
    Assert(HealthRenderer.ScoreColor(90)==Theme.Success&&HealthRenderer.ScoreColor(20)==Theme.Danger,"score colors");
    Assert(HealthRenderer.SeverityColor(HealthSeverity.Good)==Theme.Success&&HealthRenderer.SeverityColor(HealthSeverity.High)==Theme.Danger,"severity colors");
+   Assert(HealthRenderer.RowTint(HealthSeverity.High).R>HealthRenderer.RowTint(HealthSeverity.Good).R,"high rows are tinted warmer than good");
+
+   var ordered=HealthCheck.Order(heavy.Findings).ToList();
+   Assert(ordered[0].Key=="junk"&&ordered.Last().Severity==HealthSeverity.Good,"largest reclaimable issue is listed first");
+   var actions=HealthCheck.TopActions(heavy);
+   Assert(actions.Count<=3&&actions[0].Clean&&actions[0].Key=="junk"&&actions[0].Label.Contains("3"),"junk button cleans and names the size");
+   Assert(HealthCheck.TopActions(clean).Count==0,"a clean machine has no action buttons");
+   Assert(HealthCheck.Compare(60,100,54,200).Contains("54")&&HealthCheck.Compare(60,100,54,200).Contains("100"),"better score and less to clean");
+   Assert(HealthCheck.Compare(50,300,60,100).StartsWith("Kém hơn")||HealthCheck.Compare(50,300,60,100).Length>0,"worse score still produces a sentence");
+   Assert(HealthCheck.Compare(60,100,-1,0)=="","first check has no comparison");
+   Assert(HealthCheck.Compare(60,100,60,100).Contains("60")&&!HealthCheck.Compare(60,100,60,100).Contains("ít hơn"),"unchanged score names no size delta");
   }
  }
 }

@@ -11,7 +11,7 @@ using TweekPro.Health;
 
 namespace TweekPro {
  public partial class MainForm {
-  ListView healthList=new SmoothListView();Label healthOverlay,healthStage;TabPage healthTab;HealthGaugePanel healthGauge=new HealthGaugePanel();
+  ListView healthList=new SmoothListView();Label healthOverlay,healthStage;TabPage healthTab;HealthGaugePanel healthGauge=new HealthGaugePanel();FlowLayoutPanel healthActions;
   HealthReport healthReport;CancellationTokenSource healthCancellation;Button healthStop;CheckBox healthAuto;
 
   /// <summary>Builds the Overview tab: one read-only health check that scores the machine and points to the tab that fixes each finding.</summary>
@@ -30,14 +30,16 @@ namespace TweekPro {
    // Deliberately not registered through Add(): it must stay enabled while Guard disables every other action.
    healthStop=Theme.Button("Dừng kiểm tra",ButtonStyle.Secondary);healthStop.Margin=new Padding(0,0,8,8);healthStop.Visible=false;
    healthStop.Click+=(s,e)=>{if(healthCancellation!=null)healthCancellation.Cancel();};bar.Controls.Add(healthStop);
-   healthAuto=new CheckBox{Text=Core.L.T("Tự kiểm tra khi mở"),AutoSize=true,Margin=new Padding(8,8,12,0),ForeColor=Theme.Text,Checked=settings.HealthAutoCheck};
-   healthAuto.CheckedChanged+=(s,e)=>{settings.HealthAutoCheck=healthAuto.Checked;SaveSettings();};bar.Controls.Add(healthAuto);
 
-   healthGauge.Dock=DockStyle.Top;healthGauge.Height=176;
+   healthGauge.Dock=DockStyle.Top;healthGauge.Height=196;
+   healthActions=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=true,Padding=new Padding(16,0,16,4),BackColor=Theme.Surface};
+   healthAuto=new CheckBox{Text=Core.L.T("Tự kiểm tra khi mở"),AutoSize=true,Margin=new Padding(8,8,0,8),ForeColor=Theme.Muted,Checked=settings.HealthAutoCheck};
+   healthAuto.CheckedChanged+=(s,e)=>{settings.HealthAutoCheck=healthAuto.Checked;SaveSettings();};
    healthStage=new Label{Dock=DockStyle.Top,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
-   var note=Theme.Note("Kiểm tra sức khỏe chỉ đọc: đo tệp rác theo quy tắc, mục còn sót chờ duyệt, thư mục rỗng trong Downloads, bản sao lưu cũ hơn tuổi dọn kho, số mục khởi động, dung lượng trống ổ hệ thống và phần mềm không mong muốn (PUP/bloatware). Không xóa gì; bấm đúp một dòng để mở tab xử lý tương ứng.",NoteKind.Info);
-   tab.Controls.Add(host);tab.Controls.Add(healthStage);tab.Controls.Add(note);tab.Controls.Add(healthGauge);tab.Controls.Add(bar);tab.Controls.Add(BuildUpdateBanner());
+   var note=Theme.Note("Bấm nút ngay dưới điểm số để dọn rác hoặc mở đúng chỗ. Bấm đúp một dòng cũng mở tab đó. Rác được chuyển vào Kho, lấy lại được.",NoteKind.Info);
+   tab.Controls.Add(host);tab.Controls.Add(healthStage);tab.Controls.Add(note);tab.Controls.Add(healthActions);tab.Controls.Add(healthGauge);tab.Controls.Add(bar);tab.Controls.Add(BuildUpdateBanner());
    Theme.SetOverlay(healthOverlay,"Chưa kiểm tra.\r\nBấm Kiểm tra ngay để chấm điểm máy. Mỗi dòng kết quả chỉ ra tab có thể dọn an toàn.",NoteKind.Info);
+   ShowHealthActions();
   }
 
   /// <summary>Reads the fixed drives off the UI thread and shows them as rings; called at startup and after every check.</summary>
@@ -101,6 +103,8 @@ namespace TweekPro {
    finally{healthCancellation.Dispose();healthCancellation=null;if(!IsDisposed){healthStage.Visible=false;healthStop.Visible=false;healthGauge.BusyText=null;}}
    if(IsDisposed)return;
    healthReport=HealthCheck.Evaluate(inputs);
+   healthGauge.Compare=HealthCheck.Compare(healthReport.Score,healthReport.Reclaimable,settings.HealthLastScore,settings.HealthLastReclaim);
+   settings.HealthLastScore=healthReport.Score;settings.HealthLastReclaim=healthReport.Reclaimable;SaveSettings();
    healthGauge.Report=healthReport;
    RenderHealth();
    Log(Core.L.F("Kiểm tra sức khỏe: {0}/100 ({1}). {2}",healthReport.Score,healthReport.Grade,healthReport.Headline));
@@ -113,19 +117,56 @@ namespace TweekPro {
 
   void RenderHealth(){
    healthList.BeginUpdate();healthList.Items.Clear();
-   foreach(var f in healthReport.Findings){
-    var row=new ListViewItem(new[]{f.Area,f.Verdict,f.Detail,f.Bytes>0?Presentation.BytesLabel(f.Bytes):"—",f.Measured?HealthCheck.SeverityLabel(f.Severity):Core.L.T("Chưa đo"),Core.L.T(f.Tab)}){Tag=f,ToolTipText=f.Detail};
-    if(!f.Measured)row.ForeColor=Theme.Muted;else if(f.Severity!=HealthSeverity.Good)row.ForeColor=HealthRenderer.SeverityColor(f.Severity);
-    Theme.StripeRow(row,healthList.Items.Count);healthList.Items.Add(row);
+   foreach(var f in HealthCheck.Order(healthReport.Findings)){
+    var row=new ListViewItem(new[]{f.Area,f.Verdict,f.Detail,f.Bytes>0?Presentation.BytesLabel(f.Bytes):"—",f.Measured?HealthCheck.SeverityLabel(f.Severity):Core.L.T("Chưa đo"),Core.L.T(f.Tab)}){Tag=f,ToolTipText=f.Detail,UseItemStyleForSubItems=true};
+    if(!f.Measured)row.ForeColor=Theme.Muted;
+    else if(f.Severity!=HealthSeverity.Good){row.ForeColor=HealthRenderer.SeverityColor(f.Severity);row.BackColor=HealthRenderer.RowTint(f.Severity);}
+    else Theme.StripeRow(row,healthList.Items.Count);
+    healthList.Items.Add(row);
    }
    healthList.EndUpdate();
+   ShowHealthActions();
    Theme.SetOverlay(healthOverlay,null,NoteKind.Info);
+  }
+
+  /// <summary>Rebuilds the buttons under the score: the biggest junk amount cleans into the vault; the next two open their tab.</summary>
+  void ShowHealthActions(){
+   foreach(Control c in healthActions.Controls){var b=c as Button;if(b!=null)actions.Remove(b);}
+   healthActions.Controls.Clear();
+   foreach(var action in HealthCheck.TopActions(healthReport)){
+    var captured=action;
+    Add(healthActions,captured.Label,async()=>{if(captured.Clean)await CleanJunkFromOverview();else OpenFinding(healthReport.Findings.First(f=>f.Key==captured.Key));},captured.Clean?ButtonStyle.Primary:ButtonStyle.Secondary);
+   }
+   healthActions.Controls.Add(healthAuto);
+   healthActions.Visible=healthActions.Controls.Count>0;
+  }
+
+  /// <summary>Moves every unlocked junk group that has files into the vault, then checks again so the score updates.</summary>
+  async Task CleanJunkFromOverview(){
+   bool elevated=Core.Elevation.IsElevated;int minAge=settings.JunkMinAgeHours;
+   var rules=Cleaner.JunkRules.Load(Core.Paths.JunkRulesOverride).Rules;
+   List<Cleaner.JunkRuleResult> groups=null;
+   await Task.Run(()=>{groups=Cleaner.JunkCleaner.Preview(rules,elevated,minAge,CancellationToken.None).Where(r=>!r.Locked&&r.Count>0).ToList();});
+   if(groups==null||groups.Count==0)throw new IOException(Core.L.T("Không còn tệp rác để dọn."));
+   long bytes=groups.Sum(r=>r.Bytes);int files=groups.Sum(r=>r.Count);
+   string list=String.Join("\r\n",groups.Take(6).Select(r=>"• "+Core.L.T(r.Rule.Name)));
+   if(groups.Count>6)list+=Core.L.F("\r\n… và {0} nhóm khác",groups.Count-6);
+   if(!Confirm(Core.L.F("Chuyển {0} tệp rác ({1}) vào Kho khôi phục?\r\n\r\n{2}\r\n\r\nLấy lại được trong tab Kho khôi phục. Ổ đĩa chỉ trống hẳn sau khi xóa hẳn trong Kho.",files.ToString("N0"),Presentation.BytesLabel(bytes),list)))return;
+   healthStage.Visible=true;healthStage.Text=Core.L.T("Đang chuyển rác vào kho…");
+   var report=await Task.Run(()=>Cleaner.JunkCleaner.Clean(groups,false,CancellationToken.None));
+   LoadBackups();
+   Log(Core.L.F("Tổng quan: đã chuyển vào kho {0} tệp rác ({1}).",report.Cleaned.ToString("N0"),Presentation.BytesLabel(report.Bytes)));
+   MessageBox.Show(this,Core.L.F("Đã chuyển {0} tệp ({1}) vào Kho.\r\nBỏ qua vì đang mở: {2}. Lỗi: {3}.\r\n\r\nMở tab Kho khôi phục nếu muốn lấy lại.",report.Cleaned.ToString("N0"),Presentation.BytesLabel(report.Bytes),report.SkippedInUse.ToString("N0"),report.Failed.ToString("N0")),Core.L.T("Đã dọn rác"),MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
+   await RunHealthCheck();
   }
 
   /// <summary>Switches to the tab that acts on the selected finding.</summary>
   void OpenHealthTab(){
    if(healthList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một dòng kết quả trước."));
-   var f=(HealthFinding)healthList.SelectedItems[0].Tag;
+   OpenFinding((HealthFinding)healthList.SelectedItems[0].Tag);
+  }
+
+  void OpenFinding(HealthFinding f){
    var page=tabs.TabPages.Cast<TabPage>().FirstOrDefault(p=>String.Equals(p.Text,Core.L.T(f.Tab),StringComparison.OrdinalIgnoreCase));
    if(page==null)throw new IOException(Core.L.F("Không tìm thấy tab {0}.",Core.L.T(f.Tab)));
    tabs.SelectedTab=page;
@@ -141,7 +182,7 @@ namespace TweekPro {
    var drives=new List<DriveGauge>{new DriveGauge{Name="C:",FreeBytes=38L*HealthCheck.GB,TotalBytes=476L*HealthCheck.GB},new DriveGauge{Name="D:",FreeBytes=610L*HealthCheck.GB,TotalBytes=931L*HealthCheck.GB},new DriveGauge{Name="E:",FreeBytes=120L*HealthCheck.GB,TotalBytes=1863L*HealthCheck.GB}};
    foreach(var d in drives)d.Label=HealthCheck.DriveLabel(d);
    healthGauge.Drives=drives;
-   healthReport=HealthCheck.Evaluate(sample);healthGauge.Report=healthReport;RenderHealth();tabs.SelectedTab=healthTab;
+   healthReport=HealthCheck.Evaluate(sample);healthGauge.Compare=HealthCheck.Compare(healthReport.Score,healthReport.Reclaimable,healthReport.Score-6,healthReport.Reclaimable+HealthCheck.GB);healthGauge.Report=healthReport;RenderHealth();tabs.SelectedTab=healthTab;
   }
 
   void CopyHealthReport(){

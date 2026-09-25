@@ -1,10 +1,15 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-22 18:25 (Asia/Bangkok).
-Status: DONE (Cursor). Owner (18:00): "Mục ứng dụng đang ít thông tin quá, thêm Uninstall String giống Revo…" + "xếp hạng các ứng dụng dung lượng cao nhất lên đầu".
+Updated: 2026-09-25 20:30 (Asia/Bangkok).
+Status: RELEASING (Cursor). Owner: "build 0.7.8 và push lên github".
 Last editor: Cursor.
 
-## Current task (20:15)
+## Current task (20:10)
+
+V. Search cue. Owner: «Làm chữ Tìm kiếm ẩn trong ô chữ nhật» on Ứng dụng and Dịch vụ hệ thống. `Theme.Cue` sends EM_SETCUEBANNER (wParam 1, shown while focused; not part of Text). Removed the side labels in `App.cs` and `Services/ServicesUI.cs`. README `### 0.7.8 (chưa phát hành)`.
+- Build 0 W / 0 E; elevated self-test PASS. Previews `docs/screenshots/apps.png` and `services.png` show the gray «Tìm kiếm» inside the empty box. Installed exe replaced in place. Not released (stays 0.7.7 until asked).
+
+## Previous task (20:15)
 
 U. DONE GitHub feedback channel. Owner (20:01): "cài có user đánh giá và báo lỗi trên github để theo dõi" (no code signing for now). `.github/ISSUE_TEMPLATE/{bug_report,feature_request,feedback}.yml` + `config.yml` (Vietnamese issue forms, labels bug/enhancement/feedback, tab dropdown, star rating; field ids version/windows/what used for prefill). `Update/Feedback.cs`: `BugUrl/FeatureUrl/FeedbackUrl/Build` (RFC 3986 escaping, trims to `MaxUrlLength` 7000 with «…»), `WindowsLabel` (registry ProductName/DisplayVersion/CurrentBuild, build ≥22000 → "Windows 11", fallback OSVersion), `Compose`. `Update/FeedbackUI.cs`: `AddFeedbackButton` → menu (Báo lỗi…, Đề xuất…, Đánh giá…, Xem phản hồi, Mở thư mục nhật ký) on the Overview and Tools toolbars; `OpenFeedback` logs and opens the browser. LangEn pairs in `UpdateLang`. `Update/FeedbackTests.cs` wired into `Tests07.Run()`. README: new "## Báo lỗi và góp ý" section + 0.7.7 bullet (folded into 0.7.7 per owner). Build 0 W / 0 E; elevated self-test PASS 20:08; health.png/tools.png regenerated. Labels `feedback` must exist on GitHub for the template label to apply (bug/enhancement are defaults) — created via API if a token is available, otherwise GitHub silently skips it. Discussions stay off (needs owner in Settings).
 - Commits `52ba3a2` (feature) + `8636c83` (fix: first tag run 35731441549 failed because the runner is Windows Server build ≥22000 — live-label assertion removed, `Feedback.Product` unit-tested instead). Tag `v0.7.7` → `8636c83`; run 35731699544 success; Release assets replaced 13:11 UTC. Label `feedback` created on GitHub via the stored git credential (API). Issue YAMLs validated with pyyaml (ids unique, types valid). `/issues/new/choose` needs a GitHub login so it was not screenshot-verified; owner should open it once. Exe replaced in place 20:09, running PID 42448.
