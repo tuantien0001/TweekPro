@@ -1,5 +1,7 @@
 using System;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using UpdateCheck=TweekPro.Update.UpdateCheck;
@@ -50,9 +52,10 @@ namespace TweekPro {
    Theme.Tint(updateBanner,NoteKind.Success);
    var buttons=new FlowLayoutPanel{Dock=DockStyle.Right,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,FlowDirection=FlowDirection.LeftToRight,WrapContents=false,BackColor=Color.Transparent,Margin=new Padding(0)};
    var download=Theme.Button("Tải bản mới",ButtonStyle.Primary);download.Click+=(s,e)=>{if(pendingUpdate!=null)OpenUpdatePage(pendingUpdate);};
+   var install=Theme.Button("Cài bản này",ButtonStyle.Secondary);install.Name="updateInstall";install.Visible=false;install.Click+=(s,e)=>InstallPendingUpdate();
    var skip=Theme.Button("Bỏ qua bản này",ButtonStyle.Secondary);skip.Margin=new Padding(0);
    skip.Click+=(s,e)=>{if(pendingUpdate!=null){settings.UpdateSkipVersion=pendingUpdate.Latest;SaveSettings();Log(Core.L.F("Đã bỏ qua thông báo cho bản {0}.",pendingUpdate.Latest));}updateBanner.Visible=false;};
-   buttons.Controls.Add(download);buttons.Controls.Add(skip);
+   buttons.Controls.Add(download);buttons.Controls.Add(install);buttons.Controls.Add(skip);
    updateBannerText=new Label{Dock=DockStyle.Fill,AutoSize=false,TextAlign=ContentAlignment.MiddleLeft,Font=Theme.Strong,BackColor=Color.Transparent,ForeColor=updateBanner.ForeColor,AutoEllipsis=true};
    updateBanner.Controls.Add(updateBannerText);updateBanner.Controls.Add(buttons);
    return updateBanner;
@@ -61,7 +64,17 @@ namespace TweekPro {
   void ShowUpdateBanner(UpdateInfo info){
    pendingUpdate=info;if(updateBanner==null)return;
    updateBannerText.Text=Core.L.F("Có bản Tweek Pro {0} mới (đang dùng {1}). Tải bộ cài để cập nhật — ứng dụng không tự ghi đè.",info.Latest,info.Current);
+   var install=updateBanner.Controls.Find("updateInstall",true).FirstOrDefault();
+   if(install!=null)install.Visible=settings.UpdateOfferInstall&&UpdateInstall.Allowed(info.InstallerUrl);
    updateBanner.Visible=true;
+  }
+  void InstallPendingUpdate(){
+   if(pendingUpdate==null||!UpdateInstall.Allowed(pendingUpdate.InstallerUrl))throw new IOException(Core.L.T("Chỉ cài bộ cài chính thức trên GitHub của Tweek Pro."));
+   if(!Confirm(Core.L.F("Tải bộ cài {0} và chạy cài đặt im lặng?\r\nTweek Pro sẽ đóng. Bộ cài chính thức ghi vào Program Files; ứng dụng này không tự ghi đè file đang chạy.",pendingUpdate.Latest)))return;
+   string dest=Path.Combine(Path.GetTempPath(),"TweekPro-Setup.exe");
+   using(var client=new System.Net.WebClient())client.DownloadFile(pendingUpdate.InstallerUrl,dest);
+   System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dest,UpdateInstall.Arguments){UseShellExecute=true});
+   BeginInvoke((Action)Close);
   }
 
   void OpenUpdatePage(UpdateInfo info){

@@ -33,6 +33,8 @@ namespace TweekPro.Core {
   public static string SettingsFile { get { return Path.Combine(Root,"settings.json"); } }
   public static string Logs { get { return Path.Combine(Root,"Logs"); } }
   public static string JunkRulesOverride { get { return Path.Combine(Root,"junk-rules.json"); } }
+  public static string UninstallHistory { get { return Path.Combine(Root,"uninstall-history.txt"); } }
+  public static string UserToolsFile { get { return Path.Combine(Root,"user-tools.txt"); } }
 
   static string LocalAppData(){
    string local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);

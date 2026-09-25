@@ -136,6 +136,22 @@ namespace TweekPro {
    Log(summary);MessageBox.Show(this,summary,Core.L.T("Kết quả gỡ ứng dụng Windows"),MessageBoxButtons.OK,failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
   }
 
+  async Task ResetStoreApp(WindowsApp a){
+   if(a==null||a.Status==AppxStatus.Protected)throw new IOException(Core.L.T("Thành phần được bảo vệ, không đặt lại."));
+   if(!Confirm(Core.L.F("Đặt lại {0}?\r\n\r\nDữ liệu của ứng dụng này sẽ mất và không vào Kho khôi phục. Ứng dụng vẫn còn cài.",a.DisplayName)))return;
+   string script=StoreActions.ResetScript(a);
+   var result=await Task.Run(()=>Core.PowerShell.Run(script,TimeSpan.FromMinutes(2)));
+   if(result.ExitCode!=0)throw new IOException(result.Error);
+   Log(Core.L.F("Đã đặt lại {0}.",a.DisplayName));
+  }
+  async Task StopStoreApp(WindowsApp a){
+   if(a==null||a.Status==AppxStatus.Protected)throw new IOException(Core.L.T("Thành phần được bảo vệ, không kết thúc."));
+   if(!Confirm(Core.L.F("Kết thúc {0} nếu đang chạy?",a.DisplayName)))return;
+   string script=StoreActions.StopScript(a);
+   var result=await Task.Run(()=>Core.PowerShell.Run(script,TimeSpan.FromSeconds(30)));
+   if(result.ExitCode!=0)throw new IOException(result.Error);
+   Log(Core.L.F("Đã gửi lệnh kết thúc {0}.",a.DisplayName));
+  }
   WindowsApp SelectedStoreApp(){return storeList.SelectedItems.Count==0?null:(WindowsApp)storeList.SelectedItems[0].Tag;}
 
   void OpenStoreLocation(){

@@ -255,6 +255,11 @@ namespace TweekPro.Remnants {
     }
     string dot=Path.Combine(profile,"."+n.ToLowerInvariant().Replace(" ",""));if(Directory.Exists(dot))Review(result,dot,"Thư mục cấu hình ẩn «.tên» trong hồ sơ người dùng do ứng dụng tạo; kiểm tra rồi xóa thủ công.");
    }
+   string users=String.IsNullOrEmpty(profile)?"":Path.GetDirectoryName(profile);
+   foreach(string other in TweekPro.ProfileScope.OtherProfiles(users,profile))foreach(string data in TweekPro.ProfileScope.DataFolders(other)){
+    if(!Directory.Exists(data))continue;
+    foreach(string n in allNames){cancel.ThrowIfCancellationRequested();string dir=Path.Combine(data,n);if(Directory.Exists(dir))Review(result,dir,"Thư mục cùng tên ứng dụng trong tài khoản Windows khác; chỉ xem, không tự xóa.");}
+   }
   }
 
   /// <summary>SOFTWARE\variant and SOFTWARE\publisher\variant keys for near-miss names; strong variants are cleanable, weak ones review only.</summary>

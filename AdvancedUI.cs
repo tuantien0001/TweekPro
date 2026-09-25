@@ -40,6 +40,7 @@ namespace TweekPro {
    SetupList(toolList,new[]{"Công cụ","Dòng lệnh","Tình trạng","Công dụng"},new[]{220,420,120,360},false);
    var toolbar=Bar();Add(toolbar,"Mở công cụ",()=>{OpenTool();return Task.FromResult(0);},ButtonStyle.Primary);
    Add(toolbar,"Kiểm tra cập nhật",async()=>await CheckForUpdates());
+   Add(toolbar,"Thêm công cụ…",()=>{AddUserTool();return Task.FromResult(0);});
    AddFeedbackButton(toolbar);
    Add(toolbar,"Tài liệu truy vết",()=>{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"SCAN-GUIDE.md")){UseShellExecute=true});return Task.FromResult(0);});
    var note=Theme.Note("Mỗi mục dùng icon hệ thống của tệp .exe/.cpl/.msc tương ứng. Chỉ mở công cụ khi bạn chọn. Công cụ thiếu trên phiên bản Windows hiện tại sẽ được đánh dấu. SFC/chkdsk có thể sửa hệ thống và yêu cầu quyền quản trị. Kiểm tra cập nhật hỏi GitHub Releases (tag v*), không theo từng push nhánh.",NoteKind.Info);
@@ -52,14 +53,25 @@ namespace TweekPro {
   }
   void FillTools(){
    toolList.BeginUpdate();toolList.Items.Clear();toolIcons.Images.Clear();var imageHandle=toolIcons.Handle;int index=0;int iconSize=toolIcons.ImageSize.Width;
-   foreach(var t in WindowsTools.Catalog()){
+   foreach(var t in WindowsTools.Catalog().Concat(UserTools.Load(Core.Paths.UserToolsFile))){
     using(var bitmap=WindowsTools.Icon(t,iconSize))toolIcons.Images.Add(bitmap);
     var row=new ListViewItem(new[]{t.Name,t.CommandLine,Core.L.T(t.Available?"Có sẵn":"Không có sẵn"),Core.L.T(t.Description)}){Tag=t,ImageIndex=index,ForeColor=t.Available?Theme.Text:Theme.Muted,ToolTipText=t.CommandLine+"\r\n"+Core.L.T(t.Description)+(t.Available?"":Core.L.T("\r\nCông cụ không có trên phiên bản Windows này."))};
     Theme.StripeRow(row,index++);toolList.Items.Add(row);
    }
    toolList.EndUpdate();
   }
-  void OpenTool(){if(toolList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn công cụ muốn mở."));var t=(WindowsTool)toolList.SelectedItems[0].Tag;if(t.Admin&&!Confirm(Core.L.T(t.Description)+Core.L.T("\r\nTiếp tục mở công cụ với quyền quản trị?")))return;WindowsTools.Launch(t);}
+  void OpenTool(){if(toolList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn công cụ muốn mở."));var t=(WindowsTool)toolList.SelectedItems[0].Tag;if(t.Custom&&!Confirm(Core.L.F("Mở công cụ do bạn thêm?\r\n{0}\r\n{1}",t.Name,t.CommandLine)))return;if(t.Admin&&!Confirm(Core.L.T(t.Description)+Core.L.T("\r\nTiếp tục mở công cụ với quyền quản trị?")))return;WindowsTools.Launch(t);}
+  void AddUserTool(){
+   using(var dialog=new OpenFileDialog{Filter="Program|*.exe;*.msc;*.cpl"}){
+    if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+    string why=UserTools.Refuse(dialog.FileName);
+    if(why!=null)throw new IOException(Core.L.T("Chỉ nhận tệp .exe, .msc hoặc .cpl trên máy này. Không nhận cmd, PowerShell hay script."));
+    string name=Path.GetFileNameWithoutExtension(dialog.FileName);
+    var list=UserTools.Load(Core.Paths.UserToolsFile);
+    list.Add(new WindowsTool{Name=name,File=dialog.FileName,Description="Công cụ do bạn thêm.",Custom=true});
+    UserTools.Save(Core.Paths.UserToolsFile,list);FillTools();
+   }
+  }
   AutorunEntry CurrentAutorun(){if(autorunList.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một mục khởi động."));return (AutorunEntry)autorunList.SelectedItems[0].Tag;}
   static int AutorunRank(AutorunEntry a){if(a.Saved!=null)return 3;if(a.Item!=null&&a.Item.Kind=="Service")return 2;if(a.Item!=null&&a.Item.Kind==Startup.StartupSources.BackupKind)return 1;return 0;}
   void ShowAutoruns(List<AutorunEntry> entries){

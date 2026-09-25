@@ -15,7 +15,7 @@ namespace TweekPro {
   /// <summary>Builds the Browser Extensions tab: a read-only inventory grouped by browser with provenance and permission warnings.</summary>
   void BuildExtensionsTab(){
    var tab=extTab=new TabPage(Core.L.T("Tiện ích trình duyệt"));tabs.TabPages.Add(tab);
-   SetupList(extList,new[]{"Tiện ích","Phiên bản","Hồ sơ","Trạng thái","Nguồn cài","Cảnh báo","Cài lúc","Thư mục"},new[]{260,90,150,90,170,330,110,300},false,true);
+   SetupList(extList,new[]{"Tiện ích","Phiên bản","Hồ sơ","Trạng thái","Nguồn cài","Cảnh báo","Cài lúc","Thư mục"},new[]{260,90,150,90,170,330,110,300},true,true);
    extList.DoubleClick+=(s,e)=>OpenExtensionFolder();
    var host=Theme.ListHost(extList,out extOverlay);
    var bar=Bar();
@@ -57,7 +57,10 @@ namespace TweekPro {
 
   /// <summary>Confirms, makes sure the browser is closed (offering to close it), then removes every selected extension through the vault.</summary>
   async Task RemoveExtensions(){
-   var selected=extList.SelectedItems.Cast<ListViewItem>().Select(i=>(BrowserExtension)i.Tag).ToList();
+   var items=new List<ListViewItem>();
+   if(extList.CheckedItems.Count>0)foreach(ListViewItem i in extList.CheckedItems)items.Add(i);
+   else foreach(ListViewItem i in extList.SelectedItems)items.Add(i);
+   var selected=items.Select(i=>(BrowserExtension)i.Tag).ToList();
    if(selected.Count==0)throw new IOException(Core.L.T("Chọn một hoặc nhiều tiện ích để gỡ."));
    var refused=selected.Select(e=>new{e,reason=ExtensionRemoval.RefuseReason(e)}).Where(x=>x.reason!=null).ToList();
    if(refused.Count>0)throw new IOException(String.Join("\r\n",refused.Take(5).Select(x=>x.e.Name+": "+Core.L.T(x.reason))));

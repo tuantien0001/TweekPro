@@ -1,8 +1,12 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-25 20:30 (Asia/Bangkok).
-Status: RELEASING (Cursor). Owner: "build 0.7.8 và push lên github".
+Updated: 2026-09-25 20:45 (Asia/Bangkok).
+Status: IN PROGRESS (Cursor). Owner: add the remaining desktop-uninstaller features, self-test, then release to GitHub. Do not mention other products in commits, README, or release notes.
 Last editor: Cursor.
+
+## Current task (20:48)
+
+0.7.8 is on GitHub (tag v0.7.8). 0.7.9 adds install watch, uninstall history, other-account leftover folders, Store reset/stop (protected refused), extension checkboxes, dark theme, settings export without the AI key, opt-in official-setup install, DISM/flush DNS/dxdiag, user tools that refuse shells, window picker, and the feedback menu first-click fix. Release notes and commits must not name other products. Elevated `--self-test` PASS 2026-09-25T20:47:14 (0 warnings). Next: commit, then release.ps1 -Version 0.7.9.
 
 ## Current task (20:10)
 

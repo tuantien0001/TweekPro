@@ -11,8 +11,8 @@ namespace TweekPro {
   void AddFeedbackButton(FlowLayoutPanel bar){
    var b=Theme.Button("Báo lỗi / góp ý",ButtonStyle.Secondary);b.Margin=new Padding(0,0,8,8);
    var menu=new ContextMenuStrip{ShowImageMargin=false};
-   menu.Opening+=(s,e)=>{menu.Items.Clear();FillFeedbackMenu(menu);};
-   b.Click+=(s,e)=>menu.Show(b,new System.Drawing.Point(0,b.Height));
+   // Show after the click finishes. Opening the menu inside Click makes the same mouse-up close it, so the list only appeared on the second press.
+   b.Click+=(s,e)=>BeginInvoke((Action)(()=>{menu.Items.Clear();FillFeedbackMenu(menu);menu.Show(b,new System.Drawing.Point(0,b.Height));}));
    bar.Controls.Add(b);
   }
 

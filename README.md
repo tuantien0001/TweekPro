@@ -244,6 +244,19 @@ Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trìn
 
 ## Lịch sử phiên bản
 
+### 0.7.9 (chưa phát hành)
+
+- **Theo dõi cài đặt**: trên tab Ứng dụng, bấm một lần để ghi danh sách hiện có, cài phần mềm, bấm lần nữa để thấy ứng dụng mới và có thể quét phần còn sót.
+- **Lịch sử gỡ**: mỗi lần gỡ xong được ghi vào thư mục dữ liệu. Nút **Lịch sử gỡ** trên tab Nhật ký xem 30 lần gần nhất.
+- **Tài khoản khác**: quét phần còn sót cũng nhìn thư mục cùng tên trong AppData của tài khoản Windows khác (bỏ qua Public, Default và tài khoản đang dùng). Chỉ xem, không tự xóa, không mở file registry của tài khoản đó.
+- **Ứng dụng Windows**: chuột phải thêm **Đặt lại dữ liệu ứng dụng** (mất dữ liệu, không vào Kho) và **Kết thúc ứng dụng**. Thành phần được bảo vệ bị từ chối.
+- **Tiện ích**: danh sách có ô chọn để gỡ hàng loạt; nếu chưa đánh dấu thì dùng dòng đang chọn.
+- **Giao diện tối**, **xuất / nhập cài đặt** (file xuất không chứa khóa AI) trên tab Nhật ký. Đổi giao diện cần khởi động lại.
+- **Cài bản mới**: ô «Hỏi cài bản mới» (tắt mặc định). Khi bật, banner cập nhật có nút tải đúng bộ cài trên GitHub của Tweek Pro rồi chạy cài đặt im lặng. Ứng dụng không tự ghi đè file đang chạy.
+- **Công cụ**: thêm DISM RestoreHealth, xóa bộ nhớ DNS, DirectX Diagnostic, và **Thêm công cụ…** (chỉ tệp .exe/.msc/.cpl trên máy; từ chối cmd, PowerShell và script).
+- **Hunter**: kéo chữ thập thả lên một cửa sổ để chọn ứng dụng đã cài khớp tệp đó.
+- **Báo lỗi / góp ý**: menu hiện ngay lần bấm đầu.
+
 ### 0.7.8 (25/09/2026)
 
 - **Tổng quan dễ dùng hơn**: ngay dưới điểm số có tối đa 3 nút, việc nhiều GB nhất đứng trước. Nút **Dọn rác …** chuyển đúng các nhóm rác không bị khóa vào Kho (có hỏi trước, lấy lại được). Các nút còn lại mở đúng tab. Bảng xếp rác lớn lên đầu và tô nền theo mức. Thẻ điểm ghi một câu so với lần kiểm tra trước (điểm và dung lượng). Ô «Tự kiểm tra khi mở» nằm cùng hàng nút.

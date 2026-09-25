@@ -75,6 +75,8 @@ namespace TweekPro {
     var a=SelectedStoreApp();if(a==null)return;
     bool protectedApp=a.Status==AppxStatus.Protected;
     MenuItem(menu,"Gỡ gói này",async()=>{foreach(ListViewItem i in storeList.Items)i.Checked=i.Tag==a;await RemoveStoreApps();},!protectedApp,"thành phần được bảo vệ",danger:true);
+    MenuItem(menu,"Đặt lại dữ liệu ứng dụng",async()=>await ResetStoreApp(a),!protectedApp,"thành phần được bảo vệ",danger:true);
+    MenuItem(menu,"Kết thúc ứng dụng",async()=>await StopStoreApp(a),!protectedApp,"thành phần được bảo vệ");
     menu.Items.Add(new ToolStripSeparator());
     MenuItem(menu,"Mở trong Microsoft Store",()=>{OpenStorePage();return Task.FromResult(0);});
     MenuItem(menu,"Mở thư mục gói",()=>{OpenStoreLocation();return Task.FromResult(0);},!String.IsNullOrWhiteSpace(a.InstallLocation));

@@ -320,7 +320,7 @@ namespace TweekPro {
   }
  }
  public class WindowsTool {
-  public string Name,File,Arguments,Description;public bool Admin;
+  public string Name,File,Arguments,Description;public bool Admin,Custom;
   public bool Available{get{return File.StartsWith("ms-settings:")||System.IO.File.Exists(File);}}
   /// <summary>Best icon source: .msc/.cpl quoted in Arguments (mmc host), else File, else SystemSettings/shell32 for ms-settings: URIs. Cmd wrappers keep cmd.exe like Revo.</summary>
   public string IconPath{get{
@@ -373,6 +373,9 @@ namespace TweekPro {
    add("TCP/IP Netstat","cmd.exe","/k \"\""+Path.Combine(sys,"netstat.exe")+"\" -a -b\"","Liệt kê kết nối TCP/IP và tiến trình sở hữu.",false);
    add("Check Disk","cmd.exe","/k \"\""+Path.Combine(sys,"chkdsk.exe")+"\"\"","Kiểm tra ổ đĩa; sửa lỗi cần quyền quản trị và có thể yêu cầu khởi động lại.",true);
    add("System File Checker","cmd.exe","/k \"\""+Path.Combine(sys,"sfc.exe")+"\" /scannow\"","Kiểm tra và sửa file hệ thống; cần quyền quản trị.",true);
+   add("DISM RestoreHealth","dism.exe","/Online /Cleanup-Image /RestoreHealth","Sửa kho thành phần Windows (DISM). Chạy lâu, cần quyền quản trị, không xóa ứng dụng.",true);
+   add("Flush DNS","cmd.exe","/k \"\""+Path.Combine(sys,"ipconfig.exe")+"\" /flushdns\"","Xóa bộ nhớ đệm DNS. Không đổi cài đặt mạng.",false);
+   add("DirectX Diagnostic","dxdiag.exe","","Mở chẩn đoán DirectX.",false);
    list.Add(new WindowsTool{Name="Windows Security",File="ms-settings:windowsdefender",Description="Mở cài đặt bảo mật Windows."});
    list.Add(new WindowsTool{Name="Startup Apps",File="ms-settings:startupapps",Description="Xem trạng thái bật/tắt khởi động do Windows quản lý."});
    return list;

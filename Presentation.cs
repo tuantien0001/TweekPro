@@ -193,23 +193,37 @@ namespace TweekPro {
  public enum NoteKind { Info, Warning, Success, Error }
  /// <summary>Shared palette, typography and control factories so every window uses the same visual language.</summary>
  public static class Theme {
-  public static readonly Color Canvas=Color.FromArgb(244,246,250);
-  public static readonly Color Surface=Color.White;
-  public static readonly Color Border=Color.FromArgb(226,232,240);
-  public static readonly Color Text=Color.FromArgb(30,41,59);
-  public static readonly Color Muted=Color.FromArgb(100,116,139);
-  public static readonly Color Primary=Color.FromArgb(37,99,235);
-  public static readonly Color PrimaryDark=Color.FromArgb(29,78,216);
-  public static readonly Color Danger=Color.FromArgb(220,38,38);
-  public static readonly Color DangerDark=Color.FromArgb(185,28,28);
-  public static readonly Color Header=Color.FromArgb(15,23,42);
-  public static readonly Color HeaderText=Color.White;
-  public static readonly Color HeaderMuted=Color.FromArgb(148,163,184);
-  public static readonly Color Stripe=Color.FromArgb(248,250,252);
-  public static readonly Color SoftButton=Color.FromArgb(241,245,249);
-  public static readonly Color SoftButtonHover=Color.FromArgb(226,232,240);
-  public static readonly Color Success=Color.FromArgb(22,163,74);
-  public static readonly Color Warning=Color.FromArgb(180,83,9);
+  public static Color Canvas=Color.FromArgb(244,246,250);
+  public static Color Surface=Color.White;
+  public static Color Border=Color.FromArgb(226,232,240);
+  public static Color Text=Color.FromArgb(30,41,59);
+  public static Color Muted=Color.FromArgb(100,116,139);
+  public static Color Primary=Color.FromArgb(37,99,235);
+  public static Color PrimaryDark=Color.FromArgb(29,78,216);
+  public static Color Danger=Color.FromArgb(220,38,38);
+  public static Color DangerDark=Color.FromArgb(185,28,28);
+  public static Color Header=Color.FromArgb(15,23,42);
+  public static Color HeaderText=Color.White;
+  public static Color HeaderMuted=Color.FromArgb(148,163,184);
+  public static Color Stripe=Color.FromArgb(248,250,252);
+  public static Color SoftButton=Color.FromArgb(241,245,249);
+  public static Color SoftButtonHover=Color.FromArgb(226,232,240);
+  public static Color Success=Color.FromArgb(22,163,74);
+  public static Color Warning=Color.FromArgb(180,83,9);
+  /// <summary>Switches the palette. Call before any window is created; field initializers read these colors.</summary>
+  public static void Apply(bool dark){
+   if(!dark){
+    Canvas=Color.FromArgb(244,246,250);Surface=Color.White;Border=Color.FromArgb(226,232,240);Text=Color.FromArgb(30,41,59);Muted=Color.FromArgb(100,116,139);
+    Primary=Color.FromArgb(37,99,235);PrimaryDark=Color.FromArgb(29,78,216);Danger=Color.FromArgb(220,38,38);DangerDark=Color.FromArgb(185,28,28);
+    Header=Color.FromArgb(15,23,42);HeaderText=Color.White;HeaderMuted=Color.FromArgb(148,163,184);Stripe=Color.FromArgb(248,250,252);
+    SoftButton=Color.FromArgb(241,245,249);SoftButtonHover=Color.FromArgb(226,232,240);Success=Color.FromArgb(22,163,74);Warning=Color.FromArgb(180,83,9);
+    return;
+   }
+   Canvas=Color.FromArgb(15,23,42);Surface=Color.FromArgb(30,41,59);Border=Color.FromArgb(51,65,85);Text=Color.FromArgb(241,245,249);Muted=Color.FromArgb(148,163,184);
+   Primary=Color.FromArgb(96,165,250);PrimaryDark=Color.FromArgb(37,99,235);Danger=Color.FromArgb(248,113,113);DangerDark=Color.FromArgb(220,38,38);
+   Header=Color.FromArgb(2,6,23);HeaderText=Color.White;HeaderMuted=Color.FromArgb(148,163,184);Stripe=Color.FromArgb(15,23,42);
+   SoftButton=Color.FromArgb(51,65,85);SoftButtonHover=Color.FromArgb(71,85,105);Success=Color.FromArgb(74,222,128);Warning=Color.FromArgb(251,191,36);
+  }
   public static readonly Font Body=new Font("Segoe UI",10f);
   public static readonly Font Small=new Font("Segoe UI",9f);
   public static readonly Font Strong=new Font("Segoe UI",10f,FontStyle.Bold);

@@ -23,6 +23,10 @@ namespace TweekPro.Core {
   [DataMember(Name="staleIncludeDesktop")] public bool StaleIncludeDesktop=false;
   [DataMember(Name="logRetentionDays")] public int LogRetentionDays=14;
   [DataMember(Name="updateAutoCheck")] public bool UpdateAutoCheck=true;
+  /// <summary>When true, the update banner offers to download the official GitHub setup and launch it. Default off. The app never writes Program Files itself.</summary>
+  [DataMember(Name="updateOfferInstall")] public bool UpdateOfferInstall=false;
+  /// <summary>Dark palette, applied at startup before the window is created.</summary>
+  [DataMember(Name="dark")] public bool Dark=false;
   [DataMember(Name="updateSkipVersion")] public string UpdateSkipVersion="";
   /// <summary>Run the read-only health check automatically after the inventory loads at startup.</summary>
   [DataMember(Name="healthAutoCheck")] public bool HealthAutoCheck=true;
@@ -47,7 +51,7 @@ namespace TweekPro.Core {
   public bool AiAllowActions { get { return AiActionMode!=AiActionModes.ReadOnly; } }
 
   /// <summary>DataContract deserialization skips field initializers; members added after 0.7 shipped need their defaults restored for older files.</summary>
-  [OnDeserializing] void Defaults(StreamingContext context){StaleMinAgeDays=30;StaleLargeMB=200;UpdateAutoCheck=true;UpdateSkipVersion="";HealthAutoCheck=true;HealthLastScore=-1;}
+  [OnDeserializing] void Defaults(StreamingContext context){StaleMinAgeDays=30;StaleLargeMB=200;UpdateAutoCheck=true;UpdateSkipVersion="";HealthAutoCheck=true;HealthLastScore=-1;UpdateOfferInstall=false;Dark=false;}
 
   /// <summary>Clamps values that would make the UI unusable if the file was edited by hand.</summary>
   public void Normalize(){

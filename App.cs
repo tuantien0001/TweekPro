@@ -18,7 +18,7 @@ namespace TweekPro {
   int appSortColumn=3;bool appSortDescending=true;
   Label selectionSummary=new Label(),backupSummary=new Label();Label status=Theme.StatusBar();TabControl tabs=new TabControl();TabStrip tabStrip;
   Label appsOverlay,remnantsOverlay,backupsOverlay;TabPage remnantsTab;
-  List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();
+  List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();HashSet<string> installWatch;
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
   ImageList appIcons=new ImageList(); Label appCount=new Label();
   bool busy;string inventoryError;string sessions=Core.Paths.Sessions;Icon brandIcon,brandIconSmall;CheckBox pupOnly=new CheckBox();
@@ -53,6 +53,8 @@ namespace TweekPro {
    Add(bar,"Quét mục đang xem",async()=>await ScanSelected());
    Add(bar,"Gỡ cưỡng bức…",async()=>await ForceUninstall());
    Add(bar,"Xuất CSV",()=>{ExportApps();return Task.FromResult(0);});
+   Add(bar,"Theo dõi cài đặt",async()=>await ToggleInstallWatch());
+   Add(bar,"Hunter…",()=>{ShowHunter();return Task.FromResult(0);});
    deepMode.Text=Core.L.T("Quét sâu sau khi gỡ");deepMode.Checked=settings.DeepScanAfterUninstall;deepMode.CheckedChanged+=(s,e)=>settings.DeepScanAfterUninstall=deepMode.Checked;deepMode.AutoSize=true;deepMode.Margin=new Padding(12,8,16,0);deepMode.ForeColor=Theme.Text;bar.Controls.Add(deepMode);
    pupOnly.Text=Core.L.T("Chỉ hiện mục cảnh báo");pupOnly.AutoSize=true;pupOnly.Margin=new Padding(0,8,16,0);pupOnly.ForeColor=Theme.Text;pupOnly.CheckedChanged+=(s,e)=>Filter();bar.Controls.Add(pupOnly);
    var searchHost=Theme.SearchField(search);search.TextChanged+=(s,e)=>Filter();
@@ -98,6 +100,13 @@ namespace TweekPro {
    Add(logbar,"Mở thư mục nhật ký",()=>{Directory.CreateDirectory(Core.Paths.Logs);Process.Start("explorer.exe","\""+Core.Paths.Logs+"\"");return Task.FromResult(0);});
    Add(logbar,"Mở thư mục dữ liệu",()=>{Directory.CreateDirectory(Core.Paths.Root);Process.Start("explorer.exe","\""+Core.Paths.Root+"\"");return Task.FromResult(0);});
    Add(logbar,"Lưu cài đặt ngay",()=>{SaveSettings();Log(Core.L.T("Đã lưu settings.json."));return Task.FromResult(0);});
+   Add(logbar,"Xuất cài đặt…",()=>{ExportSettingsFile();return Task.FromResult(0);});
+   Add(logbar,"Nhập cài đặt…",()=>{ImportSettingsFile();return Task.FromResult(0);});
+   Add(logbar,settings.Dark?"Giao diện sáng":"Giao diện tối",()=>{ToggleDark();return Task.FromResult(0);});
+   Add(logbar,"Lịch sử gỡ",()=>{ShowUninstallHistory();return Task.FromResult(0);});
+   var offer=new CheckBox{Text=Core.L.T("Hỏi cài bản mới"),Checked=settings.UpdateOfferInstall,AutoSize=true,Margin=new Padding(8,8,8,0),ForeColor=Theme.Text};
+   offer.CheckedChanged+=(s,e)=>{settings.UpdateOfferInstall=offer.Checked;SaveSettings();};
+   logbar.Controls.Add(offer);
    var logNote=Theme.Note(Core.L.F("Nhật ký phiên hiện tại. Tệp nhật ký xoay vòng theo ngày trong {0} (giữ {1} ngày). Cài đặt: {2}.",Core.Paths.Logs,settings.LogRetentionDays,Core.Paths.SettingsFile),NoteKind.Info);
    var logWrap=new Panel{Dock=DockStyle.Fill,Padding=new Padding(16,12,16,12),BackColor=Theme.Surface};logWrap.Controls.Add(log);logs.Controls.Add(logWrap);logs.Controls.Add(logNote);logs.Controls.Add(logbar);
    BuildHealthTab();
@@ -275,6 +284,7 @@ namespace TweekPro {
       if(remains){MessageBox.Show(this,Core.L.F("Trình gỡ của {0} đã kết thúc tiến trình chính nhưng ứng dụng vẫn còn đăng ký. Nếu có cửa sổ gỡ khác, hãy hoàn tất hoặc hủy rồi nhấn OK. Nếu cần khởi động lại, có thể quét lại lịch sử sau đó.",a.Name),Core.L.T("Kiểm tra trình gỡ"),MessageBoxButtons.OK,MessageBoxIcon.Information);remains=Engine.Installed(a.Id);}
      }
      Log(a.Name+": "+Core.L.T(remains?"vẫn còn đăng ký cài đặt; không tự quét/dọn.":"đã bỏ đăng ký; mở cửa sổ quét phần còn sót."));
+     try{UninstallHistory.Append(Core.Paths.UninstallHistory,a.Name,a.Id,!remains);}catch(Exception hx){Log(hx.Message);}
      if(!remains)ReviewLeftovers(new[]{a},deepMode.Checked);
     }catch(Exception e){Log(a.Name+": "+e.Message);MessageBox.Show(this,a.Name+"\r\n"+e.Message,Core.L.T("Không hoàn tất thao tác"));}
    }
@@ -386,6 +396,50 @@ namespace TweekPro {
   string SavePath(string name){using(var dialog=new SaveFileDialog{Filter="CSV UTF-8|*.csv",FileName=name})return dialog.ShowDialog(this)==DialogResult.OK?dialog.FileName:null;}
   void ExportApps(){string p=SavePath("TweekPro-applications.csv");if(p==null)return;var lines=new List<string>{"Name,Version,Publisher,SizeKB,RegistryView,Type,InstallDate,InstallLocation,UninstallCommand,QuietUninstallCommand,Website,Comments,RegistryKey"};lines.AddRange(SortApps(inventory,appSortColumn,appSortDescending).Select(a=>String.Join(",",new[]{a.Name,a.Version,a.Publisher,a.Size.ToString(),a.Hive+"/"+a.View,a.TypeLabel,a.InstallDate,a.Location,a.Command,a.QuietCommand,a.Website,a.Comments,a.Key}.Select(Engine.Csv))));File.WriteAllLines(p,lines, new UTF8Encoding(true));Log(Core.L.T("Đã xuất danh sách: ")+p);}
   void ExportCandidates(){string p=SavePath("TweekPro-review.csv");if(p==null)return;var lines=new List<string>{"App,Kind,Path,Hive,View,Reason"};lines.AddRange(candidates.Select(c=>String.Join(",",new[]{c.AppName,c.Kind,Presentation.CandidatePath(c),c.Hive,c.View,(c.ReviewOnly?Core.L.T("CHỈ XEM: "):"")+c.Reason}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new UTF8Encoding(true));Log(Core.L.T("Đã xuất báo cáo: ")+p);}
+  async Task ToggleInstallWatch(){
+   if(installWatch==null){installWatch=InstallWatch.Ids(inventory);Log(Core.L.F("Đang theo dõi cài đặt ({0} ứng dụng). Cài phần mềm rồi bấm lại để xem mục mới.",installWatch.Count));MessageBox.Show(this,Core.L.T("Đang theo dõi. Hãy cài ứng dụng, rồi bấm «Theo dõi cài đặt» lần nữa để xem mục mới."),Core.L.T("Theo dõi cài đặt"),MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+   await Reload();
+   var added=InstallWatch.Added(installWatch,inventory);installWatch=null;
+   if(added.Count==0){MessageBox.Show(this,Core.L.T("Không có ứng dụng mới trong danh sách gỡ."),Core.L.T("Theo dõi cài đặt"),MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+   string list=String.Join("\r\n",added.Take(12).Select(a=>"• "+a.Name));
+   if(Confirm(Core.L.F("Có {0} ứng dụng mới:\r\n\r\n{1}\r\n\r\nQuét phần còn sót của các ứng dụng này?",added.Count,list)))ReviewLeftovers(added.ToArray(),deepMode.Checked);
+  }
+  void ShowUninstallHistory(){
+   var rows=UninstallHistory.Load(Core.Paths.UninstallHistory);
+   string text=rows.Count==0?Core.L.T("Chưa có lần gỡ nào được ghi."):String.Join("\r\n",rows.Skip(Math.Max(0,rows.Count-30)).Select(r=>r[2]+"  "+r[0]+"  —  "+Core.L.T(r[3]=="removed"?"đã gỡ":"vẫn còn")));
+   MessageBox.Show(this,text,Core.L.T("Lịch sử gỡ"),MessageBoxButtons.OK,MessageBoxIcon.Information);
+  }
+  void ExportSettingsFile(){
+   using(var dialog=new SaveFileDialog{Filter="JSON|*.json",FileName="TweekPro-settings.json"}){
+    if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+    SettingsPort.Export(settings,dialog.FileName);Log(Core.L.T("Đã xuất cài đặt (không gồm khóa AI): ")+dialog.FileName);
+   }
+  }
+  void ImportSettingsFile(){
+   using(var dialog=new OpenFileDialog{Filter="JSON|*.json"}){
+    if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+    var loaded=Core.Settings.Load(dialog.FileName);
+    string key=settings.AiKeyProtected;
+    loaded.AiKeyProtected=key;
+    loaded.Save(Core.Paths.SettingsFile);
+    settings=loaded;
+    if(!Confirm(Core.L.T("Đã nhập cài đặt. Khởi động lại để áp dụng giao diện và ngôn ngữ?")))return;
+    try{Process.Start(Application.ExecutablePath);}catch(Exception ex){Log(ex.Message);return;}
+    BeginInvoke((Action)Close);
+   }
+  }
+  void ToggleDark(){
+   if(!Confirm(Core.L.T(settings.Dark?"Đổi về giao diện sáng và khởi động lại?":"Đổi sang giao diện tối và khởi động lại?")))return;
+   settings.Dark=!settings.Dark;SaveSettings();
+   try{Process.Start(Application.ExecutablePath);}catch(Exception ex){Log(ex.Message);return;}
+   BeginInvoke((Action)Close);
+  }
+  void ShowHunter(){
+   if(Environment.OSVersion.Platform!=PlatformID.Win32NT)throw new IOException(Core.L.T("Hunter chỉ chạy trên Windows."));
+   using(var form=new HunterForm(inventory,a=>{
+    for(int i=0;i<apps.Items.Count;i++)if(apps.Items[i].Tag==a){apps.Items[i].Selected=true;apps.Items[i].EnsureVisible();break;}
+   }))form.ShowDialog(this);
+  }
  }
  public static class Program {
   /// <summary>Migrates the AppCare data folder once, then points the rotating log at the Tweek Pro data directory.</summary>
@@ -393,6 +447,7 @@ namespace TweekPro {
    var migration=Core.Paths.Migrate();
    var settings=Core.Settings.Load(Core.Paths.SettingsFile);
    Core.L.Lang=settings.Language;
+   Theme.Apply(settings.Dark);
    Core.Log.Configure(Core.Paths.Logs,settings.LogRetentionDays);
    Core.Log.Info("Tweek Pro "+MainForm.Version+" khởi động. Quyền: "+Core.Elevation.BadgeText+".");
    if(migration.Outcome==Core.MigrationOutcome.Moved)Core.Log.Info("Đã chuyển dữ liệu từ "+migration.Source+" sang "+migration.Target+".");
