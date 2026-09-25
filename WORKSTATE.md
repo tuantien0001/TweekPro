@@ -6,7 +6,7 @@ Last editor: Cursor.
 
 ## Current task (21:55)
 
-0.7.9 stays the project version. The v0.7.9 tag was removed so the owner could test; local fixes since e625575 are the Hunter sight, the install-watch notice, and selecting the first application so the details pane is filled. Elevated `--self-test` PASS 2026-09-25T22:01:13 (0 warnings). Next: commit, tag v0.7.9, push main and the tag.
+0.7.9 stays the project version. The v0.7.9 tag was removed so the owner could test; local fixes since e625575 are the Hunter sight, the install-watch notice, and selecting the first application so the details pane is filled. Elevated `--self-test` PASS 2026-09-25T22:01:13 (0 warnings). Pushed `6aeb122` on `origin/main` and tag `v0.7.9` (Actions publishes the Release).
 
 ## Current task (20:10)
 
