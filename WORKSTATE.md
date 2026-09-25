@@ -6,7 +6,7 @@ Last editor: Cursor.
 
 ## Current task (21:55)
 
-0.7.9 stays the project version. The v0.7.9 tag was removed so the owner could test; local fixes since e625575 are the Hunter sight, the install-watch notice, and selecting the first application so the details pane is filled. Elevated `--self-test` PASS 2026-09-25T22:01:13 (0 warnings). Pushed `6aeb122` on `origin/main` and tag `v0.7.9`. `release.ps1` now refreshes `docs/screenshots` from the built exe before the version commit, and trims the overview gap above the status bar.
+0.7.9 stays the project version. The v0.7.9 tag was removed so the owner could test; local fixes since e625575 are the Hunter sight, the install-watch notice, and selecting the first application so the details pane is filled. Elevated `--self-test` PASS 2026-09-25T22:01:13 (0 warnings). Pushed `6aeb122` on `origin/main` and tag `v0.7.9`. Screenshots recaptured from the 0.7.9 build (title shows 0.7.9). `Snapshot` scales the 1280×820 frame by the screen DPI so the list is not crushed.
 
 ## Current task (20:10)
 

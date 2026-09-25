@@ -524,7 +524,8 @@ namespace TweekPro {
    if(mode=="autorun"||mode=="tools"||mode=="junk"||mode=="network"||mode=="health"||mode=="store"||mode=="services"||mode=="ai")form.PreviewAdvanced(mode);else if(mode=="apps")form.PreviewApps();else if(mode=="stale")form.PreviewStale();else if(mode=="tracks")form.PreviewTracks(true);else if(mode=="registry")form.PreviewRegistry();else if(mode=="space")form.PreviewSystemSpace();else if(mode=="extensions")form.PreviewExtensions();else if(mode=="explorer"||mode=="tweaks")form.PreviewExplorer(mode=="tweaks");else if(mode=="empty"||mode=="dupes"||mode=="analyzer"||mode=="vault"||mode=="logs")form.PreviewTab(mode);else if(mode!="")form.PreviewRemnants();
   }
   static void Snapshot(Form form,string fileName,Size? size=null){
-   form.ShowInTaskbar=false;form.Opacity=0;form.Show();Application.DoEvents();if(size.HasValue){form.Size=size.Value;Application.DoEvents();}
+   form.ShowInTaskbar=false;form.Opacity=0;form.Show();Application.DoEvents();
+   if(size.HasValue){int dpi=96;try{using(var g=form.CreateGraphics())dpi=Math.Max(96,(int)Math.Round(g.DpiX));}catch(Exception){}form.Size=new Size(size.Value.Width*dpi/96,size.Value.Height*dpi/96);Application.DoEvents();}
    using(var bitmap=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));bitmap.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,fileName));}
   }
  }
