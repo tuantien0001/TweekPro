@@ -10,7 +10,8 @@
   "### x.y.n (chưa phát hành)" heading becomes "### <version> (dd/MM/yyyy)" with -Notes as the first bullet (a new section is
   created when none is pending); that section is also the tag annotation and, via release.yml, the GitHub Release body.
   Files are rewritten with their original UTF-8/BOM encoding so Vietnamese text is preserved. Nothing is pushed unless the
-  local build and --self-test pass (self-test needs an elevated shell).
+  local build and --self-test pass (self-test needs an elevated shell). After a successful build the script
+  refreshes docs/screenshots from that exe (--preview all) and includes the PNGs in the release commit.
 
 .EXAMPLE
   .\release.ps1                                 # next patch version automatically (0.7.1 -> 0.7.2 -> 0.7.3 ...)
@@ -159,9 +160,46 @@ if ($LASTEXITCODE -ne 0) {
   Fail 'Build or self-test failed; version bump reverted, nothing committed.'
 }
 
+# --- screenshots from this build --------------------------------------------------------------------------------------
+Step "Capturing tab screenshots from this build"
+$exe = Join-Path $PSScriptRoot "bin\Release\net48\TweekPro-$Version.exe"
+$shotDir = Join-Path $PSScriptRoot 'docs\screenshots'
+if (-not (Test-Path $exe)) { Fail "Built exe not found: $exe" }
+New-Item -ItemType Directory -Force -Path $shotDir | Out-Null
+& $exe --preview all $shotDir
+if ($LASTEXITCODE -ne 0) { Fail 'Tab screenshot capture failed; nothing committed.' }
+Add-Type -AssemblyName System.Drawing
+$health = Join-Path $shotDir 'health.png'
+if (Test-Path $health) {
+  $bmp = [Drawing.Bitmap]::FromFile($health)
+  $mid = [int]($bmp.Width / 2)
+  $status = -1
+  for ($y = $bmp.Height - 1; $y -gt $bmp.Height - 80; $y--) {
+    $c = $bmp.GetPixel($mid, $y)
+    if ($c.R -eq 226 -and $c.G -eq 232 -and $c.B -eq 240) { $status = $y; break }
+  }
+  $last = 0
+  if ($status -gt 40) {
+    for ($y = 0; $y -lt $status - 8; $y++) {
+      $c = $bmp.GetPixel($mid, $y)
+      if ($c.R -lt 250 -or $c.G -lt 250 -or $c.B -lt 250) { $last = $y }
+    }
+  }
+  $pad = 16
+  if ($status -gt ($last + $pad + 24)) {
+    $top = $last + $pad
+    $out = New-Object Drawing.Bitmap $bmp.Width, ($top + ($bmp.Height - $status))
+    $g = [Drawing.Graphics]::FromImage($out)
+    $g.DrawImage($bmp, (New-Object Drawing.Rectangle 0, 0, $bmp.Width, $top), (New-Object Drawing.Rectangle 0, 0, $bmp.Width, $top), [Drawing.GraphicsUnit]::Pixel)
+    $g.DrawImage($bmp, (New-Object Drawing.Rectangle 0, $top, $bmp.Width, ($bmp.Height - $status)), (New-Object Drawing.Rectangle 0, $status, $bmp.Width, ($bmp.Height - $status)), [Drawing.GraphicsUnit]::Pixel)
+    $g.Dispose(); $bmp.Dispose()
+    $out.Save($health, [Drawing.Imaging.ImageFormat]::Png); $out.Dispose()
+  } else { $bmp.Dispose() }
+}
+
 # --- commit, tag, push ------------------------------------------------------------------------------------------------
 Step "Committing and tagging $tag"
-Run-Git @('add', '--', 'TweekPro.csproj', 'App.cs', 'build.ps1', 'installer/TweekPro.iss', 'README.md') | Out-Null
+Run-Git @('add', '--', 'TweekPro.csproj', 'App.cs', 'build.ps1', 'installer/TweekPro.iss', 'README.md', 'docs/screenshots') | Out-Null
 $message = "Release $tag"; if ($changelog) { $message += "`n`n$changelog" } elseif ($Notes) { $message += "`n`n$Notes" }
 Run-Git ($identity + @('commit', '--quiet', '-m', $message)) | Out-Null
 Run-Git ($identity + @('tag', '-a', $tag, '-m', "Tweek Pro $Version$(if ($changelog) { "`n`n$changelog" } elseif ($Notes) { "`n`n$Notes" })")) | Out-Null

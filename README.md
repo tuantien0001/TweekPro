@@ -80,7 +80,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 
 ### Ảnh các tab
 
-Ảnh kết xuất từ chính ứng dụng bằng `--preview all` (dữ liệu mẫu, 1280×820); bấm vào ảnh để xem cỡ lớn.
+Ảnh kết xuất từ chính ứng dụng bằng `--preview all` (dữ liệu mẫu, 1280×820). Mỗi lần phát hành, `release.ps1` chụp lại mọi tab từ bản vừa build trên máy này và đưa ảnh vào commit. Bấm vào ảnh để xem cỡ lớn.
 
 <table>
 <tr>
