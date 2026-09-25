@@ -244,7 +244,7 @@ Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trìn
 
 ## Lịch sử phiên bản
 
-### 0.7.9 (chưa phát hành)
+### 0.7.9 (25/09/2026)
 
 - **Theo dõi cài đặt**: trên tab Ứng dụng, bấm một lần để ghi danh sách hiện có, cài phần mềm, bấm lần nữa để thấy ứng dụng mới và có thể quét phần còn sót.
 - **Lịch sử gỡ**: mỗi lần gỡ xong được ghi vào thư mục dữ liệu. Nút **Lịch sử gỡ** trên tab Nhật ký xem 30 lần gần nhất.

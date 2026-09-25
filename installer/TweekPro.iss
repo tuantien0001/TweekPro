@@ -3,7 +3,7 @@
 ; checks for .NET Framework 4.8 and leaves user data (%LOCALAPPDATA%\TweekPro, including the recovery vault) untouched on uninstall.
 
 #ifndef AppVersion
-  #define AppVersion "0.7.8"
+  #define AppVersion "0.7.9"
 #endif
 #ifndef SourceDir
   #define SourceDir "..\bin\Release\net48"
