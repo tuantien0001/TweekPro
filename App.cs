@@ -18,7 +18,8 @@ namespace TweekPro {
   int appSortColumn=3;bool appSortDescending=true;
   Label selectionSummary=new Label(),backupSummary=new Label();Label status=Theme.StatusBar();TabControl tabs=new TabControl();TabStrip tabStrip;
   Label appsOverlay,remnantsOverlay,backupsOverlay;TabPage remnantsTab;
-  List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();HashSet<string> installWatch;
+  List<AppEntry> inventory=new List<AppEntry>(),history=new List<AppEntry>();HashSet<string> installWatch;Button watchInstallButton;NotifyIcon installWatchIcon;
+  readonly ToolTip tips=new ToolTip{AutoPopDelay=14000,InitialDelay=250,ReshowDelay=200,ShowAlways=true};
   List<Candidate> candidates=new List<Candidate>();List<Button> actions=new List<Button>();
   ImageList appIcons=new ImageList(); Label appCount=new Label();
   bool busy;string inventoryError;string sessions=Core.Paths.Sessions;Icon brandIcon,brandIconSmall;CheckBox pupOnly=new CheckBox();
@@ -53,8 +54,9 @@ namespace TweekPro {
    Add(bar,"Quét mục đang xem",async()=>await ScanSelected());
    Add(bar,"Gỡ cưỡng bức…",async()=>await ForceUninstall());
    Add(bar,"Xuất CSV",()=>{ExportApps();return Task.FromResult(0);});
-   Add(bar,"Theo dõi cài đặt",async()=>await ToggleInstallWatch());
+   Add(bar,"Theo dõi cài đặt",async()=>await ToggleInstallWatch());watchInstallButton=actions[actions.Count-1];
    Add(bar,"Hunter…",()=>{ShowHunter();return Task.FromResult(0);});
+   tips.SetToolTip(actions[actions.Count-1],Core.L.T("Thu cửa sổ và hiện kính ngắm đỏ.\r\nKéo kính lên icon hoặc cửa sổ để xem ứng dụng, rồi gỡ hoặc mở thư mục.\r\nChuột phải trên kính để thoát."));
    deepMode.Text=Core.L.T("Quét sâu sau khi gỡ");deepMode.Checked=settings.DeepScanAfterUninstall;deepMode.CheckedChanged+=(s,e)=>settings.DeepScanAfterUninstall=deepMode.Checked;deepMode.AutoSize=true;deepMode.Margin=new Padding(12,8,16,0);deepMode.ForeColor=Theme.Text;bar.Controls.Add(deepMode);
    pupOnly.Text=Core.L.T("Chỉ hiện mục cảnh báo");pupOnly.AutoSize=true;pupOnly.Margin=new Padding(0,8,16,0);pupOnly.ForeColor=Theme.Text;pupOnly.CheckedChanged+=(s,e)=>Filter();bar.Controls.Add(pupOnly);
    var searchHost=Theme.SearchField(search);search.TextChanged+=(s,e)=>Filter();
@@ -254,7 +256,9 @@ namespace TweekPro {
     Theme.SetOverlay(appsOverlay,Core.L.F("Không đọc được danh sách ứng dụng.\r\n{0}\r\n\r\nBấm Làm mới để thử lại. Nếu khóa HKLM bị chặn, chạy Tweek Pro với quyền quản trị cùng tài khoản Windows.",inventoryError),NoteKind.Error);
     return;
    }
-   var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));apps.BeginUpdate();apps.Items.Clear();details.Clear();string q=search.Text.Trim();bool onlyPup=pupOnly.Checked;int flagged=0;foreach(var a in SortApps(inventory.Where(a=>(a.Name+" "+a.Publisher+" "+a.Comments).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0),appSortColumn,appSortDescending)){
+   var checkedIds=new HashSet<string>(apps.CheckedItems.Cast<ListViewItem>().Select(i=>((AppEntry)i.Tag).Id));
+   string keepId=apps.SelectedItems.Count==0?null:((AppEntry)apps.SelectedItems[0].Tag).Id;
+   apps.BeginUpdate();apps.Items.Clear();string q=search.Text.Trim();bool onlyPup=pupOnly.Checked;int flagged=0;foreach(var a in SortApps(inventory.Where(a=>(a.Name+" "+a.Publisher+" "+a.Comments).IndexOf(q,StringComparison.CurrentCultureIgnoreCase)>=0),appSortColumn,appSortDescending)){
    var verdict=Pup.PupDetector.Classify(a);if(verdict!=null)flagged++;if(onlyPup&&verdict==null)continue;
    string location=String.IsNullOrWhiteSpace(a.Location)?Core.L.T("Chưa được ứng dụng khai báo thư mục cài"):a.Location;
    string flag=verdict==null?"":verdict.Badge+" • "+Pup.PupDetector.SeverityLabel(verdict.Severity);
@@ -262,7 +266,13 @@ namespace TweekPro {
    var item=new ListViewItem(new[]{a.Name,a.Version,a.Publisher,Presentation.SizeLabel(a.Size)+(a.SizePartial?"+":""),a.Hive=="HKLM"?Core.L.T("Toàn máy"):Core.L.T("Tài khoản"),Presentation.DateLabel(a.InstallDate),flag,a.TypeLabel,a.Location??"",a.Command??"",a.Website??"",a.Comments??""}){Tag=a,ImageKey=a.Id,Checked=checkedIds.Contains(a.Id),ToolTipText=location+sizeNote+"\r\n"+Core.L.T("Ngày bộ cài khai báo: ")+(String.IsNullOrWhiteSpace(a.InstallDate)?Core.L.T("Không có"):a.InstallDate)+(String.IsNullOrWhiteSpace(a.Command)?"":"\r\n"+Core.L.T("Lệnh gỡ: ")+a.Command)+(verdict==null?"":"\r\n\r\n"+verdict.Badge+": "+verdict.Reason)};
    if(verdict!=null)item.ForeColor=verdict.Severity==Pup.PupSeverity.High?Theme.Danger:Theme.Warning;
    Theme.StripeRow(item,apps.Items.Count);apps.Items.Add(item);
-  }apps.EndUpdate();appCount.Text=Core.L.F("{0} ứng dụng hiển thị  /  {1} ứng dụng trên máy",apps.Items.Count,inventory.Count)+(flagged>0?"  •  "+Core.L.F("{0} mục nghi không mong muốn",flagged):"");
+  }apps.EndUpdate();
+   ListViewItem pick=null;
+   if(keepId!=null)foreach(ListViewItem i in apps.Items)if(((AppEntry)i.Tag).Id==keepId){pick=i;break;}
+   if(pick==null&&apps.Items.Count>0)pick=apps.Items[0];
+   if(pick!=null){pick.Selected=true;pick.Focused=true;pick.EnsureVisible();details.Text=AppDetails((AppEntry)pick.Tag);}
+   else details.Text=Core.L.T("Chọn một ứng dụng để xem thông tin.");
+   appCount.Text=Core.L.F("{0} ứng dụng hiển thị  /  {1} ứng dụng trên máy",apps.Items.Count,inventory.Count)+(flagged>0?"  •  "+Core.L.F("{0} mục nghi không mong muốn",flagged):"");
    if(inventory.Count==0)Theme.SetOverlay(appsOverlay,"Không tìm thấy ứng dụng desktop nào.\r\nTweek Pro đọc các khóa Uninstall của HKLM/HKCU; chưa gồm toàn bộ ứng dụng Microsoft Store.",NoteKind.Info);
    else if(apps.Items.Count==0&&onlyPup&&q=="")Theme.SetOverlay(appsOverlay,"Không có ứng dụng nào bị đánh dấu không mong muốn.\r\nBỏ chọn «Chỉ hiện mục cảnh báo» để xem toàn bộ.",NoteKind.Info);
    else if(apps.Items.Count==0)Theme.SetOverlay(appsOverlay,Core.L.F("Không có ứng dụng khớp với «{0}».\r\nThử từ khóa khác hoặc xóa ô tìm kiếm.",q),NoteKind.Info);
@@ -397,7 +407,19 @@ namespace TweekPro {
   void ExportApps(){string p=SavePath("TweekPro-applications.csv");if(p==null)return;var lines=new List<string>{"Name,Version,Publisher,SizeKB,RegistryView,Type,InstallDate,InstallLocation,UninstallCommand,QuietUninstallCommand,Website,Comments,RegistryKey"};lines.AddRange(SortApps(inventory,appSortColumn,appSortDescending).Select(a=>String.Join(",",new[]{a.Name,a.Version,a.Publisher,a.Size.ToString(),a.Hive+"/"+a.View,a.TypeLabel,a.InstallDate,a.Location,a.Command,a.QuietCommand,a.Website,a.Comments,a.Key}.Select(Engine.Csv))));File.WriteAllLines(p,lines, new UTF8Encoding(true));Log(Core.L.T("Đã xuất danh sách: ")+p);}
   void ExportCandidates(){string p=SavePath("TweekPro-review.csv");if(p==null)return;var lines=new List<string>{"App,Kind,Path,Hive,View,Reason"};lines.AddRange(candidates.Select(c=>String.Join(",",new[]{c.AppName,c.Kind,Presentation.CandidatePath(c),c.Hive,c.View,(c.ReviewOnly?Core.L.T("CHỈ XEM: "):"")+c.Reason}.Select(Engine.Csv))));File.WriteAllLines(p,lines,new UTF8Encoding(true));Log(Core.L.T("Đã xuất báo cáo: ")+p);}
   async Task ToggleInstallWatch(){
-   if(installWatch==null){installWatch=InstallWatch.Ids(inventory);Log(Core.L.F("Đang theo dõi cài đặt ({0} ứng dụng). Cài phần mềm rồi bấm lại để xem mục mới.",installWatch.Count));MessageBox.Show(this,Core.L.T("Đang theo dõi. Hãy cài ứng dụng, rồi bấm «Theo dõi cài đặt» lần nữa để xem mục mới."),Core.L.T("Theo dõi cài đặt"),MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+   if(installWatch==null){
+    installWatch=InstallWatch.Ids(inventory);
+    if(watchInstallButton!=null)watchInstallButton.Text=Core.L.T("Kết thúc theo dõi");
+    Log(Core.L.F("Đang theo dõi cài đặt ({0} ứng dụng). Cài phần mềm rồi bấm lại để xem mục mới.",installWatch.Count));
+    if(installWatchIcon==null){installWatchIcon=new NotifyIcon{Icon=Branding.AppIcon(32),Visible=true};installWatchIcon.MouseClick+=(s,e)=>{Show();WindowState=FormWindowState.Normal;Activate();};}
+    installWatchIcon.Visible=true;installWatchIcon.Text=Core.L.T("Đang theo dõi cài đặt");
+    installWatchIcon.ShowBalloonTip(8000,Core.L.T("Theo dõi cài đặt"),Core.L.T("Đang theo dõi. Hãy cài ứng dụng, rồi mở lại Tweek Pro và bấm [Kết thúc theo dõi]."),ToolTipIcon.Info);
+    WindowState=FormWindowState.Minimized;
+    return;
+   }
+   if(watchInstallButton!=null)watchInstallButton.Text=Core.L.T("Theo dõi cài đặt");
+   if(installWatchIcon!=null)installWatchIcon.Visible=false;
+   Show();WindowState=FormWindowState.Normal;Activate();
    await Reload();
    var added=InstallWatch.Added(installWatch,inventory);installWatch=null;
    if(added.Count==0){MessageBox.Show(this,Core.L.T("Không có ứng dụng mới trong danh sách gỡ."),Core.L.T("Theo dõi cài đặt"),MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
@@ -436,9 +458,21 @@ namespace TweekPro {
   }
   void ShowHunter(){
    if(Environment.OSVersion.Platform!=PlatformID.Win32NT)throw new IOException(Core.L.T("Hunter chỉ chạy trên Windows."));
-   using(var form=new HunterForm(inventory,a=>{
-    for(int i=0;i<apps.Items.Count;i++)if(apps.Items[i].Tag==a){apps.Items[i].Selected=true;apps.Items[i].EnsureVisible();break;}
-   }))form.ShowDialog(this);
+   Hide();
+   bool back=false;
+   Action show=()=>{
+    if(back)return;back=true;
+    var area=Screen.FromPoint(Cursor.Position).WorkingArea;
+    if(Width>area.Width)Width=area.Width;if(Height>area.Height)Height=area.Height;
+    if(Left<area.Left||Top<area.Top||Right>area.Right||Bottom>area.Bottom)
+     Location=new Point(area.Left+Math.Max(0,(area.Width-Width)/2),area.Top+Math.Max(0,(area.Height-Height)/2));
+    Show();WindowState=FormWindowState.Normal;Activate();
+   };
+   HunterSession.Start(this,inventory,app=>{
+    show();
+    foreach(ListViewItem i in apps.Items){bool mine=i.Tag==app;i.Selected=mine;i.Checked=mine;if(mine)i.EnsureVisible();}
+    BeginInvoke((Action)(async()=>{await Guard(()=>Uninstall());}));
+   },show);
   }
  }
  public static class Program {
