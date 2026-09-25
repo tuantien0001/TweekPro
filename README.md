@@ -244,7 +244,7 @@ Chưa có theo dõi cài đặt (install monitor), bật/tắt tiện ích trìn
 
 ## Lịch sử phiên bản
 
-### 0.7.8 (chưa phát hành)
+### 0.7.8 (25/09/2026)
 
 - **Tổng quan dễ dùng hơn**: ngay dưới điểm số có tối đa 3 nút, việc nhiều GB nhất đứng trước. Nút **Dọn rác …** chuyển đúng các nhóm rác không bị khóa vào Kho (có hỏi trước, lấy lại được). Các nút còn lại mở đúng tab. Bảng xếp rác lớn lên đầu và tô nền theo mức. Thẻ điểm ghi một câu so với lần kiểm tra trước (điểm và dung lượng). Ô «Tự kiểm tra khi mở» nằm cùng hàng nút.
 - **Ô tìm kiếm**: tab Ứng dụng và Dịch vụ hệ thống bỏ nhãn «Tìm kiếm» bên cạnh ô; chữ đó hiện mờ bên trong ô khi ô đang trống và biến mất khi gõ. Ô cao bằng nút trên thanh (36 px), mép trái/phải thẳng hàng với hàng nút, viền xanh khi đang gõ. Ô trống vẫn hiện mọi dòng.

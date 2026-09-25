@@ -8,7 +8,7 @@
     build.ps1 wraps this command for Windows machines and explains how to get the SDK when it is missing.
   -->
   <PropertyGroup>
-    <TweekVersion>0.7.7</TweekVersion>
+    <TweekVersion>0.7.8</TweekVersion>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
