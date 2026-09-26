@@ -1,7 +1,7 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-26 16:04 (Asia/Bangkok).
-Status: VERIFIED MILESTONE — broken shortcut cleanup complete; awaiting commit/push verification.
+Updated: 2026-09-26 16:07 (Asia/Bangkok).
+Status: READY FOR HANDOFF — broken shortcut cleanup verified locally and on GitHub.
 Last editor: Codex. Owner confirmed Cursor stopped and asked to resume from this file.
 
 ## Current objective and result
@@ -22,7 +22,8 @@ Continue the first outstanding roadmap item: broken Desktop / Start Menu shortcu
 
 ## Git and releases
 
-- Work on `main`, tracking `origin/main`; starting commit `57c96d5`. Push each verified milestone, never force-push.
+- Feature commit `fd6e1d1a0945fd96af5844b51ee4c2d5f647e1b9` pushed to `origin/main`; local and remote hashes verified equal. This checkpoint-only commit follows it. Push each verified milestone, never force-push.
+- GitHub Actions 36231657945 SUCCESS: Windows build, self-test, installer/portable packaging and artifact upload. https://github.com/tuantien0001/TweekPro/actions/runs/36231657945 (artifact `TweekPro-dist`).
 - v0.7.9 is already published with Setup + portable assets at https://github.com/tuantien0001/TweekPro/releases/tag/v0.7.9 (tag commit `6aeb122`, Actions success). Old release IN PROGRESS state was stale.
 - Keep application version 0.7.9 until the owner asks for a release. The new shortcut feature is source/build work, not yet in that published release.
 - Preserve local untracked `.cursor/permissions.json`; do not include it in a commit.
@@ -30,7 +31,7 @@ Continue the first outstanding roadmap item: broken Desktop / Start Menu shortcu
 
 ## Next concrete actions
 
-1. Commit this tested milestone and push `main`; verify remote hash and Actions packaging. If interrupted before push, all feature files are in `Shortcuts/` and integration edits are in AdvancedUI.cs, App.cs, Core/L.cs and Tests07.cs.
+1. Owner can test the local build or the `TweekPro-dist` Actions artifact. Resume by fetching and reading this checkpoint; there is no unfinished code in this milestone.
 2. Remaining roadmap: complete runtime VI/EN localization (Health/Junk/Services/Store/AI); add AI tools `list_unwanted` / `list_stale`; optional old-downloads Health finding.
 3. Cut a release only when requested, using `release.ps1`; do not move the existing 0.7.9 tag.
 
