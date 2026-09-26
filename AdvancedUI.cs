@@ -41,6 +41,7 @@ namespace TweekPro {
    var toolbar=Bar();Add(toolbar,"Mở công cụ",()=>{OpenTool();return Task.FromResult(0);},ButtonStyle.Primary);
    Add(toolbar,"Kiểm tra cập nhật",async()=>await CheckForUpdates());
    Add(toolbar,"Thêm công cụ…",()=>{AddUserTool();return Task.FromResult(0);});
+   Add(toolbar,"Shortcut hỏng…",()=>{OpenBrokenShortcuts();return Task.FromResult(0);});
    AddFeedbackButton(toolbar);
    Add(toolbar,"Tài liệu truy vết",()=>{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"SCAN-GUIDE.md")){UseShellExecute=true});return Task.FromResult(0);});
    var note=Theme.Note("Mỗi mục dùng icon hệ thống của tệp .exe/.cpl/.msc tương ứng. Chỉ mở công cụ khi bạn chọn. Công cụ thiếu trên phiên bản Windows hiện tại sẽ được đánh dấu. SFC/chkdsk có thể sửa hệ thống và yêu cầu quyền quản trị. Kiểm tra cập nhật hỏi GitHub Releases (tag v*), không theo từng push nhánh.",NoteKind.Info);

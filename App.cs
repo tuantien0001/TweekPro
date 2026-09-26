@@ -509,6 +509,7 @@ namespace TweekPro {
    if(args.Length>0&&args[0]=="--preview"){try{
     string mode=args.Length>1?args[1]:"";
     if(mode=="scan"){using(var window=new LeftoverScanForm(new[]{new AppEntry{Name="Ứng dụng mẫu",Hive="HKCU",View="64",Key="SOFTWARE\\Missing"}},true,null)){window.PopulateForPreview();Snapshot(window,"TweekPro-scan-preview.png");}return;}
+    if(mode=="shortcuts"){Core.L.Lang=args.Contains("--en")?"en":"vi";using(var dialog=new BrokenShortcutsForm()){dialog.PopulateForPreview();Snapshot(dialog,"TweekPro-shortcuts-preview.png");}return;}
     bool show=args.Contains("--show");
     if(mode=="all"){string dir=args.Length>2&&!args[2].StartsWith("--")?args[2]:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"previews");Directory.CreateDirectory(dir);Core.L.Lang=args.Contains("--en")?Core.L.EnglishCode:Core.L.Vietnamese;foreach(string m in PreviewModes)using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,m);Snapshot(form,Path.Combine(dir,m+".png"),new Size(1280,820));}return;}
     using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,mode);if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}

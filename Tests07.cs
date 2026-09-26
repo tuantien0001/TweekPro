@@ -97,6 +97,7 @@ namespace TweekPro {
     SysSpace.SystemSpaceTests.Run();
     Extensions.ExtensionsTests.Run();
     Shredder.ShredderTests.Run();
+    Shortcuts.ShortcutsTests.Run();
     ParityTests.Run();
 
     // Safety boundary: rules cannot reach user documents, the data folder or a whole AppData root.
