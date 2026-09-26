@@ -1,6 +1,6 @@
 # Tweek Pro — current work checkpoint
 
-Updated: 2026-09-26 16:07 (Asia/Bangkok).
+Updated: 2026-09-26 16:09 (Asia/Bangkok).
 Status: READY FOR HANDOFF — broken shortcut cleanup verified locally and on GitHub.
 Last editor: Codex. Owner confirmed Cursor stopped and asked to resume from this file.
 
@@ -28,6 +28,10 @@ Continue the first outstanding roadmap item: broken Desktop / Start Menu shortcu
 - Keep application version 0.7.9 until the owner asks for a release. The new shortcut feature is source/build work, not yet in that published release.
 - Preserve local untracked `.cursor/permissions.json`; do not include it in a commit.
 - Keep commits, README and release notes free of other product names. Prior detailed checkpoints remain in Git history (WORKSTATE at `57c96d5`); HANDOFF.md holds architectural background.
+
+## Local installation
+
+Owner requested overwriting the installed copy on 2026-09-26. Replaced only `C:\Program Files\Tweek Pro\TweekPro-0.7.9.exe` at 16:08:39; dependencies/config already matched. Installed SHA-256 `3C1934198D1E11837B79888E91FBB748468D87A888E7B924DC61B17227C008A9` matches the tested build. Desktop/Start Menu shortcuts already target this exe. Previous executable and updater result are in `C:\Users\ADMIN\TweekPro-install-backup-20260926-160836`. No user data/settings/vault changed; no app process was running or started. The older 0.7.8 exe/uninstall registration were left in place; this was an executable replacement, not an installer upgrade.
 
 ## Next concrete actions
 
