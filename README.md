@@ -252,7 +252,7 @@ Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bả
 
 ## Lịch sử phiên bản
 
-### 0.7.10 (chưa phát hành)
+### 0.8.0 (27/09/2026)
 
 - **Giao diện dễ theo dõi hơn**: thay lưới tab bằng thanh điều hướng bên trái, gom Ứng dụng / Dọn dẹp / Hệ thống, có thể mở/thu nhóm; giữ lối vào Tổng quan, Kho, Công cụ, Nhật ký và AI. Tổng quan tự giãn cột Chi tiết, có khung đọc đầy đủ dòng đang chọn và bố cục gọn khi cửa sổ nhỏ; nút dọn ghi rõ **Chuyển rác vào Kho**. Kết quả dọn rác có bộ lọc theo tệp đã xử lý, đang dùng/không truy cập được, thay đổi nên giữ lại, không còn tồn tại và lỗi; chọn dòng để xem đường dẫn/lý do đầy đủ, mở Kho ngay từ hộp kết quả. Danh sách chi tiết giới hạn 2.000 tệp, số tổng vẫn tính toàn bộ lượt dọn. Hỗ trợ tiếng Việt và tiếng Anh.
 - **Sửa lỗi an toàn khi dọn và khôi phục**: rác và tệp trùng bị trùng đích khi khôi phục giữ trạng thái Cần kiểm tra, cho thử lại và không bị chọn khi chỉ dọn bản đã khôi phục. Dọn rác kiểm tra lại thời gian, dung lượng, tuổi tệp và đường dẫn trước khi xử lý; bỏ qua tệp thay đổi sau khi xem trước. Dọn nhanh trên Tổng quan chỉ lấy nhóm mặc định được chọn, tính dung lượng cùng phạm vi và liệt kê đầy đủ nhóm trong xác nhận.
