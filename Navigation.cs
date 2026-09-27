@@ -5,13 +5,11 @@ using System.Linq;
 using System.Windows.Forms;
 
 namespace TweekPro {
- /// <summary>Keyboard-accessible grouped navigation backed by the existing tab pages.</summary>
+ /// <summary>Keyboard-accessible vertical navigation backed by the existing tab pages.</summary>
  public sealed class TabStrip:UserControl {
   readonly TabControl tabs;
   readonly FlowLayoutPanel menu=new FlowLayoutPanel();
   readonly Dictionary<TabPage,Button> links=new Dictionary<TabPage,Button>();
-  readonly Dictionary<int,FlowLayoutPanel> groups=new Dictionary<int,FlowLayoutPanel>();
-  readonly string[] names={"Ứng dụng","Dọn dẹp","Hệ thống"};
   public TabStrip(TabControl target){
    tabs=target;Dock=DockStyle.Left;Width=238;BackColor=Theme.Surface;Padding=new Padding(10,12,8,8);
    menu.Dock=DockStyle.Fill;menu.FlowDirection=FlowDirection.TopDown;menu.WrapContents=false;menu.AutoScroll=true;menu.BackColor=Theme.Surface;
@@ -32,12 +30,7 @@ namespace TweekPro {
    menu.SuspendLayout();
    var caption=new Label{Text=Core.L.T("ĐIỀU HƯỚNG"),ForeColor=Theme.Muted,Font=Theme.Small,Height=28,Margin=new Padding(10,0,0,4)};menu.Controls.Add(caption);
    foreach(TabPage p in tabs.TabPages)if(Branding.GlyphKey(p.Text)=="pulse")AddLink(menu,p);
-   for(int i=0;i<names.Length;i++){
-    var heading=new Label{Text=Core.L.T(names[i]),Height=28,TextAlign=ContentAlignment.MiddleLeft,Font=Theme.Strong,ForeColor=Theme.Text,BackColor=Theme.Surface,Margin=new Padding(0,6,0,0),Padding=new Padding(10,0,0,0)};menu.Controls.Add(heading);
-    var body=new FlowLayoutPanel{AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,FlowDirection=FlowDirection.TopDown,WrapContents=false,Margin=new Padding(0),Padding=new Padding(0)};
-    groups.Add(i,body);menu.Controls.Add(body);
-    foreach(TabPage p in tabs.TabPages)if(Group(p)==i)AddLink(body,p);
-   }
+   for(int i=0;i<3;i++)foreach(TabPage p in tabs.TabPages)if(Group(p)==i)AddLink(menu,p);
    foreach(TabPage p in tabs.TabPages)if(Group(p)<0&&Branding.GlyphKey(p.Text)!="pulse")AddLink(menu,p);
    menu.ResumeLayout(true);SelectActive();FitWidths();
   }
@@ -56,7 +49,6 @@ namespace TweekPro {
   void FitWidths(){
    int width=Math.Max(120,menu.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-4);
    foreach(Control c in menu.Controls)c.Width=width;
-   foreach(var group in groups.Values)foreach(Control c in group.Controls)c.Width=width;
   }
  }
 }

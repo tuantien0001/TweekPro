@@ -54,7 +54,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 
 ## Các tab
 
-Thanh bên trái gom các mục vào **Ứng dụng**, **Dọn dẹp** và **Hệ thống**. Các nhóm luôn mở sẵn, không cần bấm mở/thu; **Gỡ ứng dụng** được in đậm ở đầu nhóm Ứng dụng. Chọn mục bằng chuột hoặc phím Tab rồi Enter. Tổng quan, Kho khôi phục, Công cụ, Nhật ký và Trợ lý AI có lối vào riêng. Khi danh sách dài, cuộn thanh bên để xem các mục phía dưới.
+Thanh bên trái hiển thị các chức năng thành một danh sách dọc liên tục, không có tiêu đề nhóm hoặc nút thu gọn. **Gỡ ứng dụng** in đậm, nổi bật ngay dưới Tổng quan. Chọn mục bằng chuột hoặc phím Tab rồi Enter; cuộn thanh bên khi cửa sổ thấp.
 
 Kết quả dọn rác có bộ lọc theo trạng thái và khung đọc đầy đủ đường dẫn/lý do. **Chuyển vào Kho chưa giải phóng dung lượng**; có thể mở Kho ngay từ hộp kết quả để kiểm tra trước khi xóa vĩnh viễn.
 
@@ -254,7 +254,7 @@ Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bả
 
 ### 0.8.1 (chưa phát hành)
 
-- **Điều hướng dễ dùng**: hiển thị sẵn toàn bộ mục trong các nhóm Ứng dụng, Dọn dẹp và Hệ thống; bỏ nút thu gọn nhóm. Mục **Gỡ ứng dụng** in đậm, màu nổi bật; hàng gọn hơn để thấy nhiều chức năng, thanh bên không tự nhảy khi đổi tab.
+- **Điều hướng dễ dùng**: hiển thị toàn bộ chức năng theo thứ tự trong một danh sách dọc; bỏ tiêu đề nhóm và nút thu gọn. Mục **Gỡ ứng dụng** in đậm, màu nổi bật; hàng gọn hơn để thấy nhiều chức năng, thanh bên không tự nhảy khi đổi tab.
 
 ### 0.8.0 (27/09/2026)
 
