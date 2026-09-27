@@ -17,6 +17,7 @@ namespace TweekPro.Core {
    {"Đã xử lý","Processed"},{"Đang dùng / không truy cập được","In use / inaccessible"},
    {"Đã thay đổi — giữ lại","Changed — kept"},{"Không còn tồn tại","No longer exists"},{"Lỗi xử lý","Processing error"},
    {"Không có tệp trong nhóm này.","No files in this category."},
+   {"Quản trị viên","Administrator"},{"Quyền thường","Standard user"},
    {"Gỡ ứng dụng","Uninstall apps"},
    {"ĐIỀU HƯỚNG","NAVIGATION"},
    {"Dọn dẹp","Cleanup"},

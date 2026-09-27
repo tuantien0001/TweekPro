@@ -254,6 +254,8 @@ Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bả
 
 ### 0.8.1 (chưa phát hành)
 
+- **Thanh tiêu đề gọn hơn**: nút ngôn ngữ có cờ và mã VI/EN, nhãn quyền có biểu tượng khiên và nền tối nhẹ; hai mục cùng chiều cao, căn thẳng hàng.
+
 - **Điều hướng dễ dùng**: hiển thị toàn bộ chức năng theo thứ tự trong một danh sách dọc; bỏ tiêu đề nhóm và nút thu gọn. Mục **Gỡ ứng dụng** in đậm, màu nổi bật; hàng gọn hơn để thấy nhiều chức năng, thanh bên không tự nhảy khi đổi tab.
 
 ### 0.8.0 (27/09/2026)

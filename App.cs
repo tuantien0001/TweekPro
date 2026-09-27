@@ -177,9 +177,11 @@ namespace TweekPro {
   void BuildHeaderActions(Panel header){
    var right=new FlowLayoutPanel{Dock=DockStyle.Right,FlowDirection=FlowDirection.RightToLeft,WrapContents=false,Padding=new Padding(16,22,0,0),BackColor=Theme.Header};
    bool elevated=Core.Elevation.IsElevated;
-   var badge=new Label{Text=Core.Elevation.BadgeText,AutoSize=true,Padding=new Padding(10,6,10,6),Margin=new Padding(8,4,0,0),Font=Theme.Small,ForeColor=Color.White,BackColor=elevated?Theme.Success:Color.FromArgb(51,65,85)};
+   string privilege=Core.L.T(elevated?"Quản trị viên":"Quyền thường");
+   var badge=new Label{Text=privilege,AutoSize=false,Height=32,Width=TextRenderer.MeasureText(privilege,Theme.Small).Width+38,TextAlign=ContentAlignment.MiddleLeft,Padding=new Padding(28,0,8,0),Margin=new Padding(8,0,0,0),Font=Theme.Small,ForeColor=elevated?Color.FromArgb(167,243,208):Color.FromArgb(203,213,225),BackColor=Color.FromArgb(30,41,59),AccessibleName=Core.Elevation.BadgeText};
+   badge.Paint+=(s,e)=>{float scale=badge.DeviceDpi/96f;Branding.DrawTabGlyph(e.Graphics,"Kho khôi phục",new Rectangle((int)(8*scale),(badge.Height-(int)(14*scale))/2,(int)(14*scale),(int)(14*scale)),badge.ForeColor);};
    right.Controls.Add(badge);
-   var language=Branding.LanguageButton(Core.L.English?"EN":"VI",Core.L.T(Core.L.English?"Chuyển sang tiếng Việt":"Switch to English"));language.Margin=new Padding(8,2,0,0);
+   var language=Branding.LanguageButton(Core.L.English?"EN":"VI",Core.L.T(Core.L.English?"Chuyển sang tiếng Việt":"Switch to English"));language.Margin=new Padding(0);
    language.Click+=async(s,e)=>await Guard(()=>{SwitchLanguage();return Task.FromResult(0);});
    right.Controls.Add(language);
    header.Controls.Add(right);right.Width=right.PreferredSize.Width;

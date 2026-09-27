@@ -25,9 +25,9 @@ namespace TweekPro {
 
   /// <summary>Compact header button showing the current language as its flag; clicking it switches the UI language.</summary>
   public static Button LanguageButton(string code,string tooltip){
-   var b=new Button{Size=new Size(48,32),FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Theme.Header,ForeColor=Color.White,Text="",TabStop=false,UseVisualStyleBackColor=false};
+   var b=new Button{Size=new Size(76,32),FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Color.FromArgb(30,41,59),ForeColor=Color.FromArgb(226,232,240),Text="",TabStop=true,UseVisualStyleBackColor=false};
    b.FlatAppearance.BorderSize=0;b.FlatAppearance.MouseOverBackColor=Color.FromArgb(30,41,59);b.FlatAppearance.MouseDownBackColor=Color.FromArgb(51,65,85);
-   b.Paint+=(s,e)=>DrawLanguageGlyph(e.Graphics,b.ClientRectangle,code,b.ForeColor);
+   b.Paint+=(s,e)=>{float scale=b.DeviceDpi/96f;DrawLanguageGlyph(e.Graphics,new Rectangle(0,0,(int)(42*scale),b.Height),code,b.ForeColor);TextRenderer.DrawText(e.Graphics,code,Theme.Small,new Rectangle((int)(40*scale),0,b.Width-(int)(42*scale),b.Height),b.ForeColor,TextFormatFlags.Left|TextFormatFlags.VerticalCenter);};
    new ToolTip().SetToolTip(b,tooltip);
    b.AccessibleName=tooltip;
    return b;
