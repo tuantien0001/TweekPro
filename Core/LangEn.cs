@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace TweekPro.Core {
@@ -17,6 +17,7 @@ namespace TweekPro.Core {
    {"Đã xử lý","Processed"},{"Đang dùng / không truy cập được","In use / inaccessible"},
    {"Đã thay đổi — giữ lại","Changed — kept"},{"Không còn tồn tại","No longer exists"},{"Lỗi xử lý","Processing error"},
    {"Không có tệp trong nhóm này.","No files in this category."},
+   {"Gỡ ứng dụng","Uninstall apps"},
    {"ĐIỀU HƯỚNG","NAVIGATION"},
    {"Dọn dẹp","Cleanup"},
    {"Chọn một khu vực để xem chi tiết và nơi xử lý.","Select an area to see its details and next action."},

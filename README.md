@@ -1,4 +1,4 @@
-﻿<p align="center">
+<p align="center">
   <img src="Assets/TweekPro.png" width="96" alt="Tweek Pro">
 </p>
 
@@ -54,7 +54,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 
 ## Các tab
 
-Thanh bên trái gom các mục vào **Ứng dụng**, **Dọn dẹp** và **Hệ thống**. Bấm tên nhóm để mở/thu; chọn mục bằng chuột hoặc phím Tab rồi Enter. Tổng quan, Kho khôi phục, Công cụ, Nhật ký và Trợ lý AI có lối vào riêng. Khi danh sách dài, cuộn thanh bên để xem các mục phía dưới.
+Thanh bên trái gom các mục vào **Ứng dụng**, **Dọn dẹp** và **Hệ thống**. Các nhóm luôn mở sẵn, không cần bấm mở/thu; **Gỡ ứng dụng** được in đậm ở đầu nhóm Ứng dụng. Chọn mục bằng chuột hoặc phím Tab rồi Enter. Tổng quan, Kho khôi phục, Công cụ, Nhật ký và Trợ lý AI có lối vào riêng. Khi danh sách dài, cuộn thanh bên để xem các mục phía dưới.
 
 Kết quả dọn rác có bộ lọc theo trạng thái và khung đọc đầy đủ đường dẫn/lý do. **Chuyển vào Kho chưa giải phóng dung lượng**; có thể mở Kho ngay từ hộp kết quả để kiểm tra trước khi xóa vĩnh viễn.
 
@@ -251,6 +251,10 @@ Trong ứng dụng, nút **Báo lỗi / góp ý** (tab Tổng quan và Công c�
 Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bản mới im lặng chỉ khi bật «Hỏi cài bản mới». Không xác định được mọi dấu vết của mọi ứng dụng. Băng thông theo tiến trình chỉ tính từ khi bật ETW. Bản phân phối là một thư mục (exe + DLL). Chuỗi giao diện nằm trong mã (chưa `.resx`); một số thông báo nhật ký còn tiếng Việt khi chọn tiếng Anh.
 
 ## Lịch sử phiên bản
+
+### 0.8.1 (chưa phát hành)
+
+- **Điều hướng dễ dùng**: hiển thị sẵn toàn bộ mục trong các nhóm Ứng dụng, Dọn dẹp và Hệ thống; bỏ nút thu gọn nhóm. Mục **Gỡ ứng dụng** in đậm, màu nổi bật; hàng gọn hơn để thấy nhiều chức năng, thanh bên không tự nhảy khi đổi tab.
 
 ### 0.8.0 (27/09/2026)
 

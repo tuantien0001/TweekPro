@@ -1,12 +1,13 @@
 # Tweek Pro - current work checkpoint
 
 Updated: 2026-09-27 (Asia/Bangkok).
-Objective: install over local executable and publish GitHub version 0.8.0. Owner explicitly authorized both.
-Status: complete. Release v0.8.0 published; local installation updated successfully.
+Objective: simplify sidebar for nontechnical users, keep Applications/Cleanup fully expanded and make uninstall easy to find.
+Status: implemented locally and opened for owner review. DO NOT PUSH or replace installed build until owner approves this iteration (explicit latest instruction). Base main/origin 2ee0c71.
 
-- Release commit 86f0e26; remote annotated v0.8.0 peeled to that commit. GitHub Actions run 36308801882 completed SUCCESS (build, full tests, installer/portable and Release upload).
-- Release: https://github.com/tuantien0001/TweekPro/releases/tag/v0.8.0 with Setup.exe and portable.zip. Main also includes 870e2b3: wait for screenshot process in release.ps1 and complete 0.8.0 gallery; no tag moved.
-- Full local release self-test PASS 2026-09-27T16:15:17. Installed executable full self-test PASS 2026-09-27T16:20:30. Installed/build SHA256 both 5E5A9DA31DF9AE948439C09DED02B4BE25B9BABB92F3B99F3CCD1E9017C8D684.
-- Installed via locally compiled Inno Setup from the tested 0.8.0 output (GitHub downloads were slow and cancelled). Setup exit 0, no restart required. Program Files now has only TweekPro-0.8.0.exe; uninstall registry DisplayVersion 0.8.0; Start Menu shortcut points to it. Local installer: dist/TweekPro-0.8.0-Setup.exe.
-- Previous installation backup: %LOCALAPPDATA%/TweekPro-install-backup-20260927-161501. User data/vault retained. Old app closed gracefully; new app launched as PID 50976. No verification/download commands remain running.
-- Preserve untracked .bridge/ and .cursor/. Logs: .bridge/release-080.log, install-080.log, setup-080.log. All project changes committed and pushed; next action is owner's normal use/feedback.
+- All three sidebar groups permanently expanded; headings are labels with no collapse action. Compact rows; prominent bold blue Uninstall apps link (VI: Go ung dung with native Vietnamese text). Tab switches no longer auto-scroll sidebar away from top.
+- VI/EN translations and README pending 0.8.1 notes updated. All 22 tab screenshots regenerated locally in both languages; Vietnamese docs/screenshots; English in %TEMP%/TweekProUIReview-d929723cda3c4a848c31de0c485f5ef9/en.
+- Build: 0 warnings/errors. Full self-test attempt did not run because Windows elevation was cancelled; do not claim a new full PASS. VI/EN UI smoke PASS: 21 clickable/keyboard-focusable links, groups stay expanded through every selection, six cleanup filters correct. git diff --check passed.
+- Review app launched from workspace bin/Release/net48/TweekPro-0.8.0.exe, PID 49596, title confirmed. Existing installed 0.8.0 remains unchanged. User should review the workspace window.
+- Next: collect owner feedback/approval, rerun full elevated self-test before distribution, then update GitHub and latest screenshots only after approval. No new tag/release created.
+- Previous v0.8.0 Release and installed build verified in prior checkpoint; installation backup remains %LOCALAPPDATA%/TweekPro-install-backup-20260927-161501.
+- Preserve untracked .bridge/ and .cursor/. No verification commands still running; review app intentionally remains open. This local checkpoint is not a GitHub backup.
