@@ -2,7 +2,7 @@
 
 Updated: 2026-09-27 (Asia/Bangkok).
 Objective: fix the three confirmed bugs from the app audit. User also asked for improvement/UI suggestions; recommendations provided, no layout redesign requested.
-Status: all three fixes complete and verified; committing and pushing main.
+Status: all three fixes complete, verified and pushed to main.
 
 ## Changes
 
@@ -18,5 +18,5 @@ Status: all three fixes complete and verified; committing and pushing main.
 - main base 519fc7748dcddc2996a1796f20f495301a444f94. Fetch now succeeds; ls-remote verified this remote base.
 - Preserve untracked .bridge/ and .cursor/. Only this agent's changed files will be staged.
 - Git identity unset; use the existing repository agent author identity Codex <codex@local.invalid> for this commit only, without changing global configuration.
-- Next: commit and push the verified fixes, verify remote hash; owner can use bin/Release/net48/TweekPro-0.7.9.exe. UI improvement suggestions remain unimplemented.
+- Fix commit f2640cac19b350bf5b2bab1fa08c74ce0fd73953 pushed to origin/main; local and remote hashes verified equal. This documentation-only checkpoint follows it. Next: owner can use bin/Release/net48/TweekPro-0.7.9.exe. UI improvement suggestions remain unimplemented.
 - Prior feature/install handoff remains in WORKSTATE.md at 519fc77. Installed Program Files executable is still the previous build.
