@@ -245,20 +245,20 @@ namespace TweekPro.Dupes {
    if(!File.Exists(indexPath))throw new IOException("Bản sao lưu trùng lặp thiếu danh mục tệp (files.xml).");
    var moved=Engine.Load<List<JunkMoved>>(indexPath);
    var forbidden=DupeSafety.ForbiddenRoots();
-   int restored=0,skipped=0,failed=0;
+   int restored=0,failed=0,conflicts=0;
    foreach(var entry in moved){
     try{
      string source=Path.Combine(content,entry.Stored);
-     if(!File.Exists(source)){skipped++;continue;}
+     if(!File.Exists(source))continue;
      string target=Engine.Canon(entry.Original);
      foreach(string f in forbidden)if(Engine.Under(target,f))throw new IOException("Đích nằm trong thư mục được bảo vệ.");
-     if(File.Exists(target)||Directory.Exists(target)){skipped++;continue;}
+     if(File.Exists(target)||Directory.Exists(target)){conflicts++;continue;}
      Directory.CreateDirectory(Path.GetDirectoryName(target));
      File.Move(source,target);restored++;
     }catch(Exception){failed++;}
    }
-   if(failed>0){b.State="NeedsReview";b.Error="Khôi phục "+restored+" tệp; "+failed+" tệp lỗi; "+skipped+" tệp bỏ qua vì đích đã tồn tại.";Engine.SaveBackup(b);throw new IOException(b.Error);}
-   b.State="Restored";b.Error=skipped>0?"Bỏ qua "+skipped+" tệp vì đích đã tồn tại.":"";Engine.SaveBackup(b);
+   if(failed>0||conflicts>0){b.State="NeedsReview";b.Error=Core.L.F("Đã khôi phục {0} tệp; {1} tệp lỗi; {2} tệp trùng đích còn trong Kho. Di chuyển tệp ở đích rồi thử khôi phục lại.",restored,failed,conflicts);Engine.SaveBackup(b);throw new IOException(b.Error);}
+   b.State="Restored";b.Error="";Engine.SaveBackup(b);
   }
  }
 }

@@ -69,7 +69,7 @@ namespace TweekPro {
    await Task.Run(()=>LowPriority<object>(()=>{
     stage(Core.L.T("Đang đo tệp rác theo quy tắc…"));
     try{var rules=JunkRules.Load(Core.Paths.JunkRulesOverride).Rules;var preview=JunkCleaner.Preview(rules,elevated,minAge,token);
-     inputs.JunkBytes=preview.Where(r=>!r.Locked).Sum(r=>r.Bytes);inputs.JunkFiles=preview.Where(r=>!r.Locked).Sum(r=>r.Count);inputs.JunkLockedRules=preview.Count(r=>r.Locked);}
+     var quick=HealthCheck.QuickCleanGroups(preview);inputs.JunkBytes=quick.Sum(r=>r.Bytes);inputs.JunkFiles=quick.Sum(r=>r.Count);inputs.JunkLockedRules=preview.Count(r=>r.Locked);}
     catch(OperationCanceledException){throw;}
     catch(Exception e){inputs.JunkMeasured=false;Core.Log.Warn("Health: junk probe failed: "+e.Message);}
     stage(Core.L.T("Đang đo kho khôi phục…"));
@@ -141,16 +141,15 @@ namespace TweekPro {
    healthActions.Visible=healthActions.Controls.Count>0;
   }
 
-  /// <summary>Moves every unlocked junk group that has files into the vault, then checks again so the score updates.</summary>
+  /// <summary>Moves default-selected, unlocked junk groups with files into the vault, then refreshes the score.</summary>
   async Task CleanJunkFromOverview(){
    bool elevated=Core.Elevation.IsElevated;int minAge=settings.JunkMinAgeHours;
    var rules=Cleaner.JunkRules.Load(Core.Paths.JunkRulesOverride).Rules;
    List<Cleaner.JunkRuleResult> groups=null;
-   await Task.Run(()=>{groups=Cleaner.JunkCleaner.Preview(rules,elevated,minAge,CancellationToken.None).Where(r=>!r.Locked&&r.Count>0).ToList();});
+   await Task.Run(()=>{groups=HealthCheck.QuickCleanGroups(Cleaner.JunkCleaner.Preview(rules,elevated,minAge,CancellationToken.None));});
    if(groups==null||groups.Count==0)throw new IOException(Core.L.T("Không còn tệp rác để dọn."));
    long bytes=groups.Sum(r=>r.Bytes);int files=groups.Sum(r=>r.Count);
-   string list=String.Join("\r\n",groups.Take(6).Select(r=>"• "+Core.L.T(r.Rule.Name)));
-   if(groups.Count>6)list+=Core.L.F("\r\n… và {0} nhóm khác",groups.Count-6);
+   string list=String.Join("\r\n",groups.Select(r=>"• "+Core.L.T(r.Rule.Name)));
    if(!Confirm(Core.L.F("Chuyển {0} tệp rác ({1}) vào Kho khôi phục?\r\n\r\n{2}\r\n\r\nLấy lại được trong tab Kho khôi phục. Ổ đĩa chỉ trống hẳn sau khi xóa hẳn trong Kho.",files.ToString("N0"),Presentation.BytesLabel(bytes),list)))return;
    healthStage.Visible=true;healthStage.Text=Core.L.T("Đang chuyển rác vào kho…");
    var report=await Task.Run(()=>Cleaner.JunkCleaner.Clean(groups,false,CancellationToken.None));

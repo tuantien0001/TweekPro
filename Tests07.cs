@@ -69,6 +69,7 @@ namespace TweekPro {
     Assert(big.TypeLabel=="64-bit • MSI"&&small.TypeLabel=="32-bit","TypeLabel reflects registry view and MSI flag");
 
     // Platform-neutral suites added alongside the 0.7 line; each restores any global state it touches.
+    Cleaner.JunkTests.Run();
     Dupes.DupeTests.Run();
     Analyzer.AnalyzerTests.Run();
     Network.NetworkStatsTests.Run();

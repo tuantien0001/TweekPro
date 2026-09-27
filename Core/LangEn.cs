@@ -5,6 +5,8 @@ namespace TweekPro.Core {
  /// <summary>English translations keyed by the Vietnamese source string. Keep keys byte-identical to the literals in code and junk-rules.json.</summary>
  public static class LangEn {
   public static readonly Dictionary<string,string> Table=new Dictionary<string,string>(StringComparer.Ordinal){
+   {"Tệp đã thay đổi hoặc không còn đủ điều kiện; hãy xem trước lại.","The file changed or is no longer eligible; preview again."},
+   {"Đã khôi phục {0} tệp; {1} tệp lỗi; {2} tệp trùng đích còn trong Kho. Di chuyển tệp ở đích rồi thử khôi phục lại.","Restored {0} files; {1} failed; {2} conflicting files remain in the Vault. Move the destination files aside, then retry restore."},
    // Identity
    {"Trình quản lý Windows","Windows Manager"},
    {"Gỡ ứng dụng, dọn rác, theo dõi mạng  •  Mọi thao tác xóa đều được sao lưu và hoàn tác","Uninstall, clean junk, watch the network  •  Every deletion is backed up and reversible"},

@@ -51,6 +51,8 @@ namespace TweekPro.Health {
  /// </summary>
  public static class HealthCheck {
   public const long MB=1024L*1024, GB=1024L*MB;
+  /// <summary>Quick clean includes only the default-selected, unlocked groups with files.</summary>
+  public static List<Cleaner.JunkRuleResult> QuickCleanGroups(IEnumerable<Cleaner.JunkRuleResult> preview){return preview.Where(r=>r.Rule.DefaultChecked&&!r.Locked&&r.Count>0).ToList();}
   public const int PenaltyLow=5, PenaltyMedium=12, PenaltyHigh=25;
   public const string TabJunk="Dọn rác", TabLeftovers="Phần còn sót", TabEmpty="Thư mục rỗng", TabVault="Kho khôi phục", TabAutorun="Khởi động", TabAnalyzer="Phân tích ổ đĩa", TabApps="Ứng dụng";
 

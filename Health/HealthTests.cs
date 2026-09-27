@@ -9,6 +9,12 @@ namespace TweekPro.Health {
   static HealthInputs Clean(){return new HealthInputs{DiskFreeBytes=200*HealthCheck.GB,DiskTotalBytes=500*HealthCheck.GB,DiskName="Ổ C:"};}
 
   public static void Run(){
+   var normal=new Cleaner.JunkRuleResult{Rule=new Cleaner.JunkRule{DefaultChecked=true},Bytes=123};normal.Items.Add(new Cleaner.JunkItem());
+   var optional=new Cleaner.JunkRuleResult{Rule=new Cleaner.JunkRule{DefaultChecked=false},Bytes=456};optional.Items.Add(new Cleaner.JunkItem());
+   var locked=new Cleaner.JunkRuleResult{Rule=new Cleaner.JunkRule{DefaultChecked=true},Locked=true};locked.Items.Add(new Cleaner.JunkItem());
+   var emptyGroup=new Cleaner.JunkRuleResult{Rule=new Cleaner.JunkRule{DefaultChecked=true}};
+   var quick=HealthCheck.QuickCleanGroups(new[]{normal,optional,locked,emptyGroup});
+   Assert(quick.Count==1&&ReferenceEquals(quick[0],normal)&&quick.Sum(r=>r.Bytes)==123,"Overview selection and totals exclude opt-in, locked and empty rules");
    var clean=HealthCheck.Evaluate(Clean());
    Assert(clean.Score==100&&clean.Grade=="A","clean machine scores 100/A, got "+clean.Score+"/"+clean.Grade);
    Assert(clean.Findings.Count==7,"seven areas");

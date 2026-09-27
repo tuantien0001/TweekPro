@@ -58,6 +58,11 @@ namespace TweekPro.Dupes {
     Assert(backup!=null&&backup.Kind=="Duplicate"&&backup.State=="BackedUp"&&File.Exists(Path.Combine(Engine.Vault,backup.Id,"files.xml")),"Duplicate backup listed with index");
     Assert(Engine.BackupSize(backup)>=8192,"Backup size measured");
 
+    File.WriteAllText(dupe1,"new destination data");
+    MustFail(()=>Engine.Restore(backup),"Collision must report incomplete restore");
+    Assert(backup.State=="NeedsReview"&&File.ReadAllText(dupe1)=="new destination data"&&File.Exists(dupe2),"Collision preserves destination while restoring other files");
+    Assert(Engine.Backups().First(b=>b.Id==backup.Id).State=="NeedsReview"&&Engine.SelectForPurge(new[]{backup},0,DateTime.Now.AddDays(1),false).Count==0,"Incomplete restore persists and is excluded from restored-only purge");
+    File.Delete(dupe1);
     Engine.Restore(backup);
     Assert(File.Exists(dupe1)&&File.Exists(dupe2)&&backup.State=="Restored","Restore puts both copies back");
     long freed=Engine.Purge(backup);

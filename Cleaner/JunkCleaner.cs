@@ -8,12 +8,12 @@ using System.Threading;
 
 namespace TweekPro.Cleaner {
  /// <summary>One file proposed for cleaning.</summary>
- public class JunkItem { public string Path; public long Bytes; public DateTime LastWrite; public string Root; }
+ public class JunkItem { public string Path; public long Bytes; public DateTime LastWrite, Created; public string Root; }
 
  /// <summary>Preview outcome for one rule: the files found, their total size and whether the rule is currently locked.</summary>
  public class JunkRuleResult {
   public JunkRule Rule; public List<JunkItem> Items=new List<JunkItem>(); public List<string> Roots=new List<string>();
-  public long Bytes; public bool Locked, Partial; public string LockReason="", Note="";
+  public long Bytes; public int MinAgeHours; public bool Locked, Partial; public string LockReason="", Note="";
   public int Count { get { return Items.Count; } }
  }
 
@@ -56,6 +56,7 @@ namespace TweekPro.Cleaner {
     if(rule.RequiresAdmin&&!elevated){result.Locked=true;result.LockReason=(result.LockReason==""?"":result.LockReason+" ")+"Cần quyền quản trị.";}
     // The settings value is a floor for rules that already filter by age; rules with 0 (browser caches) stay at 0.
     int minAge=rule.MinAgeHours>0&&minAgeOverrideHours>=0?Math.Max(rule.MinAgeHours,minAgeOverrideHours):rule.MinAgeHours;
+    result.MinAgeHours=minAge;
     var patterns=rule.Patterns.Select(JunkRules.GlobToRegex).ToList();
     var watch=Stopwatch.StartNew();
     foreach(string template in rule.Paths){
@@ -91,7 +92,7 @@ namespace TweekPro.Cleaner {
       if(!JunkRules.MatchesName(patterns,info.Name))continue;
       if(!JunkSafety.AcceptFile(info,root,minAge,now))continue;
       long bytes;try{bytes=info.Length;}catch(IOException){continue;}
-      result.Items.Add(new JunkItem{Path=info.FullName,Bytes=bytes,LastWrite=info.LastWriteTime,Root=root});
+      result.Items.Add(new JunkItem{Path=info.FullName,Bytes=bytes,LastWrite=info.LastWriteTime,Created=info.CreationTime,Root=root});
       visited++;
       if(progress!=null&&visited%500==0)progress(new JunkProgress{Stage="Đang xem trước: "+result.Rule.Name,Current=dir,Files=result.Items.Count,Bytes=result.Items.Sum(i=>i.Bytes)});
      }
@@ -127,6 +128,14 @@ namespace TweekPro.Cleaner {
    return report;
   }
 
+  /// <summary>Revalidates preview metadata, age and path ancestry immediately before a file mutation.</summary>
+  static void ValidateSnapshot(JunkItem item,JunkRuleResult result){
+   Engine.NoLinks(item.Path,false);
+   var info=new FileInfo(item.Path);
+   if(!JunkSafety.AcceptFile(info,item.Root,result.MinAgeHours,DateTime.Now)||info.Length!=item.Bytes||info.LastWriteTime!=item.LastWrite||info.CreationTime!=item.Created)
+    throw new IOException(Core.L.T("Tệp đã thay đổi hoặc không còn đủ điều kiện; hãy xem trước lại."));
+  }
+
   static void CleanDirect(JunkRuleResult result,JunkReport report,CancellationToken cancel,Action<JunkProgress> progress){
    int index=0;
    foreach(var item in result.Items){
@@ -137,6 +146,7 @@ namespace TweekPro.Cleaner {
      if(!File.Exists(item.Path))continue;
      if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)continue;
      if(!CanTake(item.Path)){report.SkippedInUse++;continue;}
+     ValidateSnapshot(item,result);
      File.SetAttributes(item.Path,FileAttributes.Normal);
      File.Delete(item.Path);report.Cleaned++;report.Bytes+=item.Bytes;
     }catch(Exception e){report.Failed++;if(report.Errors.Count<50)report.Errors.Add(item.Path+": "+e.Message);}
@@ -158,6 +168,7 @@ namespace TweekPro.Cleaner {
       if(!File.Exists(item.Path))continue;
       if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)continue;
       if(!CanTake(item.Path)){report.SkippedInUse++;continue;}
+      ValidateSnapshot(item,result);
       string stored=StoredName(index,item.Path);
       File.Move(item.Path,Path.Combine(content,stored));
       moved.Add(new JunkMoved{Original=item.Path,Stored=stored,Bytes=item.Bytes});
@@ -211,20 +222,20 @@ namespace TweekPro.Cleaner {
    if(!File.Exists(indexPath))throw new IOException("Bản sao lưu rác thiếu danh mục tệp (files.xml).");
    var moved=Engine.Load<List<JunkMoved>>(indexPath);
    var allowed=JunkSafety.AllowedRoots();var browsers=JunkSafety.BrowserProfileRoots();var forbidden=JunkSafety.ForbiddenRoots();
-   int restored=0,skipped=0,failed=0;
+   int restored=0,failed=0,conflicts=0;
    foreach(var entry in moved){
     try{
      string source=Path.Combine(content,entry.Stored);
-     if(!File.Exists(source)){skipped++;continue;}
+     if(!File.Exists(source))continue;
      string target=Engine.Canon(entry.Original);
      JunkSafety.ValidateRoot(Path.GetDirectoryName(target),allowed,browsers,forbidden);
-     if(File.Exists(target)||Directory.Exists(target)){skipped++;continue;}
+     if(File.Exists(target)||Directory.Exists(target)){conflicts++;continue;}
      Directory.CreateDirectory(Path.GetDirectoryName(target));
      File.Move(source,target);restored++;
     }catch(Exception){failed++;}
    }
-   if(failed>0){b.State="NeedsReview";b.Error="Khôi phục "+restored+" tệp; "+failed+" tệp lỗi; "+skipped+" tệp bỏ qua vì đích đã tồn tại.";Engine.SaveBackup(b);throw new IOException(b.Error);}
-   b.State="Restored";b.Error=skipped>0?"Bỏ qua "+skipped+" tệp vì đích đã tồn tại.":"";Engine.SaveBackup(b);
+   if(failed>0||conflicts>0){b.State="NeedsReview";b.Error=Core.L.F("Đã khôi phục {0} tệp; {1} tệp lỗi; {2} tệp trùng đích còn trong Kho. Di chuyển tệp ở đích rồi thử khôi phục lại.",restored,failed,conflicts);Engine.SaveBackup(b);throw new IOException(b.Error);}
+   b.State="Restored";b.Error="";Engine.SaveBackup(b);
   }
  }
 }

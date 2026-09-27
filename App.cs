@@ -377,7 +377,7 @@ namespace TweekPro {
    long total=all.Where(b=>b.Bytes>0).Sum(b=>b.Bytes),markedBytes=marked.Where(b=>b.Bytes>0).Sum(b=>b.Bytes);
    backupSummary.Text=Core.L.F("{0} bản sao lưu ({1} trên đĩa)  •  Đã đánh dấu {2} ({3})  •  Khôi phục dùng dòng đang chọn; xóa vĩnh viễn dùng ô đánh dấu.",all.Count,Presentation.BytesLabel(total),marked.Count,Presentation.BytesLabel(markedBytes));
   }
-  async Task Restore(){if(backups.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một bản sao lưu."));var b=(Backup)backups.SelectedItems[0].Tag;if(b.State=="Restored")throw new IOException(Core.L.T("Mục này đã khôi phục."));if(!Confirm(Core.L.F("Khôi phục về vị trí gốc?\r\n{0}\r\n\r\nKhông ghi đè nếu đích đã tồn tại. Nếu lần dọn trước bị gián đoạn, kiểm tra cả vị trí gốc và kho.",b.Original)))return;await Task.Run(()=>Engine.Restore(b));LoadBackups();Log(Core.L.T("Đã khôi phục: ")+b.Original);}
+  async Task Restore(){if(backups.SelectedItems.Count==0)throw new IOException(Core.L.T("Chọn một bản sao lưu."));var b=(Backup)backups.SelectedItems[0].Tag;if(b.State=="Restored")throw new IOException(Core.L.T("Mục này đã khôi phục."));if(!Confirm(Core.L.F("Khôi phục về vị trí gốc?\r\n{0}\r\n\r\nKhông ghi đè nếu đích đã tồn tại. Nếu lần dọn trước bị gián đoạn, kiểm tra cả vị trí gốc và kho.",b.Original)))return;try{await Task.Run(()=>Engine.Restore(b));}finally{LoadBackups();}Log(Core.L.T("Đã khôi phục: ")+b.Original);}
   /// <summary>Permanently deletes the checked backups after a size-aware confirmation and reports the outcome.</summary>
   async Task PurgeChecked(){
    var marked=backups.CheckedItems.Cast<ListViewItem>().Select(i=>(Backup)i.Tag).ToList();
