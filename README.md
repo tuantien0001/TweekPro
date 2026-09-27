@@ -252,7 +252,7 @@ Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bả
 
 ## Lịch sử phiên bản
 
-### 0.8.1 (chưa phát hành)
+### 0.8.1 (27/09/2026)
 
 - **Thanh tiêu đề gọn hơn**: nút ngôn ngữ có cờ và mã VI/EN, nhãn quyền có biểu tượng khiên và nền tối nhẹ; hai mục cùng chiều cao, căn thẳng hàng.
 
