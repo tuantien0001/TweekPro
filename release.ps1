@@ -166,8 +166,8 @@ $exe = Join-Path $PSScriptRoot "bin\Release\net48\TweekPro-$Version.exe"
 $shotDir = Join-Path $PSScriptRoot 'docs\screenshots'
 if (-not (Test-Path $exe)) { Fail "Built exe not found: $exe" }
 New-Item -ItemType Directory -Force -Path $shotDir | Out-Null
-& $exe --preview all $shotDir
-if ($LASTEXITCODE -ne 0) { Fail 'Tab screenshot capture failed; nothing committed.' }
+$preview = Start-Process -FilePath $exe -ArgumentList @('--preview', 'all', ('"' + $shotDir + '"')) -WindowStyle Hidden -Wait -PassThru
+if ($preview.ExitCode -ne 0) { Fail 'Tab screenshot capture failed; nothing committed.' }
 Add-Type -AssemblyName System.Drawing
 $health = Join-Path $shotDir 'health.png'
 if (Test-Path $health) {
