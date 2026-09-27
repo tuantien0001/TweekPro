@@ -11,7 +11,7 @@ namespace TweekPro {
   readonly FlowLayoutPanel menu=new FlowLayoutPanel();
   readonly Dictionary<TabPage,Button> links=new Dictionary<TabPage,Button>();
   public TabStrip(TabControl target){
-   tabs=target;Dock=DockStyle.Left;Width=238;BackColor=Theme.Surface;Padding=new Padding(10,12,8,8);
+   tabs=target;Dock=DockStyle.Left;Width=238;BackColor=Theme.Surface;Padding=new Padding(10,4,8,4);
    menu.Dock=DockStyle.Fill;menu.FlowDirection=FlowDirection.TopDown;menu.WrapContents=false;menu.AutoScroll=true;menu.BackColor=Theme.Surface;
    Controls.Add(menu);menu.SizeChanged+=(s,e)=>FitWidths();tabs.SelectedIndexChanged+=(s,e)=>SelectActive();
    Paint+=(s,e)=>{using(var p=new Pen(Theme.Border))e.Graphics.DrawLine(p,Width-1,0,Width-1,Height);};
@@ -28,7 +28,6 @@ namespace TweekPro {
   /// <summary>Builds links after the canonical page collection has been populated.</summary>
   public void Build(){
    menu.SuspendLayout();
-   var caption=new Label{Text=Core.L.T("ĐIỀU HƯỚNG"),ForeColor=Theme.Muted,Font=Theme.Small,Height=28,Margin=new Padding(10,0,0,4)};menu.Controls.Add(caption);
    foreach(TabPage p in tabs.TabPages)if(Branding.GlyphKey(p.Text)=="pulse")AddLink(menu,p);
    for(int i=0;i<3;i++)foreach(TabPage p in tabs.TabPages)if(Group(p)==i)AddLink(menu,p);
    foreach(TabPage p in tabs.TabPages)if(Group(p)<0&&Branding.GlyphKey(p.Text)!="pulse")AddLink(menu,p);
@@ -39,7 +38,7 @@ namespace TweekPro {
    var button=new Button{Text=title,AccessibleName=title,Height=30,Font=uninstall?Theme.Strong:Theme.Small,TextAlign=ContentAlignment.MiddleLeft,Padding=new Padding(34,0,0,0),FlatStyle=FlatStyle.Flat,Margin=new Padding(0,1,0,1),BackColor=Theme.Surface,ForeColor=Theme.Muted,Cursor=Cursors.Hand,AutoEllipsis=true};
    button.FlatAppearance.BorderSize=0;button.FlatAppearance.MouseOverBackColor=Theme.SoftButtonHover;
    button.Click+=(s,e)=>tabs.SelectedTab=page;
-   button.Paint+=(s,e)=>{float scale=button.Height/30f;Branding.DrawTabGlyph(e.Graphics,page.Text,new Rectangle((int)(10*scale),(button.Height-(int)(16*scale))/2,(int)(16*scale),(int)(16*scale)),button.ForeColor);if(tabs.SelectedTab==page)using(var b=new SolidBrush(Theme.Primary))e.Graphics.FillRectangle(b,0,6,3,button.Height-12);};
+   button.Paint+=(s,e)=>{float scale=button.DeviceDpi/96f;Branding.DrawTabGlyph(e.Graphics,page.Text,new Rectangle((int)(10*scale),(button.Height-(int)(16*scale))/2,(int)(16*scale),(int)(16*scale)),button.ForeColor);if(tabs.SelectedTab==page)using(var b=new SolidBrush(Theme.Primary))e.Graphics.FillRectangle(b,0,6,3,button.Height-12);};
    links.Add(page,button);parent.Controls.Add(button);
   }
   void SelectActive(){
@@ -47,8 +46,14 @@ namespace TweekPro {
    foreach(var pair in links){bool active=pair.Key==tabs.SelectedTab;pair.Value.BackColor=active?Theme.SoftButton:Theme.Surface;pair.Value.ForeColor=active||Branding.GlyphKey(pair.Key.Text)=="apps"?Theme.Primary:Theme.Muted;pair.Value.Invalidate();}
   }
   void FitWidths(){
-   int width=Math.Max(120,menu.ClientSize.Width-SystemInformation.VerticalScrollBarWidth-4);
-   foreach(Control c in menu.Controls)c.Width=width;
+   if(menu.Controls.Count==0)return;
+   float scale=DeviceDpi/96f;int gap=Math.Max(0,(int)scale);
+   int height=Math.Max((int)(22*scale),Math.Min((int)(30*scale),(menu.ClientSize.Height-2)/menu.Controls.Count-2*gap));
+   bool scroll=(height+2*gap)*menu.Controls.Count>menu.ClientSize.Height;
+   int width=Math.Max(120,menu.ClientSize.Width-(scroll?SystemInformation.VerticalScrollBarWidth:0)-4);
+   menu.SuspendLayout();menu.AutoScroll=scroll;
+   foreach(Control c in menu.Controls){c.Margin=new Padding(0,gap,0,gap);c.Size=new Size(width,height);}
+   menu.ResumeLayout(true);
   }
  }
 }
