@@ -129,9 +129,10 @@ namespace TweekPro {
    finally{junkCancellation.Dispose();junkCancellation=null;}
    LoadBackups();
    string summary=Core.L.F(direct?"Đã xóa thẳng {0} tệp ({1}). Bỏ qua vì đang dùng: {2}. Lỗi: {3}.":"Đã chuyển vào kho {0} tệp ({1}). Bỏ qua vì đang dùng: {2}. Lỗi: {3}.",report.Cleaned.ToString("N0"),Presentation.BytesLabel(report.Bytes),report.SkippedInUse.ToString("N0"),report.Failed.ToString("N0"))+(direct?"":Core.L.F(" Bản sao lưu: {0}.",report.Backups.Count));
+   summary+="  "+Core.L.F("Giữ lại vì thay đổi: {0}; không còn tồn tại: {1}.",report.Changed,report.Missing);
    junkStage.Text=summary;Log(Core.L.T("Dọn rác: ")+summary);
    foreach(string err in report.Errors.Take(20))Log(Core.L.T("Dọn rác lỗi: ")+err);
-   MessageBox.Show(this,summary+(report.Errors.Count>0?Core.L.T("\r\n\r\nLỗi đầu tiên:\r\n")+String.Join("\r\n",report.Errors.Take(5)):"")+(direct?"":Core.L.T("\r\n\r\nCó thể khôi phục hoặc xóa vĩnh viễn trong tab Kho khôi phục.")),Core.L.T("Kết quả dọn rác"),MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
+   ShowJunkResult(report);
    await PreviewJunk();
   }
 

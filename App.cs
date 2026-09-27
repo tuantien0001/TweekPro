@@ -131,7 +131,7 @@ namespace TweekPro {
    // Canonical tab order: overview → inventory → cleanup family → recovery → system → diagnostics → AI assistant last.
    remnantsTab=clean;
    var ordered=new TabPage[]{healthTab,installed,storeTab,clean,junkTab,emptyTab,dupeTab,staleTab,analyzerTab,vault,autorunTab,explorerTab,netTab,servicesTab,toolsTab,logs,extTab,tracksTab,regTab,spaceTab,aiTab};
-   tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);
+   tabs.TabPages.Clear();tabs.TabPages.AddRange(ordered);tabStrip.Build();
    foreach(TabPage page in tabs.TabPages)page.BackColor=Theme.Canvas;
    Controls.Add(tabs);Controls.Add(tabStrip);Controls.Add(header);Controls.Add(status);
    FormClosed+=(s,e)=>SaveSettings();
@@ -153,7 +153,7 @@ namespace TweekPro {
   static int Logical(int saved){return saved>0&&saved<=4096?saved:0;}
   /// <summary>Current DPI of the window's screen; works on .NET Framework and Mono alike.</summary>
   int ScreenDpi(){try{using(var g=CreateGraphics())return Math.Max(96,(int)Math.Round(g.DpiX));}catch(Exception){return 96;}}
-  /// <summary>Hides the native tab headers and mounts a fixed-order TabStrip above the pages (multiline TabControl reorders its rows on selection).</summary>
+  /// <summary>Hides native headers and mounts grouped navigation beside the existing pages.</summary>
   void BuildTabs(){
    tabs.Dock=DockStyle.Fill;tabs.Font=Theme.Body;TabStrip.HideNativeHeaders(tabs);
    tabStrip=new TabStrip(tabs);
@@ -510,6 +510,7 @@ namespace TweekPro {
     string mode=args.Length>1?args[1]:"";
     if(mode=="scan"){using(var window=new LeftoverScanForm(new[]{new AppEntry{Name="Ứng dụng mẫu",Hive="HKCU",View="64",Key="SOFTWARE\\Missing"}},true,null)){window.PopulateForPreview();Snapshot(window,"TweekPro-scan-preview.png");}return;}
     if(mode=="shortcuts"){Core.L.Lang=args.Contains("--en")?"en":"vi";using(var dialog=new BrokenShortcutsForm()){dialog.PopulateForPreview();Snapshot(dialog,"TweekPro-shortcuts-preview.png");}return;}
+    if(mode=="cleanup-results"){Core.L.Lang=args.Contains("--en")?"en":"vi";using(var dialog=new JunkResultForm(JunkResultForm.PreviewReport()))Snapshot(dialog,"TweekPro-cleanup-results-preview.png");return;}
     bool show=args.Contains("--show");
     if(mode=="all"){string dir=args.Length>2&&!args[2].StartsWith("--")?args[2]:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"previews");Directory.CreateDirectory(dir);Core.L.Lang=args.Contains("--en")?Core.L.EnglishCode:Core.L.Vietnamese;foreach(string m in PreviewModes)using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,m);Snapshot(form,Path.Combine(dir,m+".png"),new Size(1280,820));}return;}
     using(var form=new MainForm(true)){form.PopulateForPreview();ApplyPreview(form,mode);if(show)Application.Run(form);else Snapshot(form,"TweekPro-preview.png");}

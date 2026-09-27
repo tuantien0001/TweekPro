@@ -13,13 +13,18 @@ namespace TweekPro {
  public partial class MainForm {
   ListView healthList=new SmoothListView();Label healthOverlay,healthStage;TabPage healthTab;HealthGaugePanel healthGauge=new HealthGaugePanel();FlowLayoutPanel healthActions;
   HealthReport healthReport;CancellationTokenSource healthCancellation;Button healthStop;CheckBox healthAuto;
+  TextBox healthDetail=new TextBox();
 
   /// <summary>Builds the Overview tab: one read-only health check that scores the machine and points to the tab that fixes each finding.</summary>
   void BuildHealthTab(){
    var tab=healthTab=new TabPage(Core.L.T("Tổng quan"));
-   SetupList(healthList,new[]{"Khu vực","Đánh giá","Chi tiết","Có thể giải phóng","Mức","Xử lý ở tab"},new[]{180,210,470,130,90,150},false);
+   SetupList(healthList,new[]{"Khu vực","Đánh giá","Chi tiết","Có thể giải phóng","Mức"},new[]{150,180,280,120,80},false);
+   healthList.SizeChanged+=(s,e)=>FitHealthColumns();
+   healthList.SelectedIndexChanged+=(s,e)=>ShowHealthDetail();
    healthList.DoubleClick+=async(s,e)=>await Guard(()=>{if(healthList.SelectedItems.Count>0)OpenHealthTab();return Task.FromResult(0);});
    var host=Theme.ListHost(healthList,out healthOverlay);
+   healthDetail.Multiline=true;healthDetail.ReadOnly=true;healthDetail.BorderStyle=BorderStyle.None;healthDetail.ScrollBars=ScrollBars.Vertical;healthDetail.Font=Theme.Small;healthDetail.BackColor=Theme.Stripe;healthDetail.ForeColor=Theme.Text;healthDetail.Dock=DockStyle.Fill;
+   var detailPanel=new Panel{Dock=DockStyle.Bottom,Height=88,Padding=new Padding(16,10,16,8),BackColor=Theme.Stripe};detailPanel.Controls.Add(healthDetail);Theme.BorderTop(detailPanel);ShowHealthDetail();
 
    var bar=Bar();
    Add(bar,"Kiểm tra ngay",async()=>await RunHealthCheck(),ButtonStyle.Primary);
@@ -36,10 +41,27 @@ namespace TweekPro {
    healthAuto=new CheckBox{Text=Core.L.T("Tự kiểm tra khi mở"),AutoSize=true,Margin=new Padding(8,8,0,8),ForeColor=Theme.Muted,Checked=settings.HealthAutoCheck};
    healthAuto.CheckedChanged+=(s,e)=>{settings.HealthAutoCheck=healthAuto.Checked;SaveSettings();};
    healthStage=new Label{Dock=DockStyle.Top,Height=30,Padding=new Padding(16,0,16,0),TextAlign=ContentAlignment.MiddleLeft,BackColor=Theme.Surface,ForeColor=Theme.Muted,Font=Theme.Small,AutoEllipsis=true,Visible=false};
-   var note=Theme.Note("Bấm nút ngay dưới điểm số để dọn rác hoặc mở đúng chỗ. Bấm đúp một dòng cũng mở tab đó. Rác được chuyển vào Kho, lấy lại được.",NoteKind.Info);
-   tab.Controls.Add(host);tab.Controls.Add(healthStage);tab.Controls.Add(note);tab.Controls.Add(healthActions);tab.Controls.Add(healthGauge);tab.Controls.Add(bar);tab.Controls.Add(BuildUpdateBanner());
+   var note=Theme.Note("Chọn một dòng để đọc đầy đủ bên dưới. Chuyển rác vào Kho có thể hoàn tác; dung lượng chỉ được giải phóng khi xóa vĩnh viễn trong Kho.",NoteKind.Info);
+   tab.Controls.Add(host);tab.Controls.Add(detailPanel);tab.Controls.Add(healthStage);tab.Controls.Add(note);tab.Controls.Add(healthActions);tab.Controls.Add(healthGauge);tab.Controls.Add(bar);tab.Controls.Add(BuildUpdateBanner());
+   Action fitHeight=()=>{float scale=tab.DeviceDpi/96f;bool compact=tab.ClientSize.Height<640*scale;note.Visible=!compact;healthGauge.Height=(int)((compact?180:196)*scale);detailPanel.Height=(int)((compact?72:88)*scale);};
+   tab.SizeChanged+=(s,e)=>fitHeight();tab.HandleCreated+=(s,e)=>fitHeight();
    Theme.SetOverlay(healthOverlay,"Chưa kiểm tra.\r\nBấm Kiểm tra ngay để chấm điểm máy. Mỗi dòng kết quả chỉ ra tab có thể dọn an toàn.",NoteKind.Info);
    ShowHealthActions();
+  }
+
+  /// <summary>Gives the detail column the remaining space while keeping a horizontal scrollbar on narrow windows.</summary>
+  void FitHealthColumns(){
+   if(healthList.Columns.Count!=5)return;
+   float scale=healthList.DeviceDpi/96f;
+   int[] widths={150,180,0,120,80};int used=SystemInformation.VerticalScrollBarWidth+8;
+   for(int i=0;i<widths.Length;i++)if(i!=2){healthList.Columns[i].Width=(int)(widths[i]*scale);used+=healthList.Columns[i].Width;}
+   healthList.Columns[2].Width=Math.Max((int)(180*scale),healthList.ClientSize.Width-used);
+  }
+
+  /// <summary>Shows the entire selected finding without relying on ellipsized list cells.</summary>
+  void ShowHealthDetail(){
+   var f=healthList.SelectedItems.Count==0?null:healthList.SelectedItems[0].Tag as HealthFinding;
+   healthDetail.Text=f==null?Core.L.T("Chọn một khu vực để xem chi tiết và nơi xử lý."):f.Area+" — "+f.Verdict+"\r\n"+f.Detail+"\r\n"+Core.L.F("Xử lý ở tab: {0}. Bấm đúp dòng hoặc chọn Mở tab xử lý.",Core.L.T(f.Tab));
   }
 
   /// <summary>Reads the fixed drives off the UI thread and shows them as rings; called at startup and after every check.</summary>
@@ -118,13 +140,14 @@ namespace TweekPro {
   void RenderHealth(){
    healthList.BeginUpdate();healthList.Items.Clear();
    foreach(var f in HealthCheck.Order(healthReport.Findings)){
-    var row=new ListViewItem(new[]{f.Area,f.Verdict,f.Detail,f.Bytes>0?Presentation.BytesLabel(f.Bytes):"—",f.Measured?HealthCheck.SeverityLabel(f.Severity):Core.L.T("Chưa đo"),Core.L.T(f.Tab)}){Tag=f,ToolTipText=f.Detail,UseItemStyleForSubItems=true};
+    var row=new ListViewItem(new[]{f.Area,f.Verdict,f.Detail,f.Bytes>0?Presentation.BytesLabel(f.Bytes):"—",f.Measured?HealthCheck.SeverityLabel(f.Severity):Core.L.T("Chưa đo")}){Tag=f,ToolTipText=f.Detail,UseItemStyleForSubItems=true};
     if(!f.Measured)row.ForeColor=Theme.Muted;
     else if(f.Severity!=HealthSeverity.Good){row.ForeColor=HealthRenderer.SeverityColor(f.Severity);row.BackColor=HealthRenderer.RowTint(f.Severity);}
     else Theme.StripeRow(row,healthList.Items.Count);
     healthList.Items.Add(row);
    }
    healthList.EndUpdate();
+   FitHealthColumns();if(healthList.Items.Count>0)healthList.Items[0].Selected=true;ShowHealthDetail();
    ShowHealthActions();
    Theme.SetOverlay(healthOverlay,null,NoteKind.Info);
   }
@@ -155,7 +178,7 @@ namespace TweekPro {
    var report=await Task.Run(()=>Cleaner.JunkCleaner.Clean(groups,false,CancellationToken.None));
    LoadBackups();
    Log(Core.L.F("Tổng quan: đã chuyển vào kho {0} tệp rác ({1}).",report.Cleaned.ToString("N0"),Presentation.BytesLabel(report.Bytes)));
-   MessageBox.Show(this,Core.L.F("Đã chuyển {0} tệp ({1}) vào Kho.\r\nBỏ qua vì đang mở: {2}. Lỗi: {3}.\r\n\r\nMở tab Kho khôi phục nếu muốn lấy lại.",report.Cleaned.ToString("N0"),Presentation.BytesLabel(report.Bytes),report.SkippedInUse.ToString("N0"),report.Failed.ToString("N0")),Core.L.T("Đã dọn rác"),MessageBoxButtons.OK,report.Failed>0?MessageBoxIcon.Warning:MessageBoxIcon.Information);
+   ShowJunkResult(report);
    await RunHealthCheck();
   }
 

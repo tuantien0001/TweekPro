@@ -54,6 +54,12 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 
 ## Các tab
 
+Thanh bên trái gom các mục vào **Ứng dụng**, **Dọn dẹp** và **Hệ thống**. Bấm tên nhóm để mở/thu; chọn mục bằng chuột hoặc phím Tab rồi Enter. Tổng quan, Kho khôi phục, Công cụ, Nhật ký và Trợ lý AI có lối vào riêng. Khi danh sách dài, cuộn thanh bên để xem các mục phía dưới.
+
+Kết quả dọn rác có bộ lọc theo trạng thái và khung đọc đầy đủ đường dẫn/lý do. **Chuyển vào Kho chưa giải phóng dung lượng**; có thể mở Kho ngay từ hộp kết quả để kiểm tra trước khi xóa vĩnh viễn.
+
+<a href="docs/screenshots/cleanup-results.png"><img src="docs/screenshots/cleanup-results.png" width="760" alt="Kết quả dọn rác minh họa với bộ lọc trạng thái"></a>
+
 | Tab | Chức năng | An toàn |
 |---|---|---|
 | **Tổng quan** | Kiểm tra sức khỏe **tự chạy khi mở** (tắt được bằng «Tự kiểm tra khi mở»): điểm 0–100, hạng A–E, 7 khu vực (rác, phần còn sót, thư mục rỗng, Kho, khởi động, ổ trống, phần mềm không mong muốn), dung lượng giải phóng được; **vòng tròn dung lượng cho từng ổ đĩa cố định** (C:, D:, …) tô màu theo mức trống còn lại; bấm đúp mở tab xử lý; sao chép báo cáo; dải thông báo cập nhật | Kiểm tra chỉ đọc; dọn nhanh có xác nhận, chỉ lấy nhóm mặc định được chọn và chuyển vào Kho; khu vực không đo được không bị trừ điểm |
@@ -248,6 +254,7 @@ Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bả
 
 ### 0.7.10 (chưa phát hành)
 
+- **Giao diện dễ theo dõi hơn**: thay lưới tab bằng thanh điều hướng bên trái, gom Ứng dụng / Dọn dẹp / Hệ thống, có thể mở/thu nhóm; giữ lối vào Tổng quan, Kho, Công cụ, Nhật ký và AI. Tổng quan tự giãn cột Chi tiết, có khung đọc đầy đủ dòng đang chọn và bố cục gọn khi cửa sổ nhỏ; nút dọn ghi rõ **Chuyển rác vào Kho**. Kết quả dọn rác có bộ lọc theo tệp đã xử lý, đang dùng/không truy cập được, thay đổi nên giữ lại, không còn tồn tại và lỗi; chọn dòng để xem đường dẫn/lý do đầy đủ, mở Kho ngay từ hộp kết quả. Danh sách chi tiết giới hạn 2.000 tệp, số tổng vẫn tính toàn bộ lượt dọn. Hỗ trợ tiếng Việt và tiếng Anh.
 - **Sửa lỗi an toàn khi dọn và khôi phục**: rác và tệp trùng bị trùng đích khi khôi phục giữ trạng thái Cần kiểm tra, cho thử lại và không bị chọn khi chỉ dọn bản đã khôi phục. Dọn rác kiểm tra lại thời gian, dung lượng, tuổi tệp và đường dẫn trước khi xử lý; bỏ qua tệp thay đổi sau khi xem trước. Dọn nhanh trên Tổng quan chỉ lấy nhóm mặc định được chọn, tính dung lượng cùng phạm vi và liệt kê đầy đủ nhóm trong xác nhận.
 - **Công cụ → Shortcut hỏng…**: quét Desktop, Start Menu và Startup; hiển thị đường dẫn shortcut và đích bị mất, có Chọn tất cả/Bỏ chọn, Dừng và chuyển các mục đã xác nhận vào Kho khôi phục. Kiểm tra lại nội dung và đích ngay trước khi dọn; không xóa tệp đích. Bỏ qua shortcut cài theo yêu cầu, đích mạng/ổ rời, mục không đọc được và liên kết junction/symlink. Shortcut khác ổ với Kho được giữ nguyên.
 

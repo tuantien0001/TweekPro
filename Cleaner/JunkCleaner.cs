@@ -22,8 +22,11 @@ namespace TweekPro.Cleaner {
 
  /// <summary>Result of a clean run across the selected rules.</summary>
  public class JunkReport {
-  public int Cleaned, SkippedInUse, Failed; public long Bytes; public bool Direct; public List<Backup> Backups=new List<Backup>(); public List<string> Errors=new List<string>();
+  public int Cleaned, SkippedInUse, Changed, Missing, Failed; public long Bytes; public bool Direct; public List<Backup> Backups=new List<Backup>(); public List<string> Errors=new List<string>();
+  public List<JunkOutcome> Outcomes=new List<JunkOutcome>();
  }
+ public enum JunkOutcomeKind { Cleaned, InUse, Changed, Missing, Failed }
+ public class JunkOutcome { public string Path,Detail; public JunkOutcomeKind Kind; }
 
  /// <summary>Index entry stored next to a Junk backup so each file can be put back exactly where it came from.</summary>
  public class JunkMoved { public string Original, Stored; public long Bytes; }
@@ -32,6 +35,11 @@ namespace TweekPro.Cleaner {
  public static class JunkCleaner {
   public const int MaxFilesPerRule=100000;
   public const int MaxSecondsPerRule=30;
+  public const int MaxOutcomeDetails=2000;
+  sealed class ChangedFileException:IOException { public ChangedFileException():base(Core.L.T("Tệp đã thay đổi hoặc không còn đủ điều kiện; hãy xem trước lại.")){} }
+  static void Outcome(JunkReport report,JunkItem item,JunkOutcomeKind kind,string detail=""){
+   if(report.Outcomes.Count<MaxOutcomeDetails)report.Outcomes.Add(new JunkOutcome{Path=item.Path,Kind=kind,Detail=detail});
+  }
 
   /// <summary>Names of blocked processes that are currently running, or an empty list.</summary>
   public static List<string> RunningBlockers(JunkRule rule){
@@ -133,7 +141,7 @@ namespace TweekPro.Cleaner {
    Engine.NoLinks(item.Path,false);
    var info=new FileInfo(item.Path);
    if(!JunkSafety.AcceptFile(info,item.Root,result.MinAgeHours,DateTime.Now)||info.Length!=item.Bytes||info.LastWriteTime!=item.LastWrite||info.CreationTime!=item.Created)
-    throw new IOException(Core.L.T("Tệp đã thay đổi hoặc không còn đủ điều kiện; hãy xem trước lại."));
+    throw new ChangedFileException();
   }
 
   static void CleanDirect(JunkRuleResult result,JunkReport report,CancellationToken cancel,Action<JunkProgress> progress){
@@ -143,13 +151,14 @@ namespace TweekPro.Cleaner {
     if(progress!=null&&index%100==0)progress(new JunkProgress{Stage="Đang xóa thẳng: "+result.Rule.Name,Current=item.Path,Files=report.Cleaned,Bytes=report.Bytes});
     try{
      if(!result.Roots.Any(r=>Engine.Under(item.Path,r)))throw new IOException("Tệp nằm ngoài gốc quy tắc.");
-     if(!File.Exists(item.Path))continue;
-     if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)continue;
-     if(!CanTake(item.Path)){report.SkippedInUse++;continue;}
+     if(!File.Exists(item.Path)){report.Missing++;Outcome(report,item,JunkOutcomeKind.Missing);continue;}
+     if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)throw new ChangedFileException();
+     if(!CanTake(item.Path)){report.SkippedInUse++;Outcome(report,item,JunkOutcomeKind.InUse);continue;}
      ValidateSnapshot(item,result);
      File.SetAttributes(item.Path,FileAttributes.Normal);
-     File.Delete(item.Path);report.Cleaned++;report.Bytes+=item.Bytes;
-    }catch(Exception e){report.Failed++;if(report.Errors.Count<50)report.Errors.Add(item.Path+": "+e.Message);}
+     File.Delete(item.Path);report.Cleaned++;report.Bytes+=item.Bytes;Outcome(report,item,JunkOutcomeKind.Cleaned);
+    }catch(ChangedFileException e){report.Changed++;Outcome(report,item,JunkOutcomeKind.Changed,e.Message);}
+    catch(Exception e){report.Failed++;Outcome(report,item,JunkOutcomeKind.Failed,e.Message);if(report.Errors.Count<50)report.Errors.Add(item.Path+": "+e.Message);}
    }
   }
 
@@ -165,17 +174,18 @@ namespace TweekPro.Cleaner {
      if(progress!=null&&index%100==0)progress(new JunkProgress{Stage="Đang chuyển vào kho: "+result.Rule.Name,Current=item.Path,Files=report.Cleaned,Bytes=report.Bytes});
      try{
       if(!result.Roots.Any(r=>Engine.Under(item.Path,r)))throw new IOException("Tệp nằm ngoài gốc quy tắc.");
-      if(!File.Exists(item.Path))continue;
-      if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)continue;
-      if(!CanTake(item.Path)){report.SkippedInUse++;continue;}
+      if(!File.Exists(item.Path)){report.Missing++;Outcome(report,item,JunkOutcomeKind.Missing);continue;}
+      if((File.GetAttributes(item.Path)&FileAttributes.ReparsePoint)!=0)throw new ChangedFileException();
+      if(!CanTake(item.Path)){report.SkippedInUse++;Outcome(report,item,JunkOutcomeKind.InUse);continue;}
       ValidateSnapshot(item,result);
       string stored=StoredName(index,item.Path);
       File.Move(item.Path,Path.Combine(content,stored));
       moved.Add(new JunkMoved{Original=item.Path,Stored=stored,Bytes=item.Bytes});
-      report.Cleaned++;report.Bytes+=item.Bytes;
+      report.Cleaned++;report.Bytes+=item.Bytes;Outcome(report,item,JunkOutcomeKind.Cleaned);
       if(moved.Count%200==0)Engine.Save(indexPath,moved);
      }catch(OperationCanceledException){throw;}
-     catch(Exception e){report.Failed++;if(report.Errors.Count<50)report.Errors.Add(item.Path+": "+e.Message);}
+     catch(ChangedFileException e){report.Changed++;Outcome(report,item,JunkOutcomeKind.Changed,e.Message);}
+     catch(Exception e){report.Failed++;Outcome(report,item,JunkOutcomeKind.Failed,e.Message);if(report.Errors.Count<50)report.Errors.Add(item.Path+": "+e.Message);}
     }
     Engine.Save(indexPath,moved);
     backup.State="BackedUp";Engine.SaveBackup(backup);report.Backups.Add(backup);

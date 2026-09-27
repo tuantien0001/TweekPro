@@ -1,22 +1,12 @@
 # Tweek Pro - current work checkpoint
 
 Updated: 2026-09-27 (Asia/Bangkok).
-Objective: fix the three confirmed bugs from the app audit. User also asked for improvement/UI suggestions; recommendations provided, no layout redesign requested.
-Status: all three fixes complete, verified and pushed to main.
+Objective: improve navigation, readability and cleanup results; owner reviews before GitHub executable upload.
+Status: implementation and final verification complete locally on main; ready for owner review. Base origin/main remains 5e0e93e (fetch verified).
 
-## Changes
-
-- Junk and duplicate destination collisions persist NeedsReview, retain payloads and allow retry; restored-only purge excludes them. Vault UI reloads after a failed/partial restore.
-- Junk cleanup rechecks preview size, creation/last-write timestamps, effective age floor and link ancestry before moving/deleting. Changed files are kept and reported.
-- Overview quick clean and displayed junk totals use only default-selected, unlocked nonempty groups. Confirmation lists every selected group.
-- Regression coverage: new Cleaner/JunkTests.cs wired into Tests07.Run; duplicate partial-restore/retry/purge tests; health selection tests. VI/EN messages and README updated.
-- No tab layout changes, release or installed application replacement.
-
-## Verification and Git
-
-- Final full Windows build/self-test: exit 0, 0 errors, 0 warnings, PASS at 2026-09-27T15:46:17. Regression suites included. Whitespace diff check passed. No background process remains.
-- main base 519fc7748dcddc2996a1796f20f495301a444f94. Fetch now succeeds; ls-remote verified this remote base.
-- Preserve untracked .bridge/ and .cursor/. Only this agent's changed files will be staged.
-- Git identity unset; use the existing repository agent author identity Codex <codex@local.invalid> for this commit only, without changing global configuration.
-- Fix commit f2640cac19b350bf5b2bab1fa08c74ce0fd73953 pushed to origin/main; local and remote hashes verified equal. This documentation-only checkpoint follows it. Next: owner can use bin/Release/net48/TweekPro-0.7.9.exe. UI improvement suggestions remain unimplemented.
-- Prior feature/install handoff remains in WORKSTATE.md at 519fc77. Installed Program Files executable is still the previous build.
+- Grouped sidebar preserves all 21 feature links; Overview has adaptive columns, full finding details and explicit vault wording; cleanup dialog has per-file outcomes and six filters. VI/EN translations and README updated.
+- Verification rerun: build.ps1 -SelfTest, 0 warnings / 0 errors, full Windows PASS at 2026-09-27T16:10:33. UI smoke PASS in VI/EN: all 21 links clickable and keyboard-focusable, all six result filters correct. git diff --check passed.
+- Regenerated all 22 preview images in both languages; Vietnamese gallery and cleanup-results.png in docs/screenshots. English gallery: %TEMP%/TweekPro-final-en. Reviewed Overview VI/EN, small Overview and cleanup dialog plus Junk layout. Small-window/filter evidence: %TEMP%/TweekProUIReview-83679110168147d9a52bd8523b8779be.
+- Initial relative-path preview invocation failed saving in GDI+; rerun with absolute output directories succeeded. All verification commands finished. Existing user app PID 15408 (started 15:30) left running.
+- Next: owner reviews screenshots, then explicitly approves push/upload. Do not push before review: .github/workflows/release.yml runs publish.ps1 and uploads distributables on every branch push. No release/tag or installed-exe replacement authorized.
+- Changes are checkpointed in a local commit, not a GitHub backup. Preserve untracked .bridge/ and .cursor/; they are excluded from the commit.

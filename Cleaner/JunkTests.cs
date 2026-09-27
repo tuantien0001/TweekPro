@@ -21,7 +21,8 @@ namespace TweekPro.Cleaner {
      Assert(preview[0].Count==1,"Fixture appears in preview");
      File.WriteAllText(file,sameSize?"new data":"longer new data");File.SetLastWriteTime(file,DateTime.Now);
      var report=JunkCleaner.Clean(preview,direct,CancellationToken.None);
-     Assert(File.Exists(file)&&report.Cleaned==0&&report.Failed==1&&report.Backups.Count==0,"Changed file survives both cleanup modes, including same-size edits");
+     Assert(File.Exists(file)&&report.Cleaned==0&&report.Changed==1&&report.Failed==0&&report.Backups.Count==0,"Changed file survives both cleanup modes, including same-size edits");
+     Assert(report.Outcomes.Count==1&&report.Outcomes[0].Kind==JunkOutcomeKind.Changed&&report.Outcomes[0].Path==file,"Changed outcome has its own category and full path");
     }
     if(Environment.OSVersion.Platform==PlatformID.Win32NT){
      rule.MinAgeHours=1;
@@ -30,11 +31,19 @@ namespace TweekPro.Cleaner {
      Assert(preview[0].MinAgeHours==48&&preview[0].Count==1,"Preview retains effective settings age floor");
      File.SetCreationTime(file,DateTime.Now);
      var report=JunkCleaner.Clean(preview,true,CancellationToken.None);
-     Assert(File.Exists(file)&&report.Cleaned==0&&report.Failed==1,"Recreated file with unchanged size and last-write survives");
+     Assert(File.Exists(file)&&report.Cleaned==0&&report.Changed==1&&report.Failed==0,"Recreated file with unchanged size and last-write survives");
      rule.MinAgeHours=0;
     }
+    var missingPreview=JunkCleaner.Preview(new[]{rule},true,-1,CancellationToken.None);File.Delete(file);
+    var missing=JunkCleaner.Clean(missingPreview,false,CancellationToken.None);
+    Assert(missing.Missing==1&&missing.Failed==0&&missing.Outcomes.Single().Kind==JunkOutcomeKind.Missing,"Missing preview files are counted separately");
     File.WriteAllText(file,"original backup");
+    var refusedPreview=JunkCleaner.Preview(new[]{rule},true,-1,CancellationToken.None);
+    string outside=Path.Combine(root,"outside.tmp");File.WriteAllText(outside,"keep");refusedPreview[0].Items[0].Path=outside;
+    var refusedReport=JunkCleaner.Clean(refusedPreview,true,CancellationToken.None);
+    Assert(refusedReport.Failed==1&&refusedReport.Outcomes.Single().Kind==JunkOutcomeKind.Failed&&File.ReadAllText(outside)=="keep","Out-of-root refusal appears as an error without mutation");
     var clean=JunkCleaner.Clean(JunkCleaner.Preview(new[]{rule},true,-1,CancellationToken.None),false,CancellationToken.None);
+    Assert(clean.Outcomes.Single().Kind==JunkOutcomeKind.Cleaned,"Successful move is recorded");
     var backup=clean.Backups.Single();File.WriteAllText(file,"new destination");
     bool refused=false;try{Engine.Restore(backup);}catch(IOException){refused=true;}
     Assert(refused&&backup.State=="NeedsReview"&&File.ReadAllText(file)=="new destination","Collision leaves backup retryable and destination intact");

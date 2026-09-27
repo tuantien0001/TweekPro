@@ -5,6 +5,24 @@ namespace TweekPro.Core {
  /// <summary>English translations keyed by the Vietnamese source string. Keep keys byte-identical to the literals in code and junk-rules.json.</summary>
  public static class LangEn {
   public static readonly Dictionary<string,string> Table=new Dictionary<string,string>(StringComparer.Ordinal){
+   {"Giữ lại vì thay đổi: {0}; không còn tồn tại: {1}.","Kept because changed: {0}; no longer present: {1}."},
+   {"Đã xóa vĩnh viễn","Permanently deleted"},{"Đã chuyển vào Kho","Moved to the Vault"},
+   {"Đã xử lý {0} tệp • {1}","Processed {0} files • {1}"},
+   {"Tất cả ({0})","All ({0})"},
+   {"Đang dùng: {0} • Đã thay đổi: {1} • Không còn: {2} • Lỗi: {3}","In use: {0} • Changed: {1} • Missing: {2} • Errors: {3}"},
+   {"Các tệp đã xóa vĩnh viễn không thể khôi phục. Các mục bị bỏ qua vẫn được giữ nguyên.","Permanently deleted files cannot be restored. Skipped items were left untouched."},
+   {"Tệp đã chuyển vẫn chiếm dung lượng trong Kho. Mở Kho khôi phục để lấy lại hoặc xóa vĩnh viễn sau khi kiểm tra.","Moved files still occupy space in the Vault. Open the Recovery Vault to restore them or permanently delete them after review."},
+   {"Mở Kho khôi phục","Open Recovery Vault"},
+   {"Danh sách hiển thị tối đa {0} tệp; số tổng bao gồm toàn bộ lượt dọn.","The list shows up to {0} files; totals cover the entire cleanup."},
+   {"Đã xử lý","Processed"},{"Đang dùng / không truy cập được","In use / inaccessible"},
+   {"Đã thay đổi — giữ lại","Changed — kept"},{"Không còn tồn tại","No longer exists"},{"Lỗi xử lý","Processing error"},
+   {"Không có tệp trong nhóm này.","No files in this category."},
+   {"ĐIỀU HƯỚNG","NAVIGATION"},
+   {"Dọn dẹp","Cleanup"},
+   {"Chọn một khu vực để xem chi tiết và nơi xử lý.","Select an area to see its details and next action."},
+   {"Xử lý ở tab: {0}. Bấm đúp dòng hoặc chọn Mở tab xử lý.","Open: {0}. Double-click the row or choose Open action tab."},
+   {"Chọn một dòng để đọc đầy đủ bên dưới. Chuyển rác vào Kho có thể hoàn tác; dung lượng chỉ được giải phóng khi xóa vĩnh viễn trong Kho.","Select a row to read its full details below. Moving junk to the Vault is reversible; space is freed only after permanent deletion from the Vault."},
+   {"Chuyển {0} rác vào Kho","Move {0} of junk to Vault"},
    {"Tệp đã thay đổi hoặc không còn đủ điều kiện; hãy xem trước lại.","The file changed or is no longer eligible; preview again."},
    {"Đã khôi phục {0} tệp; {1} tệp lỗi; {2} tệp trùng đích còn trong Kho. Di chuyển tệp ở đích rồi thử khôi phục lại.","Restored {0} files; {1} failed; {2} conflicting files remain in the Vault. Move the destination files aside, then retry restore."},
    // Identity

@@ -107,7 +107,7 @@ namespace TweekPro.Health {
   }
 
   static string ActionLabel(HealthFinding f){
-   if(f.Key=="junk"&&f.Bytes>0)return L.F("Dọn rác {0}",Presentation.BytesLabel(f.Bytes));
+   if(f.Key=="junk"&&f.Bytes>0)return L.F("Chuyển {0} rác vào Kho",Presentation.BytesLabel(f.Bytes));
    if(f.Key=="empty"&&f.Count>0)return L.F("Xem {0} thư mục rỗng",f.Count);
    if(f.Key=="pup"&&f.Count>0)return L.F("Xem {0} phần mềm cảnh báo",f.Count);
    if(f.Key=="leftovers"&&f.Count>0)return L.F("Xem {0} phần còn sót",f.Count);

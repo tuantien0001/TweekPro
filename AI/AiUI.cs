@@ -499,7 +499,7 @@ namespace TweekPro {
    finally{busy=false;}
    junkResults=junkRules.Rules.Select(r=>new Cleaner.JunkRuleResult{Rule=r}).ToList();RenderJunk(false);LoadBackups();
    var sb=new StringBuilder();
-   sb.AppendLine("Done: cleaned "+report.Cleaned+" file(s), "+Presentation.BytesLabel(report.Bytes)+" moved to the Recovery Vault; skipped_in_use="+report.SkippedInUse+" failed="+report.Failed+" rules="+String.Join(", ",selected.Select(r=>r.Rule.Name)));
+   sb.AppendLine("Done: cleaned "+report.Cleaned+" file(s), "+Presentation.BytesLabel(report.Bytes)+" moved to the Recovery Vault; skipped_in_use="+report.SkippedInUse+" changed="+report.Changed+" missing="+report.Missing+" failed="+report.Failed+" rules="+String.Join(", ",selected.Select(r=>r.Rule.Name)));
    foreach(var err in report.Errors.Take(5))sb.AppendLine("error: "+err);
    return sb.ToString().TrimEnd();
   }
