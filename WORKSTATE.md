@@ -1,12 +1,10 @@
 # Tweek Pro - current work checkpoint
 
 Updated: 2026-09-27 (Asia/Bangkok).
-Objective: improve navigation, readability and cleanup results; owner reviews before GitHub executable upload.
-Status: implementation and final verification complete locally on main; ready for owner review. Base origin/main remains 5e0e93e (fetch verified).
+Objective: owner explicitly authorized installing over the local executable and publishing GitHub version 0.8.0.
+Status: releasing from main, local UI commit d288e51; origin/main 5e0e93e, fetch confirmed no incoming commits.
 
-- Grouped sidebar preserves all 21 feature links; Overview has adaptive columns, full finding details and explicit vault wording; cleanup dialog has per-file outcomes and six filters. VI/EN translations and README updated.
-- Verification rerun: build.ps1 -SelfTest, 0 warnings / 0 errors, full Windows PASS at 2026-09-27T16:10:33. UI smoke PASS in VI/EN: all 21 links clickable and keyboard-focusable, all six result filters correct. git diff --check passed.
-- Regenerated all 22 preview images in both languages; Vietnamese gallery and cleanup-results.png in docs/screenshots. English gallery: %TEMP%/TweekPro-final-en. Reviewed Overview VI/EN, small Overview and cleanup dialog plus Junk layout. Small-window/filter evidence: %TEMP%/TweekProUIReview-83679110168147d9a52bd8523b8779be.
-- Initial relative-path preview invocation failed saving in GDI+; rerun with absolute output directories succeeded. All verification commands finished. Existing user app PID 15408 (started 15:30) left running.
-- Next: owner reviews screenshots, then explicitly approves push/upload. Do not push before review: .github/workflows/release.yml runs publish.ps1 and uploads distributables on every branch push. No release/tag or installed-exe replacement authorized.
-- Changes are checkpointed in a local commit, not a GitHub backup. Preserve untracked .bridge/ and .cursor/; they are excluded from the commit.
+- Prior UI work verified: build 0 warnings/errors; full Windows self-test PASS 2026-09-27T16:10:33; VI/EN navigation and result filters PASS.
+- Next: run release.ps1 -Version 0.8.0 elevated with full tests, verify remote main/tag and GitHub Actions assets, install 0.8.0 over existing Program Files installation and verify executable version/hash.
+- Owner authorization supersedes previous hold on push/executable upload and installed-exe replacement. Do not skip tests or force-push.
+- Existing Tweek Pro PID 15408 may need closing for replacement. Preserve user data/vault and untracked .bridge/ and .cursor/.
