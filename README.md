@@ -252,12 +252,9 @@ Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bả
 
 ## Lịch sử phiên bản
 
-### 0.8.2 (chưa phát hành)
-
-- **Thanh tiêu đề**: nút ngôn ngữ bo tròn có cờ, tên ngôn ngữ và menu chọn Tiếng Việt / English; hỗ trợ rê chuột và bàn phím. Trạng thái quyền quản trị viên có khiên xanh, nền và viền nhẹ, căn cùng hàng với nút ngôn ngữ.
-- **Ứng dụng**: bỏ chế độ Hunter và kính ngắm nổi; thanh thao tác gọn hơn.
-
 ### 0.8.1 (27/09/2026)
+
+- **Tệp tải cập nhật 01/10/2026**: bộ cài và bản portable trên GitHub được thay bằng bản mới cùng phiên bản 0.8.1. Nút ngôn ngữ bo tròn có cờ, tên đầy đủ và menu chọn Tiếng Việt / English; trạng thái quản trị viên có khiên xanh, nền và viền nhẹ. Bỏ chế độ Hunter và kính ngắm nổi.
 
 - **Thanh tiêu đề gọn hơn**: nút ngôn ngữ có cờ và mã VI/EN, nhãn quyền có biểu tượng khiên và nền tối nhẹ; hai mục cùng chiều cao, căn thẳng hàng.
 
