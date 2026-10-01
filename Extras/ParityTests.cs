@@ -29,17 +29,6 @@ namespace TweekPro {
     if(others.Count!=1||!others[0].EndsWith("Other",StringComparison.OrdinalIgnoreCase))throw new Exception("other profiles skip Public, Default and the current user");
     if(ProfileScope.DataFolders(others[0]).Length!=2)throw new Exception("data folders");
 
-    var apps=new[]{
-     new AppEntry{Name="Editor",Location=@"C:\Apps\Editor",Command=@"C:\Apps\Editor\uninstall.exe"},
-     new AppEntry{Name="Other",Location=@"C:\Apps\Other",Command="msiexec /x {x}"}
-    };
-    var hit=HunterMatch.Find(@"C:\Apps\Editor\bin\editor.exe",apps);
-    if(hit==null||hit.Name!="Editor")throw new Exception("hunter matches install folder");
-    var byCmd=HunterMatch.Find(@"D:\tools\uninstall.exe",new[]{apps[0]});
-    if(byCmd==null||byCmd.Name!="Editor")throw new Exception("hunter matches uninstall command file name");
-    if(HunterMatch.Find(@"C:\Windows\notepad.exe",apps)!=null)throw new Exception("hunter must not guess");
-    if(HunterMatch.Find("not-a-path",apps)!=null)throw new Exception("hunter rejects a bad path");
-
     if(UserTools.Refuse(@"C:\Windows\System32\cmd.exe")!="blocked")throw new Exception("cmd refused");
     if(UserTools.Refuse(@"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")!="blocked")throw new Exception("powershell refused");
     if(UserTools.Refuse("notepad.exe")!="not-rooted")throw new Exception("relative path refused");

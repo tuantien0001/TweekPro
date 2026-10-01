@@ -1,13 +1,11 @@
 # Tweek Pro - current work checkpoint
 
-Updated: 2026-09-27 (Asia/Bangkok).
-Objective: simplify sidebar for nontechnical users, keep Applications/Cleanup fully expanded and make uninstall easy to find.
-Status: owner approved the flat sidebar (2026-09-27 16:48). Installed exe overwritten with the Release build (hash ED6B264E…, shortcut points at TweekPro-0.8.0.exe). Pushing the four sidebar commits plus this checkpoint; screenshots in docs/screenshots are from this UI.
+Updated: 2026-10-01 (Asia/Bangkok).
+Objective: redesign language/admin header controls and remove Hunter mode.
+Status: implementation and verification complete on main; committing and pushing this checkpoint.
 
-- One flat vertical list of 21 feature links with no group headings or nested panels. Uninstall apps remains bold blue directly below Overview; same order as previous review.
-- VI/EN translations and README pending 0.8.1 notes updated. All 22 tab screenshots regenerated locally in both languages; Vietnamese docs/screenshots; English in %TEMP%/TweekProUIReview-c31ab63717ac4c8ba8853d5aed663cbd/en.
-- Build: 0 warnings/errors. Elevated `--self-test` PASS 2026-09-27T16:46:08. VI/EN UI smoke PASS: 21 clickable/keyboard-focusable links, flat list contains exactly 21 buttons with no captions; no scrollbar or clipped links at 1120x700 and 1280x820 in VI/EN, six cleanup filters correct. git diff --check passed.
-- Review app launched from workspace bin/FitReview/TweekPro-0.8.0.exe, PID 46648. Existing installed 0.8.0 remains unchanged. User should review the workspace window.
-- Next: nothing pending for this iteration. No new tag; v0.8.0 release assets stay as published. README gallery updates from the pushed screenshots.
-- Previous v0.8.0 Release and installed build verified in prior checkpoint; installation backup remains %LOCALAPPDATA%/TweekPro-install-backup-20260927-161501.
-- Preserve untracked .bridge/ and .cursor/. No verification commands still running; review app intentionally remains open. Older review PIDs 49596, 46340 and 51232 were not closed. This local checkpoint is not a GitHub backup.
+- Rounded language selector (flag, full name, chevron), checked VI/EN menu, hover/focus states; green rounded elevated status with shield. Removed Hunter button, floating UI, matching helper and obsolete helper tests; Remnants.TraceHunter remains.
+- README pending 0.8.2 notes and language instructions updated; all 22 Vietnamese screenshots regenerated; English and elevated-badge previews in %TEMP%/TweekProHeader-8bbd8af91fe5453990567d9884d57a62.
+- Release build: 0 warnings/errors. Final elevated full self-test exit 0, PASS 2026-10-01T23:40:17. VI/EN isolated UI checks PASS at 1120x700 and 1280x820: bounds, menu open/checked selection, current-language no-op, keyboard focus, Hunter absent. Initial harness SendKeys failed due to desktop access; replaced with direct menu checks, rerun passed. git diff --check passed.
+- No verification commands remain running. No release or installed executable overwrite requested.
+- Preserve pre-existing untracked .bridge/ and .cursor/. Next: verify remote identity after push; owner can review bin/Release/net48/TweekPro-0.8.1.exe.

@@ -55,8 +55,6 @@ namespace TweekPro {
    Add(bar,"Gỡ cưỡng bức…",async()=>await ForceUninstall());
    Add(bar,"Xuất CSV",()=>{ExportApps();return Task.FromResult(0);});
    Add(bar,"Theo dõi cài đặt",async()=>await ToggleInstallWatch());watchInstallButton=actions[actions.Count-1];
-   Add(bar,"Hunter…",()=>{ShowHunter();return Task.FromResult(0);});
-   tips.SetToolTip(actions[actions.Count-1],Core.L.T("Thu cửa sổ và hiện kính ngắm đỏ.\r\nKéo kính lên icon hoặc cửa sổ để xem ứng dụng, rồi gỡ hoặc mở thư mục.\r\nChuột phải trên kính để thoát."));
    deepMode.Text=Core.L.T("Quét sâu sau khi gỡ");deepMode.Checked=settings.DeepScanAfterUninstall;deepMode.CheckedChanged+=(s,e)=>settings.DeepScanAfterUninstall=deepMode.Checked;deepMode.AutoSize=true;deepMode.Margin=new Padding(12,8,16,0);deepMode.ForeColor=Theme.Text;bar.Controls.Add(deepMode);
    pupOnly.Text=Core.L.T("Chỉ hiện mục cảnh báo");pupOnly.AutoSize=true;pupOnly.Margin=new Padding(0,8,16,0);pupOnly.ForeColor=Theme.Text;pupOnly.CheckedChanged+=(s,e)=>Filter();bar.Controls.Add(pupOnly);
    var searchHost=Theme.SearchField(search);search.TextChanged+=(s,e)=>Filter();
@@ -173,17 +171,20 @@ namespace TweekPro {
   void Log(string value){log.AppendText(DateTime.Now.ToString("HH:mm:ss")+"  "+value+"\r\n");status.Text=value;if(value.StartsWith("LỖI",StringComparison.OrdinalIgnoreCase)||value.StartsWith("ERROR",StringComparison.OrdinalIgnoreCase))Core.Log.Error(value);else Core.Log.Info(value);}
   /// <summary>Persists settings.json; failures are logged, never shown as blocking errors.</summary>
   void SaveSettings(){try{settings.Save(Core.Paths.SettingsFile);}catch(Exception e){Core.Log.Warn("Không lưu được settings.json: "+e.Message);}}
-  /// <summary>Adds the privilege badge and the compact language toggle to the right side of the header band.</summary>
+  /// <summary>Adds a language menu and a distinct privilege status to the header.</summary>
   void BuildHeaderActions(Panel header){
-   var right=new FlowLayoutPanel{Dock=DockStyle.Right,FlowDirection=FlowDirection.RightToLeft,WrapContents=false,Padding=new Padding(16,22,0,0),BackColor=Theme.Header};
-   bool elevated=Core.Elevation.IsElevated;
-   string privilege=Core.L.T(elevated?"Quản trị viên":"Quyền thường");
-   var badge=new Label{Text=privilege,AutoSize=false,Height=32,Width=TextRenderer.MeasureText(privilege,Theme.Small).Width+38,TextAlign=ContentAlignment.MiddleLeft,Padding=new Padding(28,0,8,0),Margin=new Padding(8,0,0,0),Font=Theme.Small,ForeColor=elevated?Color.FromArgb(167,243,208):Color.FromArgb(203,213,225),BackColor=Color.FromArgb(30,41,59),AccessibleName=Core.Elevation.BadgeText};
-   badge.Paint+=(s,e)=>{float scale=badge.DeviceDpi/96f;Branding.DrawTabGlyph(e.Graphics,"Kho khôi phục",new Rectangle((int)(8*scale),(badge.Height-(int)(14*scale))/2,(int)(14*scale),(int)(14*scale)),badge.ForeColor);};
-   right.Controls.Add(badge);
-   var language=Branding.LanguageButton(Core.L.English?"EN":"VI",Core.L.T(Core.L.English?"Chuyển sang tiếng Việt":"Switch to English"));language.Margin=new Padding(0);
-   language.Click+=async(s,e)=>await Guard(()=>{SwitchLanguage();return Task.FromResult(0);});
+   var right=new FlowLayoutPanel{Dock=DockStyle.Right,FlowDirection=FlowDirection.LeftToRight,WrapContents=false,Padding=new Padding(16,12,0,0),BackColor=Theme.Header};
+   var language=Branding.LanguageButton(Core.L.English?"EN":"VI",Core.L.T("Ngôn ngữ"));language.Margin=new Padding(0,0,10,0);
+   var menu=new ContextMenuStrip{Font=Theme.Body};
+   foreach(string code in new[]{Core.L.Vietnamese,Core.L.EnglishCode}){
+    string target=code;var item=new ToolStripMenuItem(Core.L.T(code==Core.L.Vietnamese?"Tiếng Việt":"English")){Checked=String.Equals(Core.L.Lang,code,StringComparison.OrdinalIgnoreCase)};
+    item.Click+=async(s,e)=>{if(!String.Equals(Core.L.Lang,target,StringComparison.OrdinalIgnoreCase))await Guard(()=>{SwitchLanguage();return Task.FromResult(0);});};menu.Items.Add(item);
+   }
+   language.ContextMenuStrip=menu;tips.SetToolTip(language,Core.L.T("Ngôn ngữ"));
+   language.Click+=(s,e)=>menu.Show(language,new Point(0,language.Height));
+   FormClosed+=(s,e)=>menu.Dispose();
    right.Controls.Add(language);
+   var badge=Branding.PrivilegeBadge(Core.Elevation.IsElevated);badge.Margin=new Padding(0);tips.SetToolTip(badge,Core.Elevation.BadgeText);right.Controls.Add(badge);
    header.Controls.Add(right);right.Width=right.PreferredSize.Width;
   }
   /// <summary>Toggles between Vietnamese and English, saves the preference and relaunches so every tab is rebuilt in the new language.</summary>
@@ -458,24 +459,7 @@ namespace TweekPro {
    try{Process.Start(Application.ExecutablePath);}catch(Exception ex){Log(ex.Message);return;}
    BeginInvoke((Action)Close);
   }
-  void ShowHunter(){
-   if(Environment.OSVersion.Platform!=PlatformID.Win32NT)throw new IOException(Core.L.T("Hunter chỉ chạy trên Windows."));
-   Hide();
-   bool back=false;
-   Action show=()=>{
-    if(back)return;back=true;
-    var area=Screen.FromPoint(Cursor.Position).WorkingArea;
-    if(Width>area.Width)Width=area.Width;if(Height>area.Height)Height=area.Height;
-    if(Left<area.Left||Top<area.Top||Right>area.Right||Bottom>area.Bottom)
-     Location=new Point(area.Left+Math.Max(0,(area.Width-Width)/2),area.Top+Math.Max(0,(area.Height-Height)/2));
-    Show();WindowState=FormWindowState.Normal;Activate();
-   };
-   HunterSession.Start(this,inventory,app=>{
-    show();
-    foreach(ListViewItem i in apps.Items){bool mine=i.Tag==app;i.Selected=mine;i.Checked=mine;if(mine)i.EnsureVisible();}
-    BeginInvoke((Action)(async()=>{await Guard(()=>Uninstall());}));
-   },show);
-  }
+
  }
  public static class Program {
   /// <summary>Migrates the AppCare data folder once, then points the rotating log at the Tweek Pro data directory.</summary>

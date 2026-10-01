@@ -50,7 +50,7 @@ Tải bản mới nhất tại **[Releases](https://github.com/tuantien0001/Twee
 - **Quyền quản trị:** ứng dụng luôn chạy quản trị (UAC hỏi một lần khi mở). Quyền này cần cho Rác hệ thống, HKLM, băng thông ETW, gỡ ứng dụng Windows cho mọi tài khoản và tệp cứng đầu. Có quyền cao không đồng nghĩa xóa được mọi thứ — các thư mục lõi vẫn bị khóa trong mã.
 - **Cập nhật:** khi khởi động, ứng dụng hỏi GitHub Releases một lần (không gửi gì khác); có bản mới thì hiện dải thông báo trên tab **Tổng quan** với **Tải về** / **Bỏ qua bản này**. Tắt tự kiểm tra bằng `updateAutoCheck: false` trong `settings.json`; nút **Kiểm tra cập nhật** vẫn dùng được.
 - **Dữ liệu:** `%LOCALAPPDATA%\TweekPro` — `Backups\` (Kho), `settings.json`, `sessions.xml`, `install-sizes.xml` (dung lượng thư mục cài đã đo, nhớ 24 giờ), `Logs\` (giữ 14 ngày), `junk-rules.json` tùy chọn. Lần chạy đầu tự đổi tên thư mục `AppCare` cũ sang `TweekPro`; kho AppCare vẫn đọc và khôi phục được.
-- **Ngôn ngữ:** nút quả cầu **EN / VI** ở góc phải header đổi ngôn ngữ và khởi động lại (khóa `language` trong `settings.json`).
+- **Ngôn ngữ:** nút bo tròn có cờ và tên **Tiếng Việt / English** ở góc phải thanh tiêu đề mở menu chọn ngôn ngữ; đổi ngôn ngữ sẽ hỏi xác nhận rồi khởi động lại (khóa `language` trong `settings.json`). Bên cạnh là nhãn trạng thái quyền với biểu tượng khiên, màu xanh khi chạy bằng quyền quản trị viên.
 
 ## Các tab
 
@@ -251,6 +251,11 @@ Trong ứng dụng, nút **Báo lỗi / góp ý** (tab Tổng quan và Công c�
 Chưa bật/tắt tiện ích trình duyệt tại chỗ (chỉ gỡ). Cài bản mới im lặng chỉ khi bật «Hỏi cài bản mới». Không xác định được mọi dấu vết của mọi ứng dụng. Băng thông theo tiến trình chỉ tính từ khi bật ETW. Bản phân phối là một thư mục (exe + DLL). Chuỗi giao diện nằm trong mã (chưa `.resx`); một số thông báo nhật ký còn tiếng Việt khi chọn tiếng Anh.
 
 ## Lịch sử phiên bản
+
+### 0.8.2 (chưa phát hành)
+
+- **Thanh tiêu đề**: nút ngôn ngữ bo tròn có cờ, tên ngôn ngữ và menu chọn Tiếng Việt / English; hỗ trợ rê chuột và bàn phím. Trạng thái quyền quản trị viên có khiên xanh, nền và viền nhẹ, căn cùng hàng với nút ngôn ngữ.
+- **Ứng dụng**: bỏ chế độ Hunter và kính ngắm nổi; thanh thao tác gọn hơn.
 
 ### 0.8.1 (27/09/2026)
 

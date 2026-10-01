@@ -74,24 +74,6 @@ namespace TweekPro {
   }
  }
 
- /// <summary>Matches a window's executable to an installed application by install folder, then by the uninstall command.</summary>
- public static class HunterMatch {
-  public static AppEntry Find(string exePath,IEnumerable<AppEntry> apps){
-   if(String.IsNullOrWhiteSpace(exePath)||apps==null)return null;
-   string full;try{full=Path.GetFullPath(exePath);}catch(Exception){return null;}
-   string file=Path.GetFileName(full);
-   if(file.Length<5||!file.EndsWith(".exe",StringComparison.OrdinalIgnoreCase))return null;
-   AppEntry byCommand=null;
-   foreach(var a in apps){
-    if(a==null)continue;
-    string loc=(a.Location??"").Trim().TrimEnd('\\');
-    if(loc.Length>2&&full.StartsWith(loc+"\\",StringComparison.OrdinalIgnoreCase))return a;
-    if(byCommand==null&&(a.Command??"").IndexOf(file,StringComparison.OrdinalIgnoreCase)>=0)byCommand=a;
-   }
-   return byCommand;
-  }
- }
-
  /// <summary>User-added tools. Only a local .exe, .msc or .cpl is accepted; shells and script hosts are refused.</summary>
  public static class UserTools {
   static readonly string[] Blocked={"cmd.exe","powershell.exe","pwsh.exe","wscript.exe","cscript.exe","mshta.exe","reg.exe","regedit.exe","bash.exe","wt.exe"};

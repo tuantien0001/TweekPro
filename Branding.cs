@@ -23,14 +23,33 @@ namespace TweekPro {
   static readonly Color LogoTop=Color.FromArgb(56,132,255);
   static readonly Color LogoBottom=Color.FromArgb(29,78,216);
 
-  /// <summary>Compact header button showing the current language as its flag; clicking it switches the UI language.</summary>
+  /// <summary>Rounded language selector with the current flag, language name and menu chevron.</summary>
   public static Button LanguageButton(string code,string tooltip){
-   var b=new Button{Size=new Size(76,32),FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Color.FromArgb(30,41,59),ForeColor=Color.FromArgb(226,232,240),Text="",TabStop=true,UseVisualStyleBackColor=false};
-   b.FlatAppearance.BorderSize=0;b.FlatAppearance.MouseOverBackColor=Color.FromArgb(30,41,59);b.FlatAppearance.MouseDownBackColor=Color.FromArgb(51,65,85);
-   b.Paint+=(s,e)=>{float scale=b.DeviceDpi/96f;DrawLanguageGlyph(e.Graphics,new Rectangle(0,0,(int)(42*scale),b.Height),code,b.ForeColor);TextRenderer.DrawText(e.Graphics,code,Theme.Small,new Rectangle((int)(40*scale),0,b.Width-(int)(42*scale),b.Height),b.ForeColor,TextFormatFlags.Left|TextFormatFlags.VerticalCenter);};
-   new ToolTip().SetToolTip(b,tooltip);
-   b.AccessibleName=tooltip;
+   string name=Core.L.T(code=="EN"?"English":"Tiếng Việt");
+   var b=new Button{Size=new Size(TextRenderer.MeasureText(name,Theme.Small).Width+76,36),Font=Theme.Small,FlatStyle=FlatStyle.Flat,Cursor=Cursors.Hand,BackColor=Theme.Header,ForeColor=Color.FromArgb(226,232,240),Text="",TabStop=true,UseVisualStyleBackColor=false,AccessibleName=tooltip+": "+name};
+   b.FlatAppearance.BorderSize=0;b.FlatAppearance.MouseOverBackColor=Theme.Header;b.FlatAppearance.MouseDownBackColor=Theme.Header;
+   bool hover=false,pressed=false;
+   b.MouseEnter+=(s,e)=>{hover=true;b.Invalidate();};b.MouseLeave+=(s,e)=>{hover=false;pressed=false;b.Invalidate();};b.MouseDown+=(s,e)=>{pressed=true;b.Invalidate();};b.MouseUp+=(s,e)=>{pressed=false;b.Invalidate();};b.GotFocus+=(s,e)=>b.Invalidate();b.LostFocus+=(s,e)=>b.Invalidate();
+   b.Paint+=(s,e)=>{
+    float scale=b.DeviceDpi/96f;var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;
+    using(var shape=Rounded(new Rectangle(1,1,b.Width-3,b.Height-3),(int)(10*scale)))using(var fill=new SolidBrush(pressed?Color.FromArgb(51,65,85):hover?Color.FromArgb(40,55,76):Color.FromArgb(30,41,59)))using(var edge=new Pen(b.Focused?Color.FromArgb(96,165,250):Color.FromArgb(64,80,103))){g.FillPath(fill,shape);g.DrawPath(edge,shape);}
+    DrawLanguageGlyph(g,new Rectangle((int)(10*scale),0,(int)(26*scale),b.Height),code,b.ForeColor);
+    TextRenderer.DrawText(g,name,b.Font,new Rectangle((int)(44*scale),0,b.Width-(int)(66*scale),b.Height),b.ForeColor,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.NoPrefix);
+    int x=b.Width-(int)(16*scale),y=b.Height/2;using(var pen=new Pen(b.ForeColor,1.5f*scale)){g.DrawLines(pen,new[]{new PointF(x-3*scale,y-1*scale),new PointF(x,y+2*scale),new PointF(x+3*scale,y-1*scale)});}
+   };
    return b;
+  }
+  /// <summary>Rounded read-only privilege status, with a green shield when elevated.</summary>
+  public static Label PrivilegeBadge(bool elevated){
+   string text=Core.L.T(elevated?"Quản trị viên":"Quyền thường");
+   var badge=new Label{Text="",Height=36,Width=TextRenderer.MeasureText(text,Theme.Small).Width+46,Font=Theme.Small,BackColor=Theme.Header,ForeColor=elevated?Color.FromArgb(167,243,208):Color.FromArgb(203,213,225),AccessibleName=Core.Elevation.BadgeText};
+   badge.Paint+=(s,e)=>{
+    float scale=badge.DeviceDpi/96f;var g=e.Graphics;g.SmoothingMode=SmoothingMode.AntiAlias;
+    using(var shape=Rounded(new Rectangle(1,1,badge.Width-3,badge.Height-3),(int)(10*scale)))using(var fill=new SolidBrush(elevated?Color.FromArgb(20,49,48):Color.FromArgb(30,41,59)))using(var edge=new Pen(elevated?Color.FromArgb(38,83,73):Color.FromArgb(64,80,103))){g.FillPath(fill,shape);g.DrawPath(edge,shape);}
+    DrawTabGlyph(g,"Kho khôi phục",new Rectangle((int)(12*scale),(badge.Height-(int)(16*scale))/2,(int)(16*scale),(int)(16*scale)),badge.ForeColor);
+    TextRenderer.DrawText(g,text,badge.Font,new Rectangle((int)(36*scale),0,badge.Width-(int)(42*scale),badge.Height),badge.ForeColor,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.NoPrefix);
+   };
+   return badge;
   }
 
   /// <summary>Draws the flag of the active language, centered in r: Vietnam (red, gold star) for VI and the Union Jack for EN.</summary>
